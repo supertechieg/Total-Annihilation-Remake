@@ -73,6 +73,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     if ($Native) {
+        python tools\native_ballistic_deadline.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original ballistic deadline reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_ballistic_deadline.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Ballistic deadline differs from original executable' }
         python tools\native_ballistic_lifetime.py
         if ($LASTEXITCODE -ne 0) { throw 'Original ballistic lifetime reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_ballistic_lifetime.gd

@@ -23,6 +23,12 @@ func _initialize() -> void:
 		if Launch.initial_offset(case[0], 0) != int(case[1]):
 			failures += 1
 			printerr("FAIL: initial muzzle offset ", case)
-	var total := cases.size() + offsets.size()
+	var deadlines := [
+		Launch.deadline(100, 30, false, [0, 0, 0], [0, 0, 0], 1) == 130,
+		Launch.deadline(100, 30, true, [0, 0, 0], [300, 9999, 400], 10) == 150,
+		Launch.deadline(100, 30, true, [0, 0, 0], [300, 0, 400], 11) == 145,
+		Launch.deadline(0xffffffff, 1, false, [0, 0, 0], [0, 0, 0], 1) == 0]
+	failures += deadlines.count(false)
+	var total := cases.size() + offsets.size() + deadlines.size()
 	print("BALLISTIC_LAUNCH %d / %d checks pass" % [total - failures, total])
 	quit(0 if failures == 0 else 1)

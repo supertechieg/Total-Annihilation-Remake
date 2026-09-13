@@ -3,6 +3,15 @@ extends RefCounted
 const Ground = preload("res://ground_motion.gd")
 var trig := Ground.new()
 
+static func deadline(tick: int, weapon_timer: int, burnblow: bool, start: Array, target: Array, horizontal_speed: int) -> int:
+	var duration := weapon_timer & 65535
+	if burnblow:
+		var x := Ground.signed32(int(start[0]) - int(target[0]))
+		var z := Ground.signed32(int(start[2]) - int(target[2]))
+		@warning_ignore("integer_division")
+		duration = int(sqrt(float(x) * x + float(z) * z)) / horizontal_speed
+	return (tick + duration) & 0xffffffff
+
 static func initial_offset(muzzle_z: int, aim_z: int) -> int:
 	# Original weapon initialization uses world Z separation, not 3D distance.
 	@warning_ignore("integer_division")
