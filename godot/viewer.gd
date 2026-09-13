@@ -15,6 +15,8 @@ const CombatOverlay = preload("res://combat_overlay.gd")
 const WeaponAudio = preload("res://weapon_audio.gd")
 var weapon_audio: Node
 const Opponent = preload("res://opponent.gd")
+const ScenarioResult = preload("res://scenario_result.gd")
+var scenario_result: RefCounted
 var opponent: RefCounted
 var combat: RefCounted
 var combat_overlay: Node2D
@@ -138,6 +140,17 @@ func start_world_movement() -> void:
 			get_tree().quit(1)
 		else:
 			print("OPPONENT_VIEWER_OK constructed base, produced units and damaged Commander")
+			for id: int in economy.units.keys():
+				if int(economy.units[id].get("team", 0)) == 1:
+					economy.remove_unit(id)
+			check_scenario_result()
+			var finished_tick: int = economy.ticks
+			step_script()
+			if scenario_result.outcome != "victory" or economy.ticks != finished_tick:
+				push_error("Opponent result/freeze failed")
+				get_tree().quit(1)
+			else:
+				print("OPPONENT_RESULT_OK victory latched and simulation stopped")
 	if "--move" in OS.get_cmdline_user_args():
 		issue_move(unit_position + Vector2(128, -96))
 	if "--construction-demo" in OS.get_cmdline_user_args():
@@ -598,6 +611,8 @@ func toggle_build() -> void:
 	status_label.text = "  Original Commander construction pose"
 
 func step_script() -> void:
+	if scenario_result != null and scenario_result.outcome != "active":
+		return
 	if script_vm == null or not script_vm.fault.is_empty():
 		return
 	if economy != null and not economy.units.has(economy.builder_id):
@@ -625,6 +640,7 @@ func step_script() -> void:
 		if opponent != null:
 			opponent.step()
 		combat.step()
+		check_scenario_result()
 		combat_overlay.queue_redraw()
 		for id: int in structure_sprites.keys():
 			if not economy.units.has(id):
@@ -1059,7 +1075,28 @@ func start_opponent() -> void:
 			economy.remove_unit(id)
 			continue
 		opponent = policy
+		scenario_result = ScenarioResult.new()
 		add_structure_sprite(id)
 		status_label.text = "  Opponent active  -  build an army to defend your Commander"
 		return
 	status_label.text = "  No nearby opponent build site found"
+
+func check_scenario_result() -> void:
+	if scenario_result == null or scenario_result.outcome != "active":
+		return
+	var result: String = scenario_result.update(economy.units, economy.builder_id)
+	if result == "active":
+		return
+	var message := "Victory - enemy forces eliminated" if result == "victory" else "Defeat - Commander destroyed"
+	status_label.text = "  " + message
+	if DisplayServer.get_name() == "headless":
+		return
+	var dialog := AcceptDialog.new()
+	dialog.title = "Battle finished"
+	dialog.dialog_text = message
+	dialog.ok_button_text = "Restart"
+	dialog.dialog_close_on_escape = false
+	add_child(dialog)
+	dialog.confirmed.connect(func() -> void: get_tree().reload_current_scene())
+	dialog.canceled.connect(func() -> void: get_tree().reload_current_scene())
+	dialog.popup_centered()

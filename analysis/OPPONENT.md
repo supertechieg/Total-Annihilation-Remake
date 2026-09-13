@@ -65,3 +65,19 @@ The base test interrupts construction after at least ten percent progress,
 requires exactly one resume, completion of the same building and subsequent
 production/attack. All ten checks pass; the Comet Catcher opponent scenario
 also still passes. Builder replacement and long-distance recovery remain open.
+
+
+## Scenario completion
+
+The opt-in scenario now latches victory when no team-1 units remain, including
+unfinished structures, and defeat when the player Commander is absent. Defeat
+wins simultaneous elimination. Completed results stop subsequent simulation
+ticks. A result dialog offers Restart, which reloads the development scene.
+These are explicit rules for this asymmetric development scenario, not a claim
+of complete original skirmish victory modes or mission conditions.
+
+Six result checks cover active unfinished enemies, victory, defeat, simultaneous
+elimination and result latching. The viewer test additionally removes remaining
+enemies after its production/combat verification, requires victory and checks
+that another step does not advance simulation. Both pass. The modal/restart
+interaction itself has not yet received interactive visual verification.
