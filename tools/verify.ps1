@@ -99,6 +99,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-warrior
     if ($LASTEXITCODE -ne 0) { throw 'Warrior factory duel failed' }
     if ($Native) {
+        python tools\native_missile_steering.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original missile steering failed' }
+        & $godotPath --headless --path godot --script res://compare_native_missile_steering.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Missile steering differs from original executable' }
         python tools\native_firing_reference.py --unit armwar
         if ($LASTEXITCODE -ne 0) { throw 'Original Warrior firing reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --armwar
