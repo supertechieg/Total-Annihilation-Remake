@@ -21,5 +21,7 @@ static func overlay(nav: RefCounted, terrain: PackedByteArray, units: Dictionary
 				for cy in range(maxi(0, int(tile.position.y / 16) - footprint.y), mini(nav.height, int(tile.end.y / 16) + footprint.y + 1)):
 					for cx in range(maxi(0, int(tile.position.x / 16) - footprint.x), mini(nav.width, int(tile.end.x / 16) + footprint.x + 1)):
 						var size := Vector2(footprint) * 16
-						if tile.intersects(Rect2(Vector2(cx, cy) * 16 - size * 0.5, size)):
+						# Match terrain_navigation's integer cell anchor for odd footprints.
+						var anchor := Vector2(footprint.x >> 1, footprint.y >> 1) * 16
+						if tile.intersects(Rect2(Vector2(cx, cy) * 16 - anchor, size)):
 							nav.blocked[cy * nav.width + cx] = 1

@@ -6,6 +6,8 @@ Use Light/low by default, including reverse engineering when it can be done reli
 
 ## Completed
 
+Latest extension: all twelve Arm Vehicle Plant/Kbot Lab products execute healthy original COB scripts. Native playback matches 3,661 snapshots; 73 host checks cover production, animation and exit for every product. Odd-sized footprint alignment in the yard overlay was fixed to agree with terrain_navigation. Both real-map factory demos pass. See analysis/MOBILE_SCRIPTS.md; this supersedes older notes about static Kbot poses. Next major gameplay work remains mobile-builder controls, combat and opponents, alongside Core coverage and fidelity work.
+
 - Installation inventory and PE inspection in `analysis/`.
 - Ghidra 12.1.3 project at `local/ghidra-projects/TotalAnnihilation.gpr`.
 - 2,640 functions decompiled; one failed at `0x004e5392`. Approximate output, not buildable source.

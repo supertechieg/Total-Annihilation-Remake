@@ -28,9 +28,17 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Construction checks failed' }
     & $godotPath --headless --path godot --script res://test_factory_world.gd
     if ($LASTEXITCODE -ne 0) { throw 'Factory production checks failed' }
+    & $godotPath --headless --path godot --script res://test_produced_scripts.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Produced unit script checks failed' }
     & $godotPath --headless --path godot -- --verify
     if ($LASTEXITCODE -ne 0) { throw 'Viewer checks failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --kbot-demo
+    if ($LASTEXITCODE -ne 0) { throw 'Real-map Kbot production and movement failed' }
     if ($Native) {
+        python tools\native_mobile_reference.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original mobile script reference run failed' }
+        & $godotPath --headless --path godot --script res://compare_native_units.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Mobile scripts differ from original interpreter' }
         python tools\native_factory_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original factory reference run failed' }
         & $godotPath --headless --path godot --script res://compare_native_factory.gd

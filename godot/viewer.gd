@@ -115,11 +115,16 @@ func start_world_movement() -> void:
 			step_script()
 	if "--factory-demo" in OS.get_cmdline_user_args():
 		assert(run_factory_demo(), "Factory demo failed")
+	if "--kbot-demo" in OS.get_cmdline_user_args():
+		if not run_factory_demo("armlab", "armpw"):
+			push_error("Kbot demo failed")
+			get_tree().quit(1)
 
-func run_factory_demo() -> bool:
+func run_factory_demo(factory_type := "armvp", product_type := "armflash") -> bool:
 	select_unit(0)
-	var point := unit_position + Vector2(-112, 0)
-	if not place_structure("armvp", point):
+	var offset := float(unit_catalog.definition(factory_type).get("footprintx", "8")) * 8 + 48
+	var point := unit_position + Vector2(-offset, 0)
+	if not place_structure(factory_type, point):
 		return false
 	var id: int = economy.task_id
 	for tick in range(1200):
@@ -128,7 +133,7 @@ func run_factory_demo() -> bool:
 		return false
 	select_unit(id)
 	for index in range(factory_picker.item_count):
-		if factory_picker.get_item_metadata(index) == "armflash":
+		if factory_picker.get_item_metadata(index) == product_type:
 			factory_picker.select(index)
 	queue_factory_unit()
 	queue_factory_unit()
@@ -152,7 +157,7 @@ func run_factory_demo() -> bool:
 	if economy.units[produced[0]].position.distance_to(target) > 5:
 		return false
 	select_unit(id)
-	print("FACTORY_VERIFY_OK built=armvp produced=2 armflash; exit and selected movement passed")
+	print("FACTORY_VERIFY_OK built=%s produced=2 %s; exit and selected movement passed" % [factory_type, product_type])
 	return true
 
 func issue_move(target: Vector2) -> bool:

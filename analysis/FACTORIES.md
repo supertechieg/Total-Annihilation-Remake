@@ -4,13 +4,14 @@ Arm Vehicle Plants and Kbot Labs accept their original six-entry build menus aft
 
 QueryBuildInfo supplies the model piece used for the build position. Both enabled factory pads are directly under an unrotated base; their original local offsets and current COB translation supply the planar position. The finished unit receives a movement controller and an exit order. The next queued product waits until its predecessor's footprint clears the factory footprint. The factory deactivates when its queue and pad are empty, retaining its original delayed closing script.
 
-The viewer selects completed factories to expose production controls, displays products during construction, and selects completed products for movement. Flash Create/healthy smoke playback initializes its model visibility. Other produced unit scripts and builder commands remain unfinished: a constructed Kbot currently moves with a static pose, and a construction vehicle does not yet expose its own construction menu. No produced unit has combat yet.
+The viewer selects completed factories to expose production controls, displays products during construction, and selects completed products for movement. All twelve original Arm ground factory products now execute their healthy scripts, including Kbot walking and stopping; see MOBILE_SCRIPTS.md. A construction vehicle does not yet expose its own construction menu. No produced unit has combat yet.
 
 ## Verified behavior
 
 - The existing native factory/rotation suite has 2,124 matching interpreter snapshots; see native-factory-validation.json. This establishes script execution with supplied healthy/clear-yard inputs, not production lifecycle timing.
 - 36 factory host checks cover both factory types, rejection of unfinished factories and foreign menu units, opening readiness, completion/health, queried build position, stopped units blocking the pad, movement out of the yard, shortages/recovery, clearing pending orders, idle closing, and capacity stalls.
 - The real Comet Catcher viewer integration builds a Vehicle Plant with the Commander, queues two Flash tanks through the production controls, waits for both to exit, selects one and moves it to a new destination. The normal verification suite passes, and a rendered capture was inspected.
+- A further 73 checks exercise scripted production and exit for all twelve products, and a second real-map scenario produces and moves two Peewees from a Kbot Lab. Healthy product-script native playback matches 3,661 snapshots.
 
 Run `.\tools\verify.ps1` for host/integration checks; add `-Native` to regenerate original interpreter comparisons. A visual demo uses Godot `--path godot -- --factory-demo --capture ABSOLUTE_PNG_PATH`.
 

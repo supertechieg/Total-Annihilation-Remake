@@ -5,6 +5,7 @@ const VM = preload("res://cob_vm.gd")
 const Navigation = preload("res://terrain_navigation.gd")
 const BuildingNavigation = preload("res://building_navigation.gd")
 const Mobile = preload("res://mobile_unit.gd")
+const SCRIPTED_UNITS = ["armsolar", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv"]
 var mobile_units: Dictionary = {}
 var navigation_cache: Dictionary = {}
 var yard_signature := ""
@@ -41,7 +42,7 @@ func add_unit(type: String, position: Vector2, remaining: float) -> int:
 	units[id] = {"id": id, "type": type, "position": position, "remaining": remaining,
 		"health": 1 if remaining > 0 else int(definition.get("maxdamage", "1")), "active": true}
 	# Only these healthy scripts currently have native lifecycle comparisons.
-	if type in ["armsolar", "armvp", "armlab", "armflash"]:
+	if type in SCRIPTED_UNITS:
 		var vm = VM.new(catalog.load_script(type))
 		vm.read_values = {4: 100, 17: ceili(remaining * 100)}
 		if type == "armsolar":

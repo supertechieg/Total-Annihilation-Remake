@@ -33,6 +33,8 @@ Choose a structure in the dropdown, press **Place selected structure**, and clic
 
 Original speed caps, heading-to-velocity rounding, supplied-waypoint steering and movement-animation transitions match 6,837 native comparison checks. See [ground movement evidence and remaining work](analysis/GROUND_MOVEMENT.md) and [playable movement scope](analysis/PLAYABLE_MOVEMENT.md).
 
+All twelve Arm ground factory products now execute their healthy original scripts, including Kbot walking and stopping. Product-script playback matches 3,661 native snapshots; [scope and verification](analysis/MOBILE_SCRIPTS.md).
+
 Requires Godot 4 (tested on installed 4.6.2) and Python with Pillow for preparation. To recreate generated assets:
 
 ```powershell
