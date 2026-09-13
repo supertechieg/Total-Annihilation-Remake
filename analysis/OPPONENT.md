@@ -17,3 +17,22 @@ factory, has full-world target knowledge and lacks base construction, scouting,
 fog-of-war, strategic unit composition, resource expansion and mission behavior.
 These remain required toward a complete game; the test is a production-to-combat
 milestone only.
+
+
+## Initial base construction
+
+The policy now asks idle owned builders to construct a solar collector, then a
+Vehicle Plant, if those structures are absent. It searches nearby candidate
+sites through the existing placement checks and submits begin_build; it does
+not create completed structures or bypass resource payment. Unfinished owned
+structures count as present to avoid duplicate orders. Destruction makes a
+replacement eligible on a later decision tick.
+
+The new base integration test starts with an Arm Construction Vehicle and the
+normal 1000/1000 enemy resources, with no supplied factory. It requires two
+construction starts, resource spending, enemy-owned factory products and actual
+damage to a player target. All seven checks pass. This uses healthy original
+builder/factory scripts and the existing provisional economy, not original AI
+strategy. Site search is local; no builder relocation, resource expansion, metal
+extraction or recovery of abandoned unfinished jobs is implemented yet. The
+controller is still awaiting a viewer scenario.

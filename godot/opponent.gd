@@ -6,6 +6,7 @@ var team: int
 var next_decision := 0
 var queued := 0
 var attacks := 0
+var structures_started := 0
 
 func _init(source: RefCounted, battle: RefCounted, owner: int) -> void:
 	world = source
@@ -16,6 +17,7 @@ func step() -> void:
 	if world.ticks < next_decision:
 		return
 	next_decision = world.ticks + 30
+	build_base()
 	for id: int in world.factories:
 		if int(world.units[id].get("team", 0)) != team or float(world.units[id].remaining) > 0:
 			continue
@@ -46,3 +48,28 @@ func step() -> void:
 				target = candidate
 		if target != 0 and combat.attack(id, target, true):
 			attacks += 1
+
+func build_base() -> void:
+	var has_solar := false
+	var has_factory := false
+	for unit: Dictionary in world.units.values():
+		if int(unit.get("team", 0)) == team:
+			has_solar = has_solar or unit.type == "armsolar"
+			has_factory = has_factory or unit.type in ["armvp", "armlab"]
+	var type := "armsolar" if not has_solar else "armvp"
+	if has_solar and has_factory:
+		return
+	for id: int in world.units.keys():
+		var unit: Dictionary = world.units[id]
+		if int(unit.get("team", 0)) != team or not world.can_build(id):
+			continue
+		if world.builder_jobs.has(id) or (id == world.builder_id and world.task_id != 0):
+			continue
+		if type not in world.catalog.build_options(unit.type):
+			continue
+		for radius in [64, 96, 128]:
+			for offset in [Vector2(radius, 0), Vector2(-radius, 0), Vector2(0, radius), Vector2(0, -radius), Vector2(radius, radius), Vector2(-radius, -radius)]:
+				var point: Vector2 = unit.position + offset
+				if world.placement_error(type, point, id).is_empty() and world.begin_build(type, point, id) != 0:
+					structures_started += 1
+					return
