@@ -109,3 +109,20 @@ The fixture disables the SetSpeed callback by leaving the script pointer null;
 otherwise the extractor and map-lookup routines execute unchanged. Original map
 loading into metal bytes and script SetSpeed behavior still need verification
 before this helper can provide live extractor income.
+
+The full feature-metal pass at 0x422040 and original map lookup now match 48
+cases in native_feature_metal.py against terrain_metal.feature_metal. Loaded
+features with nonzero metal and indestructible (definition +0xff bit 1) overwrite
+every valid cell in their footprint with the low byte of their metal value.
+Anchors are scanned in map row order, so later anchors overwrite overlapping
+earlier footprints. Zero-metal and destructible features leave the base intact.
+The definition loader stores metal as an unsigned 16-bit integer converted to
+float; the overlay truncates that to a byte. Tests cover these flags, clipping,
+empty footprints, overlap and values through 65535. No native code is patched
+by this fixture; loaded definitions and base cell bytes are supplied.
+
+Static map-loader inspection distinguishes two attribute layouts: its older
+8-byte cells provide metal at attribute offset 6, while the 4-byte layout starts
+from the configured SurfaceMetal (or zero) before the feature pass. These loader
+branches and the existing prepared map bundle still need to be connected and
+checked; the overlay comparison alone does not prove map import fidelity.

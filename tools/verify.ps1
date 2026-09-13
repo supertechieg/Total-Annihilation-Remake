@@ -119,6 +119,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "$missileUnit factory duel failed" }
     }
     if ($Native) {
+        python tools\native_feature_metal.py
+        if ($LASTEXITCODE -ne 0) { throw 'Feature metal overlay differs from original' }
         python tools\native_extractor_yield.py
         if ($LASTEXITCODE -ne 0) { throw 'Native extractor yield failed' }
         & $godotPath --headless --path godot --script res://compare_native_extractor_yield.gd
