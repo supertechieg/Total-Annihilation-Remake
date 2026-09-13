@@ -124,6 +124,7 @@ func start_world_movement() -> void:
 		return
 	combat = Combat.new(economy)
 	var environment: Dictionary = scene_data.get("environment", {})
+	economy.tidal_strength = float(environment.get("tidal_strength", 0.0))
 	economy.configure_wind(int(environment.get("min_wind", 100)), int(environment.get("max_wind", 2000)))
 	weapon_audio = WeaponAudio.new()
 	add_child(weapon_audio)

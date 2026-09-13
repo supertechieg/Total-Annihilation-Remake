@@ -4,7 +4,8 @@ $workspacePath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $scenePath = Join-Path $workspacePath 'local\viewer-assets\scene.json'
 $viewerBundleCurrent = $false
 if (Test-Path -LiteralPath $scenePath) {
-    $viewerBundleCurrent = (Get-Content -LiteralPath $scenePath -Raw | ConvertFrom-Json).environment_version -eq 1
+    $sceneMetadata = Get-Content -LiteralPath $scenePath -Raw | ConvertFrom-Json
+    $viewerBundleCurrent = $sceneMetadata.environment_version -eq 1 -and $null -ne $sceneMetadata.environment.tidal_strength
 }
 if ($Prepare -or -not $viewerBundleCurrent -or -not (Test-Path -LiteralPath (Join-Path $workspacePath 'local\viewer-assets\armcom.cob.json'))) {
     Push-Location $workspacePath

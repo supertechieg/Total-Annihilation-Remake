@@ -8,6 +8,8 @@ $godotPath = if ($godotCommand) { $godotCommand.Source } else {
 if (-not $godotPath) { throw 'Godot 4 is required. Add godot to PATH.' }
 Push-Location $workspacePath
 try {
+    & $godotPath --headless --path godot --script res://test_live_tidal.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Live tidal generation failed' }
     & $godotPath --headless --path godot --script res://test_live_wind.gd
     if ($LASTEXITCODE -ne 0) { throw 'Live wind generation failed' }
     & $godotPath --headless --path godot --script res://test_opponent_metal_expansion.gd
@@ -129,6 +131,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "$missileUnit factory duel failed" }
     }
     if ($Native) {
+        python tools\native_map_tidal.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original tidal environment differs' }
         foreach ($generator in @('armwin', 'armtide')) {
             python tools\native_solar_reference.py --unit $generator
             if ($LASTEXITCODE -ne 0) { throw 'Original generator script failed' }

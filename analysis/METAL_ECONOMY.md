@@ -239,3 +239,19 @@ yielding 3 energy per period, shared RNG identity, toggling and script health.
 Original initial RNG seeds and the complete ordering of all RNG consumers remain
 provisional (current seeds are 1). This does not yet connect wind drift to every
 projectile path or enable tidal generation.
+
+## Live tidal generation
+
+Map tidal selection at 0x483842..0x483873 matches ten native finite inputs:
+negative descriptor values select 0.5; zero and positive values retain float32
+precision. The OTA parsing path supplies zero for a missing tidalstrength key.
+Map preparation now exports tidal_strength, and the launcher refreshes older
+bundles missing that field. Comet Catcher's supplied value is 20.
+
+The world now enables healthy Arm tidal scripts and adds the verified tidal
+contribution during settlement, independently of whether wind is configured.
+Five live checks cover supplied underwater terrain, completed versus unfinished
+generators, on/off control, zero and fallback strength, and script health.
+These tests add generators directly; they do not prove the entire coastal
+construction/navigation workflow or naval unit support. Original damaged
+generator scripts and full callback ordering remain unfinished.

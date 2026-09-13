@@ -1,5 +1,11 @@
 """Recovered map environment selection and gravity conversion."""
 from weapon_math import extended_product_integer
+import struct
+
+
+def tidal_strength(value):
+    value = struct.unpack('<f', struct.pack('<f', value))[0]
+    return 0.5 if value < 0 else value
 
 
 def gravity_raw(version, header_gravity=0, override=-1):
@@ -16,6 +22,6 @@ def gravity_raw(version, header_gravity=0, override=-1):
 def environment(header, descriptor):
     version = header[0]
     legacy = version < 0x2000
-    return dict(gravity_raw_per_tick=gravity_raw(version, header[13] if legacy else 0, int(descriptor.get('gravity', '-1'))),
+    return dict(tidal_strength=tidal_strength(float(descriptor.get('tidalstrength', '0'))), gravity_raw_per_tick=gravity_raw(version, header[13] if legacy else 0, int(descriptor.get('gravity', '-1'))),
                 min_wind=int(descriptor.get('minwindspeed', '-1')) if not legacy and int(descriptor.get('minwindspeed', '-1')) >= 0 else (header[10] if legacy else 100),
                 max_wind=int(descriptor.get('maxwindspeed', '-1')) if not legacy and int(descriptor.get('maxwindspeed', '-1')) >= 0 else (header[11] if legacy else 2000))

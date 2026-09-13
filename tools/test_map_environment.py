@@ -3,6 +3,11 @@ from map_environment import gravity_raw, environment
 
 
 class MapEnvironmentTests(unittest.TestCase):
+    def test_tidal_descriptor(self):
+        header = [0x2000] + [0] * 15
+        for value, expected in [('-1', 0.5), ('0', 0.0), ('20', 20.0)]:
+            self.assertEqual(environment(header, {'tidalstrength': value})['tidal_strength'], expected)
+
     def test_legacy_default(self):
         self.assertEqual(gravity_raw(0x1020), 8155)
 
@@ -15,17 +20,17 @@ class MapEnvironmentTests(unittest.TestCase):
     def test_comet_catcher(self):
         header = [0x2000] + [0] * 15
         self.assertEqual(environment(header, {'gravity': '60', 'minwindspeed': '10', 'maxwindspeed': '15'}),
-                         dict(gravity_raw_per_tick=4369, min_wind=10, max_wind=15))
+                         dict(tidal_strength=0.0, gravity_raw_per_tick=4369, min_wind=10, max_wind=15))
 
     def test_missing_modern_descriptor(self):
         self.assertEqual(environment([0x2000] + [0] * 15, {}),
-                         dict(gravity_raw_per_tick=8155, min_wind=100, max_wind=2000))
+                         dict(tidal_strength=0.0, gravity_raw_per_tick=8155, min_wind=100, max_wind=2000))
 
     def test_legacy_environment(self):
         header = [0x1020] + [0] * 15
         header[10], header[11], header[13] = 20, 40, 112
         self.assertEqual(environment(header, {'gravity': '60', 'minwindspeed': '1', 'maxwindspeed': '2'}),
-                         dict(gravity_raw_per_tick=8155, min_wind=20, max_wind=40))
+                         dict(tidal_strength=0.0, gravity_raw_per_tick=8155, min_wind=20, max_wind=40))
 
 
 if __name__ == '__main__':
