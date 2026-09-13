@@ -1,5 +1,6 @@
 """Original loader axis conversion, model update and SweetSpot wrapper on tanks."""
 import json
+import sys
 from pathlib import Path
 from native_movement_reference import MovementReference, UNIT
 from native_cob_reference import EXE_HASH, CONTEXT, STATICS, SCRIPT
@@ -10,7 +11,9 @@ MODEL, OUTPUT = 0x1500000, 0x15f0000
 
 def main():
     cases = []
-    for unit in ['armflash', 'corraid', 'armstump']:
+    roster = '--roster' in sys.argv
+    units = sorted(p.parent.name for p in Path('local/unit-assets').glob('*/unit.json')) if roster else ['armflash', 'corraid', 'armstump']
+    for unit in units:
         root = Path('local/unit-assets') / unit
         model = json.loads((root / 'unit.json').read_text())['model']
         program = json.loads((root / 'script.json').read_text())
@@ -49,7 +52,10 @@ def main():
             native.write(rec + 0x2e, record(children[0]) if children else 0)
             native.write(rec + 0x2a, record(siblings[0]) if siblings else 0)
         path = Path('local/firing/native-trace.json') if unit == 'armflash' else Path(f'local/firing/{unit}/native-trace.json')
-        for item in json.loads(path.read_text())['snapshots']:
+        snapshots = json.loads(path.read_text())['snapshots'] if not roster else [dict(query_piece=0, state=dict(
+            pieces=[dict(name=name, position=[0, 0, 0], rotation=[0, 0, 0]) for name in program['pieces']],
+            statics=[]))]
+        for item in snapshots:
             if 'query_piece' not in item:
                 continue
             poses = item['state']['pieces']
@@ -71,7 +77,8 @@ def main():
                 native.call(0x43e3c0, [UNIT, OUTPUT])
                 cases.append(dict(unit=unit, poses=poses, statics=item['state']['statics'], angles=angles, position=position,
                                   expected=[signed(native.read(OUTPUT + axis * 4)) for axis in range(3)]))
-    Path('local/target-point/tanks.json').write_text(json.dumps(dict(exe_sha256=EXE_HASH, cases=cases)))
+    Path('local/target-point').mkdir(exist_ok=True)
+    Path('local/target-point/' + ('roster.json' if roster else 'tanks.json')).write_text(json.dumps(dict(exe_sha256=EXE_HASH, cases=cases)))
     print(f'NATIVE_TANK_TARGETS {len(cases)} cases')
 
 

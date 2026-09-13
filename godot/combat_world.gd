@@ -100,14 +100,21 @@ func attack(source: int, target: int, pursue := false) -> bool:
 
 func center(id: int) -> Vector3:
 	var unit: Dictionary = world.units[id]
-	if unit.type in SUPPORTED_UNITS and world.scripts.has(id):
+	if world.scripts.has(id):
 		var vm = world.scripts[id]
 		var query := Queries.new(vm)
 		var piece := query.output("SweetSpot", 0)
-		if query.fault.is_empty() and piece >= 0 and piece < vm.pieces.size():
+		var model: Dictionary = world.catalog.load_unit(unit.type).model
+		var names: Array = []
+		for pose: Dictionary in vm.pieces:
+			names.append(str(pose.name).to_lower())
+		for item: Dictionary in model.pieces:
+			if str(item.name).to_lower() not in names:
+				names.append(str(item.name).to_lower())
+		if query.fault.is_empty() and piece >= 0 and piece < names.size():
 			var heading := int(world.mobile_units[id].heading) if world.mobile_units.has(id) else 32768
 			var position := raw_point(Vector3(unit.position.x, world.navigation.height_at(unit.position), unit.position.y))
-			return render_point(TargetPoint.model_point(world.catalog.load_unit(unit.type).model, vm.pieces, str(vm.pieces[piece].name), [0, heading, 0], position))
+			return render_point(TargetPoint.model_point(model, vm.pieces, names[piece], [0, heading, 0], position))
 	var height := 12.0
 	if world.collision.records.has(id):
 		height = float(world.collision.records[id].bounds.upper[1]) / 131072.0

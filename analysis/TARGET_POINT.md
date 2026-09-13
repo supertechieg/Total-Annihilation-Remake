@@ -16,9 +16,8 @@ Original wrapper `0x43e3c0` initializes the piece index to zero and invokes the
 unit's `SweetSpot` script before calling this routine. Unit-target resolution
 `0x48a1e0` calls that wrapper. Target leading is a separate behavior.
 
-Combat now uses the verified model adapter and synchronous SweetSpot query for
-Flash, Raider and Stumpy targets. Other unit types retain the approximate half
-blast-height target until their scripts and models are covered. The adapter
+Combat now uses the model adapter and synchronous SweetSpot query for all targets
+with a usable script and model. Invalid queries retain a half-height fallback. The adapter
 converts prepared vertices and offsets through the original loader convention.
 
 Reproduce with `python tools/native_target_point.py`, then run Godot headless
@@ -63,3 +62,19 @@ The normal verification suite, including Flash and Stumpy duels, passes.
 
 Reproduce with `python tools/native_tank_targets.py` and Godot script
 `res://compare_native_tank_targets.gd` after generating the native firing traces.
+
+## Full roster baseline
+
+The `--roster` option on both tools checks all 272 prepared units at four headings,
+zero script pose and a translated world position. All 1,088 cases match the original
+axis conversion, model update and SweetSpot wrapper. 252 scripts define SweetSpot;
+20 use the default piece index. Arm/Core Dragon's Teeth and Core Fortification
+have no script pieces, so runtime name ordering must append model pieces before
+resolving that default. Combat now handles this case and enables model target
+points throughout the roster.
+
+This baseline does not execute Create or validate every unit's animated states.
+Only the three tank tests above cover recorded firing poses and statics. Flight
+altitude, unit roll/pitch, cache scheduling and target leading remain outside the
+current combat host's fidelity. The full normal verification suite passes after
+enabling the roster adapter.

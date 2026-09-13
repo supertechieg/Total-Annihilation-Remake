@@ -161,6 +161,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original tank target reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_tank_targets.gd
         if ($LASTEXITCODE -ne 0) { throw 'Tank targets differ from original executable' }
+        python tools\native_tank_targets.py --roster
+        if ($LASTEXITCODE -ne 0) { throw 'Original roster target reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_tank_targets.gd -- --roster
+        if ($LASTEXITCODE -ne 0) { throw 'Roster targets differ from original executable' }
         python tools\native_tank_origins.py
         if ($LASTEXITCODE -ne 0) { throw 'Original tank origin reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_tank_origins.gd
