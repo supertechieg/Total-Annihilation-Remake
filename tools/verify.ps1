@@ -91,6 +91,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-peewee
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Peewee duel failed' }
     if ($Native) {
+        python tools\native_firing_reference.py --unit armrock
+        if ($LASTEXITCODE -ne 0) { throw 'Original Rocko firing reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --armrock
+        if ($LASTEXITCODE -ne 0) { throw 'Rocko firing differs from original executable' }
         python tools\native_rocket_motion.py
         if ($LASTEXITCODE -ne 0) { throw 'Original rocket motion failed' }
         & $godotPath --headless --path godot --script res://compare_native_rocket_motion.gd

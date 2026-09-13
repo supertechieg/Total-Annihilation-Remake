@@ -32,7 +32,7 @@ func _initialize() -> void:
 				mismatches.append({"case": index, "actual": actual, "expected": case.expected})
 				break
 	var report := {"exe_sha256": trace.exe_sha256, "cases": trace.cases.size(), "mismatches": mismatches,
-		"scope": "Flash/Raider/Stumpy/Hammer/Peewee original axis conversion, full dirty vertex update and SweetSpot wrapper with firing snapshots at four headings; synthetic name ordering; excludes cache timing"}
+		"scope": "Flash/Raider/Stumpy/Hammer/Peewee/Rocko original axis conversion, full dirty vertex update and SweetSpot wrapper with firing snapshots at four headings; synthetic name ordering; excludes cache timing"}
 	if roster:
 		report.scope = "All prepared unit models at zero script pose and four headings: original axis conversion, dirty update and SweetSpot wrapper; excludes Create, animated poses, cache timing and full model loader"
 	FileAccess.open("res://../analysis/native-roster-target-validation.json" if roster else "res://../analysis/native-tank-target-validation.json", FileAccess.WRITE).store_string(JSON.stringify(report, "  ") + "\n")

@@ -12,7 +12,7 @@ MODEL, OUTPUT = 0x1500000, 0x15f0000
 def main():
     cases = []
     roster = '--roster' in sys.argv
-    units = sorted(p.parent.name for p in Path('local/unit-assets').glob('*/unit.json')) if roster else ['armflash', 'corraid', 'armstump', 'armham', 'armpw']
+    units = sorted(p.parent.name for p in Path('local/unit-assets').glob('*/unit.json')) if roster else ['armflash', 'corraid', 'armstump', 'armham', 'armpw', 'armrock']
     for unit in units:
         root = Path('local/unit-assets') / unit
         model = json.loads((root / 'unit.json').read_text())['model']

@@ -47,3 +47,21 @@ fields and supplied boundaries. This includes the shipped acceleration text
 cover that case, and the regenerated Godot catalog passes 8,925 checks.
 This verifies numeric fields, not a complete recreation of the original text
 parser or live rocket combat.
+
+
+## Rocko firing and model queries
+
+Rocko's healthy firing script matches 323 snapshots from the original interpreter
+at supplied Create, AimPrimary, QueryPrimary and FirePrimary callback times.
+All nine QueryPrimary calls return piece 1. This verifies script execution under
+the supplied events, not the original host's firing cadence.
+
+Adding Rocko firing poses to the shared model fixtures yields 648 matching
+muzzle/AimFrom cases and 216 matching SweetSpot cases across six units and four
+headings. Original axis conversion, pose setters and traversal run in the oracle;
+full model loading, damaged scripts and walking-to-firing transitions remain
+outside these checks. Live rocket combat remains to be connected.
+
+Reproduce with `python tools/native_firing_reference.py --unit armrock` and Godot
+`--headless --path godot --script res://compare_native_firing.gd -- --armrock`.
+The native verification suite includes this comparison.
