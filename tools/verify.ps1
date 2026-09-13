@@ -34,6 +34,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Produced unit script checks failed' }
     & $godotPath --headless --path godot --script res://test_mobile_builders.gd
     if ($LASTEXITCODE -ne 0) { throw 'Mobile builder checks failed' }
+    & $godotPath --headless --path godot --script res://test_weapon_cycle.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Weapon cycle checks failed' }
     & $godotPath --headless --path godot -- --verify
     if ($LASTEXITCODE -ne 0) { throw 'Viewer checks failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --kbot-demo
@@ -41,6 +43,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --builder-demo
     if ($LASTEXITCODE -ne 0) { throw 'Real-map mobile builder construction failed' }
     if ($Native) {
+        python tools\native_firing_reference.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original Flash firing reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_firing.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Flash firing script differs from original interpreter' }
         python tools\native_weapon_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original weapon scalar reference failed' }
         python tools\compare_native_weapons.py

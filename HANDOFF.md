@@ -6,6 +6,8 @@ Use Light/low by default, including reverse engineering when it can be done reli
 
 ## Completed
 
+Firing prerequisite: Flash QueryPrimary/FirePrimary overlap and recoil match 323 native snapshots, including actual query output locals. First three supplied muzzle queries are 0,0,1; do not hard-code alternation. `weapon_cycle.gd` emits script-queried shot events with provisional burst/reload timing and re-aims after idle restoration/permission pauses. Fourteen host checks pass. It is not yet wired to the world; next is projectile spawn transforms/spread, collision and damage. See analysis/FIRING_CYCLE.md.
+
 Combat prerequisite: exact loader conversions for weapon speed, reload ticks and burst interval are now prepared into each weapon's local `runtime` data. 618 native cases match; see analysis/WEAPON_SCALARS.md. x87 precision matters (.3 seconds => 8 ticks; EMG speed 300 => raw 655359/tick). `unit_catalog.weapon(name)` exposes these values; launcher upgrades old bundles. Next combat work is firing callback/burst scheduling, projectiles, hits and damage; no combat is playable yet.
 
 Mobile-builder extension: Arm Construction Vehicles, Construction Kbots and Minelayers now expose original menus and independent construction jobs. StartBuilding/readiness/StopBuilding, range, pause/resume and move cancellation are integrated. 48 host checks and a real-map factory-produced Construction Vehicle building solar pass; see analysis/MOBILE_BUILDERS.md. Normal verifier includes --builder-demo. Older notes saying mobile-builder commands are missing are superseded. Combat/opponents and Core coverage remain the next major gameplay work.
