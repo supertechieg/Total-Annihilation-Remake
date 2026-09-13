@@ -10,6 +10,6 @@ The current EMG host emits three shots separated by the converted three-tick bur
 
 Fourteen host checks cover aiming readiness, two bursts, turret orientation, intervals, native-compared barrel selection, converted velocity, stopping, permission gating/recovery, replacement aim, sustained firing and VM faults. These establish the stated provisional host policy. Original countdown order, reload origin, repeated aim scheduling, burst defaults/zero intervals, shot costs, targeting/range checks and behavior for other weapon types still need native world comparison.
 
-The controller is not yet connected to the playable world. Projectile spawn transforms, spread/random state, collision, damage, destruction and opponents are still required. No new combat capability is claimed for the viewer by this checkpoint. The complete-game objective remains active.
+The controller is now connected to a first Flash projectile/damage loop; see COMBAT.md for integration and fidelity limits. Spread/random state, original collision/damage/destruction behavior and opponents still require reconstruction. The complete-game objective remains active.
 
 Normal checks run via `tools/verify.ps1`; `-Native` includes the original Flash comparison.

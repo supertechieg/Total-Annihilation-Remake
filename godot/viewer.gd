@@ -10,6 +10,10 @@ var unit_visuals: RefCounted
 const Navigation = preload("res://terrain_navigation.gd")
 const MobileUnit = preload("res://mobile_unit.gd")
 const ConstructionWorld = preload("res://construction_world.gd")
+const Combat = preload("res://combat_world.gd")
+const CombatOverlay = preload("res://combat_overlay.gd")
+var combat: RefCounted
+var combat_overlay: Node2D
 var economy: RefCounted
 var build_picker: OptionButton
 var place_button: Button
@@ -108,6 +112,11 @@ func start_world_movement() -> void:
 	assert(unit_position.x >= 0, "Map has no passable starting point")
 	mobile = MobileUnit.new(navigation, fields, unit_position, script_vm)
 	economy = ConstructionWorld.new(unit_catalog, navigation, unit_position)
+	combat = Combat.new(economy)
+	combat_overlay = CombatOverlay.new()
+	combat_overlay.combat = combat
+	combat_overlay.z_index = 10
+	world.add_child(combat_overlay)
 	map_center = unit_position
 	if "--move" in OS.get_cmdline_user_args():
 		issue_move(unit_position + Vector2(128, -96))
@@ -125,6 +134,59 @@ func start_world_movement() -> void:
 		if not run_builder_demo():
 			push_error("Mobile builder demo failed")
 			get_tree().quit(1)
+	if "--combat-demo" in OS.get_cmdline_user_args() or "--verify-combat" in OS.get_cmdline_user_args():
+		if not run_combat_demo("--verify-combat" in OS.get_cmdline_user_args()):
+			push_error("Combat demo failed")
+			get_tree().quit(1)
+
+func add_practice_target() -> int:
+	if selected_unit == 0 or not economy.units.has(selected_unit) or economy.units[selected_unit].type != "armflash":
+		status_label.text = "  Select a Flash tank to add a practice target"
+		return 0
+	for offset: Vector2 in [Vector2(128, 0), Vector2(-128, 0), Vector2(0, 128), Vector2(0, -128)]:
+		var point: Vector2 = (economy.units[selected_unit].position + offset).snapped(Vector2(16, 16))
+		if not navigation.passable(navigation.cell_at(point)):
+			continue
+		var clear := true
+		for unit: Dictionary in economy.units.values():
+			if economy.footprint("corraid", point).intersects(economy.footprint(unit.type, unit.position)):
+				clear = false
+		if not clear:
+			continue
+		var id: int = economy.add_unit("corraid", point, 0.0)
+		economy.units[id].team = 1
+		add_structure_sprite(id)
+		status_label.text = "  Click the red-ringed target to attack with the selected Flash"
+		combat_overlay.queue_redraw()
+		return id
+	status_label.text = "  No clear nearby target location"
+	return 0
+
+func run_combat_demo(verify: bool) -> bool:
+	if not run_factory_demo():
+		return false
+	var source := 0
+	for unit: Dictionary in economy.units.values():
+		if unit.type == "armflash":
+			source = unit.id
+			break
+	select_unit(source)
+	var target := add_practice_target()
+	if target == 0 or not combat.attack(source, target):
+		return false
+	for tick in range(100):
+		step_script()
+	if combat.hits == 0 or combat.shots_fired == 0:
+		return false
+	if verify:
+		for tick in range(1000):
+			step_script()
+			if not economy.units.has(target):
+				break
+		if economy.units.has(target) or structure_sprites.has(target) or not combat.cycles[source].fault.is_empty():
+			return false
+		print("COMBAT_VERIFY_OK factory-produced Flash attacked and destroyed practice target")
+	return true
 
 func run_factory_demo(factory_type := "armvp", product_type := "armflash", product_count := 2) -> bool:
 	select_unit(0)
@@ -195,6 +257,8 @@ func run_builder_demo() -> bool:
 func issue_move(target: Vector2) -> bool:
 	if selected_unit != 0:
 		var accepted: bool = economy.move_unit(selected_unit, target)
+		if accepted:
+			combat.stop(selected_unit)
 		status_label.text = "  Move order accepted" if accepted else "  Select a completed mobile unit to move"
 		return accepted
 	if mobile == null:
@@ -216,6 +280,8 @@ func issue_move(target: Vector2) -> bool:
 
 func stop_order() -> void:
 	placement_type = ""
+	if combat != null:
+		combat.stop(selected_unit)
 	if selected_unit != 0 and economy.mobile_units.has(selected_unit):
 		economy.stop_build(selected_unit)
 		economy.mobile_units[selected_unit].stop()
@@ -301,6 +367,12 @@ func select_unit(id: int) -> void:
 	selected_unit = id
 	placement_type = ""
 	var source_id: int = economy.builder_id if id == 0 else id
+	if not economy.units.has(source_id):
+		selection_label.text = "Commander destroyed"
+		build_picker.disabled = true
+		place_button.disabled = true
+		factory_controls.visible = false
+		return
 	selection_label.text = "Selected: " + unit_catalog.definition(economy.units[source_id].type).get("name", economy.units[source_id].type)
 	var builder: bool = economy.can_build(source_id)
 	build_picker.clear()
@@ -438,6 +510,10 @@ func toggle_build() -> void:
 func step_script() -> void:
 	if script_vm == null or not script_vm.fault.is_empty():
 		return
+	if economy != null and not economy.units.has(economy.builder_id):
+		status_label.text = "  Commander destroyed — restart the development build to play again"
+		unit_sprite.hide()
+		return
 	script_vm.step()
 	if mobile != null:
 		var was_active: bool = not mobile.route.is_empty() or mobile.speed != 0
@@ -456,6 +532,18 @@ func step_script() -> void:
 		var was_building: bool = economy.task_id != 0
 		var selected_target: int = economy.builder_jobs[selected_unit].target if economy.builder_jobs.has(selected_unit) else 0
 		economy.step()
+		combat.step()
+		combat_overlay.queue_redraw()
+		for id: int in structure_sprites.keys():
+			if not economy.units.has(id):
+				structure_sprites[id].queue_free()
+				structure_sprites.erase(id)
+				structure_models.erase(id)
+				if structure_views.has(str(id)):
+					structure_views[str(id)].queue_free()
+					structure_views.erase(str(id))
+				if selected_unit == id:
+					select_unit(0)
 		for id: int in economy.units:
 			if id != economy.builder_id and not structure_sprites.has(id):
 				add_structure_sprite(id)
@@ -481,6 +569,8 @@ func step_script() -> void:
 			status_label.text = "  " + economy.builder_jobs[selected_unit].status
 		elif selected_target != 0 and selected_target in economy.completed:
 			status_label.text = "  Construction complete"
+		if not combat.destroyed.is_empty():
+			status_label.text = "  Unit destroyed"
 	var restore_id := int(get_meta("pending_build", -1))
 	if restore_id >= 0 and script_vm.completions.has(restore_id):
 		set_meta("pending_build", -1)
@@ -603,6 +693,7 @@ func build_interface() -> void:
 	factory_controls.add_child(button("Queue unit", queue_factory_unit))
 	factory_controls.add_child(button("Clear pending orders", func() -> void: economy.clear_factory_queue(selected_unit)))
 	column.add_child(button("Select Commander", func() -> void: select_unit(0)))
+	column.add_child(button("Add practice target", func() -> void: add_practice_target()))
 	column.add_child(label("Click terrain to move · Right-click / S to stop", 11))
 	column.add_child(button("Stop movement  [S]", stop_order))
 	walk_button = button("Play walk cycle  [Space]", toggle_walk)
@@ -693,6 +784,11 @@ func map_input(event: InputEvent) -> void:
 					ids.reverse()
 					for id: int in ids:
 						var unit: Dictionary = economy.units[id]
+						if int(unit.get("team", 0)) != 0 and economy.footprint(unit.type, unit.position).has_point(pos):
+							combat.attack(economy.builder_id if selected_unit == 0 else selected_unit, id)
+							status_label.text = "  " + combat.status
+							resumed = true
+							break
 						if economy.footprint(unit.type, unit.position).has_point(pos) and (economy.factories.has(id) or economy.mobile_units.has(id)) and float(unit.remaining) == 0:
 							select_unit(id)
 							resumed = true

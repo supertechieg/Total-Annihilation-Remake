@@ -27,7 +27,7 @@ The viewer displays Comet Catcher's original terrain and a controllable Arm Comm
 | Q / E | Rotate whole model |
 | F / R | Center commander / reset zoom |
 
-Original renderer fidelity and world simulation are still under reconstruction. Terrain routing and arrival handling are provisional. A first construction/resource loop is available; projectile and damage simulation are not yet implemented.
+Original renderer fidelity and world simulation are still under reconstruction. Terrain routing and arrival handling are provisional. Construction, resource accounting and an initial Flash projectile/damage loop are available.
 
 Choose a structure in the dropdown, press **Place selected structure**, and click nearby terrain. Right-click/S pauses Commander construction; click an unfinished structure to resume. Completed solar collectors generate energy and toggle on/off when clicked. Build an Arm Vehicle Plant or Kbot Lab, click it, choose a unit and press **Queue unit**. Completed units leave the pad and can be selected and moved. **Clear pending orders** retains the current unit. Combat and several resource sources remain unfinished; see [construction scope](analysis/CONSTRUCTION.md) and [factory scope and verification](analysis/FACTORIES.md).
 
@@ -36,6 +36,8 @@ Original speed caps, heading-to-velocity rounding, supplied-waypoint steering an
 All twelve Arm ground factory products now execute their healthy original scripts, including Kbot walking and stopping. Product-script playback matches 3,661 native snapshots; [scope and verification](analysis/MOBILE_SCRIPTS.md).
 
 Select a produced Construction Vehicle, Construction Kbot or Minelayer to use its original build menu. Builders can work independently alongside the Commander. Stop/move preserves unfinished structures; select a builder and click an unfinished structure to resume. [Mobile-builder scope and checks](analysis/MOBILE_BUILDERS.md).
+
+For the first combat demo, select a produced Flash, choose **Add practice target**, then click the red-ringed target. Shots reduce its health and can destroy it. Stop/move cancels the attack. This is stationary target practice; enemy AI, other weapon types and several original damage rules remain unfinished. [Combat scope and verification](analysis/COMBAT.md).
 
 Requires Godot 4 (tested on installed 4.6.2) and Python with Pillow for preparation. To recreate generated assets:
 

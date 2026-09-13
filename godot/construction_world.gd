@@ -71,6 +71,24 @@ func set_active(id: int, active: bool) -> bool:
 		scripts[id].invoke("Activate" if active else "Deactivate")
 	return true
 
+func remove_unit(id: int) -> void:
+	if not units.has(id):
+		return
+	stop_build(id)
+	if task_id == id or builder_id == id:
+		task_id = 0
+	for source: int in builder_jobs.keys():
+		if int(builder_jobs[source].target) == id:
+			stop_build(source)
+	for factory: Dictionary in factories.values():
+		if int(factory.product) == id:
+			factory.product = 0
+	factories.erase(id)
+	mobile_units.erase(id)
+	scripts.erase(id)
+	units.erase(id)
+	refresh_navigation(true)
+
 func queue_unit(factory_id: int, type: String) -> bool:
 	if not factories.has(factory_id) or float(units[factory_id].remaining) > 0:
 		status = "Finish the factory first"

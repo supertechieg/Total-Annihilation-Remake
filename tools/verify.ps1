@@ -36,12 +36,16 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Mobile builder checks failed' }
     & $godotPath --headless --path godot --script res://test_weapon_cycle.gd
     if ($LASTEXITCODE -ne 0) { throw 'Weapon cycle checks failed' }
+    & $godotPath --headless --path godot --script res://test_combat_world.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Combat host checks failed' }
     & $godotPath --headless --path godot -- --verify
     if ($LASTEXITCODE -ne 0) { throw 'Viewer checks failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --kbot-demo
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Kbot production and movement failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --builder-demo
     if ($LASTEXITCODE -ne 0) { throw 'Real-map mobile builder construction failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
+    if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     if ($Native) {
         python tools\native_firing_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original Flash firing reference failed' }
