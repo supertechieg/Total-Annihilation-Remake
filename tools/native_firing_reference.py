@@ -9,7 +9,7 @@ from cob import signed
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--unit', choices=['armflash', 'corraid', 'armstump', 'armham'], default='armflash')
+    parser.add_argument('--unit', choices=['armflash', 'corraid', 'armstump', 'armham', 'armpw'], default='armflash')
     unit = parser.parse_args().unit
     native = FactoryReference(Path('local/original/TotalA.exe').read_bytes(), Path(f'local/unit-assets/{unit}/script.cob').read_bytes())
     native.read_values[17] = 0

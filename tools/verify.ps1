@@ -88,7 +88,13 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Stumpy duel failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-hammer
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Hammer duel failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-peewee
+    if ($LASTEXITCODE -ne 0) { throw 'Real-map Peewee duel failed' }
     if ($Native) {
+        python tools\native_firing_reference.py --unit armpw
+        if ($LASTEXITCODE -ne 0) { throw 'Original Peewee firing reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --armpw
+        if ($LASTEXITCODE -ne 0) { throw 'Peewee firing differs from original executable' }
         python tools\native_emg_launch.py
         if ($LASTEXITCODE -ne 0) { throw 'Original direct launch failed' }
         & $godotPath --headless --path godot --script res://compare_native_direct_launch.gd

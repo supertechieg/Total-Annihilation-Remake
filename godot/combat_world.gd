@@ -17,7 +17,7 @@ const Ground = preload("res://ground_motion.gd")
 const DirectLaunch = preload("res://direct_launch.gd")
 var burst_random := GameRandom.new()
 var bursts: Array = []
-const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham"]
+const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham", "armpw"]
 var launch := Launch.new()
 var gravity := 8155
 var tick := 0
@@ -84,7 +84,7 @@ func attack(source: int, target: int, pursue := false) -> bool:
 	if not world.units.has(source) or not world.units.has(target) or source == target:
 		return false
 	if world.units[source].type not in SUPPORTED_UNITS or float(world.units[source].remaining) > 0:
-		status = "Combat currently supports completed Flash, Stumpy, Raider and Hammer units"
+		status = "Combat currently supports completed Flash, Stumpy, Raider, Hammer and Peewee units"
 		return false
 	if world.units[source].get("team", 0) == world.units[target].get("team", 0):
 		status = "Select an enemy target"
