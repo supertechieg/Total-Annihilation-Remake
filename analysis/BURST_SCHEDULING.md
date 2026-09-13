@@ -2,6 +2,18 @@
 
 ## Live Flash integration
 
+Source death cleanup is now supported by direct native evidence: the unit-death
+path calls `0x49c880`, which removes matching nonzero-burst records and retains
+emitted rounds. `native_burst_cleanup.py` executes that routine and its actual pool
+compactor `0x49ae20` across ten mixed-record scenarios, with no callback stubs.
+It also confirms an original bug: removing a source compacts the pool, then the
+loop increments its index and can skip an adjacent matching source. The rebuild
+deliberately removes every pending burst owned by the dead unit rather than
+reproducing this skip. A live test kills the Flash after its first burst round and
+checks that pending rounds stop while the emitted projectile remains; all 12
+burst combat checks pass. Camera tracking and projectile-reference relocation are
+outside this cleanup fixture's coverage.
+
 WeaponCycle now dispatches one burst source with one QueryPrimary/FirePrimary
 pair per reload. Combat advances that source independently of subsequent orders,
 uses its cached piece name for position refresh, and applies verified source

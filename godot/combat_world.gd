@@ -266,7 +266,8 @@ func advance_bursts() -> Array:
 	var copies: Array = []
 	var pending: Array = []
 	for burst: Dictionary in bursts:
-		# Source teardown is provisional until native death cleanup is reconstructed.
+		# Native death cleanup removes burst sources, not already-emitted rounds.
+		# Remove all here; do not preserve the native adjacent-compaction skip.
 		if not world.units.has(burst.source) or not world.scripts.has(burst.source):
 			continue
 		var fresh := raw_point(muzzle(int(burst.source), str(burst.piece_name)))

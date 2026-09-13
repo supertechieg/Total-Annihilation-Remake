@@ -37,6 +37,22 @@ func _initialize() -> void:
 		combat.step()
 	checks.append(combat.shots_fired == 3)
 	checks.append(world.scripts[source].fault.is_empty())
+	combat.attack(source, target)
+	for tick in range(120):
+		world.step()
+		combat.step()
+		if not combat.bursts.is_empty():
+			break
+	var before_death: int = combat.shots_fired
+	for tick in range(3):
+		world.step()
+		combat.step()
+	checks.append(combat.shots_fired == before_death + 1)
+	world.remove_unit(source)
+	world.step()
+	combat.step()
+	checks.append(combat.bursts.is_empty() and combat.shots_fired == before_death + 1)
+	checks.append(not combat.projectiles.is_empty())
 	var failures := checks.count(false)
 	print("BURST_COMBAT %d / %d checks pass; emission ticks=%s" % [checks.size() - failures, checks.size(), emission_ticks])
 	quit(0 if failures == 0 else 1)
