@@ -99,6 +99,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-warrior
     if ($LASTEXITCODE -ne 0) { throw 'Warrior factory duel failed' }
     if ($Native) {
+        python tools\native_guided_motion.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original guided motion failed' }
+        & $godotPath --headless --path godot --script res://compare_native_guided_motion.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Guided motion differs from original executable' }
         python tools\native_missile_target.py
         if ($LASTEXITCODE -ne 0) { throw 'Original missile target selection failed' }
         & $godotPath --headless --path godot --script res://compare_native_missile_target.gd

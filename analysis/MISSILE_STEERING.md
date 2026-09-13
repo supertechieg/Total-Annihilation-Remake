@@ -57,3 +57,27 @@ This does not yet establish target-reference assignment, destruction cleanup,
 or when saved points are refreshed. It must not be interpreted as proof of
 complete target-loss behavior. The native verification suite runs the new
 native_missile_target.py and compare_native_missile_target.gd comparison.
+
+
+## Combined ordinary guided flight
+
+The composed guided_motion helper matches 240 executions of the full original
+0x49b720 updater with weapon flags 0x101001 (ordinary self-propelled guidance),
+steering toward saved points. Native 0x49b3e0 target selection and 0x49b520
+steering execute without stubs. Collision and pool consolidation are isolated.
+Checks compare heading, pitch, speed, velocity and position before, at and after
+the deadline, across zero/partial/maximum/above-maximum speeds, varying gravity,
+acceleration, target points and turn allowances including Samson/Jethro values.
+
+The original accelerates, steers and recomputes velocity before moving during
+powered flight. Acceleration and steering are independent for this ordinary
+branch, allowing the helper to compose existing primitives. At the deadline,
+steering stops and gravity changes vertical velocity while angles remain stored.
+Burnblow flag 0x800000 instead calls the impact handler, including when steering
+rejects a turn. Vertical-launch flag 0x1000000 has further state transitions.
+Those special modes, cruise, water, referenced-target assignment/cleanup and
+live guided combat remain outside this helper. No additional combat unit is
+enabled by this checkpoint.
+
+Reproduce using native_guided_motion.py and compare_native_guided_motion.gd;
+both are included in the native verification suite.
