@@ -29,8 +29,21 @@ not simply expire like an EMG round.
 Cases cover zero/partial/maximum/above-maximum speeds, three acceleration values,
 three gravity values, arbitrary angles and deadline boundaries. Collision and
 pool consolidation are stubbed; guidance, water, smoke, burnblow and cruise are
-excluded. This primitive is not yet connected to live combat. Start-speed and
-acceleration scalar preparation and Rocko firing verification remain next.
+excluded. This primitive is not yet connected to live combat. Rocko firing verification and live rocket integration remain next.
 
 Reproduce with `python tools/native_rocket_motion.py`, then Godot headless with
 `--path godot --script res://compare_native_rocket_motion.gd`.
+
+
+## Prepared start speed and acceleration
+
+Weapon runtime schema 3 includes start_velocity_raw_per_tick and
+acceleration_raw_per_tick_squared. The original loader at 0x42e4e4 scales start
+speed by binary64 65536/30; at 0x42e502 it scales acceleration by binary64
+65536/900. Both truncate the x87 product and store a 32-bit result.
+The expanded native comparison passes 1,233 cases across the bundled weapon
+fields and supplied boundaries. This includes the shipped acceleration text
+`13O`, whose numeric prefix is read as 13 by the original parser. Python tests
+cover that case, and the regenerated Godot catalog passes 8,925 checks.
+This verifies numeric fields, not a complete recreation of the original text
+parser or live rocket combat.

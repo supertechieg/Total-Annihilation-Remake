@@ -13,7 +13,7 @@ def main():
         if actual != item['result']:
             differences.append(dict(**item, actual=actual))
     report = dict(cases=len(reference['cases']), mismatches=len(differences), exe_sha256=reference['exe_sha256'],
-                  scope='Weapon velocity, reload, burst-rate and minimum barrel angle text conversion for 193 bundled definitions plus supplied boundary cases; excludes firing schedule and projectile simulation', differences=differences)
+                  scope='Weapon velocity, start velocity, acceleration, reload, burst-rate and minimum barrel angle text conversion for 193 bundled definitions plus supplied boundary cases; excludes firing schedule and projectile simulation', differences=differences)
     (folder / 'native-comparison.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(f"NATIVE_WEAPON_COMPARISON {report['cases'] - len(differences)} / {report['cases']} cases match")
     print(differences[:5])

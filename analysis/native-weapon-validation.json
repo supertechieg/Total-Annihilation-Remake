@@ -1,7 +1,7 @@
 {
-  "cases": 821,
+  "cases": 1233,
   "mismatches": 0,
   "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
-  "scope": "Weapon velocity, reload, burst-rate and minimum barrel angle text conversion for 193 bundled definitions plus supplied boundary cases; excludes firing schedule and projectile simulation",
+  "scope": "Weapon velocity, start velocity, acceleration, reload, burst-rate and minimum barrel angle text conversion for 193 bundled definitions plus supplied boundary cases; excludes firing schedule and projectile simulation",
   "differences": []
 }

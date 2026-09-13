@@ -132,7 +132,7 @@ def prepare(root, output):
                 if name in weapons:
                     issues.append(dict(duplicate_weapon=name, previous=weapons[name]['source'], source=path))
                 weapons[name] = dict(source=path, definition=fields, runtime=weapon_runtime(fields))
-    index = dict(weapon_runtime_version=2, profile=PROFILE, profile_status='provisional archive precedence', units=units,
+    index = dict(weapon_runtime_version=3, profile=PROFILE, profile_status='provisional archive precedence', units=units,
                  build_menus=menus, menu_additions=additions, weapons=weapons, textures=textures,
                  palette=[palette[i:i + 3] for i in range(0, 768, 3)], issues=issues,
                  missing_textures=missing_textures, missing_menu_units=missing_menu_units)
