@@ -119,6 +119,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "$missileUnit factory duel failed" }
     }
     if ($Native) {
+        python tools\native_solar_reference.py --unit armmakr
+        if ($LASTEXITCODE -ne 0) { throw 'Original metal maker lifecycle failed' }
+        & $godotPath --headless --path godot --script res://compare_native_solar.gd -- --armmakr
+        if ($LASTEXITCODE -ne 0) { throw 'Metal maker lifecycle differs from original' }
         python tools\native_direct_deadline.py
         if ($LASTEXITCODE -ne 0) { throw 'Original direct deadline failed' }
         & $godotPath --headless --path godot --script res://compare_native_direct_deadline.gd

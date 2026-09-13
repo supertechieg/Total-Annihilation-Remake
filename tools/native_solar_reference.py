@@ -1,4 +1,5 @@
 """Original solar COB playback with explicit health/build-percent host inputs."""
+import argparse
 import json
 from pathlib import Path
 from native_cob_reference import NativeReference, EXE_HASH, VTABLE, CALLBACKS
@@ -24,7 +25,12 @@ class SolarReference(NativeReference):
 
 
 def main():
-    native = SolarReference(Path('local/original/TotalA.exe').read_bytes(), Path('local/unit-assets/armsolar/script.cob').read_bytes())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--unit', choices=['armsolar', 'armmakr'], default='armsolar')
+    unit = parser.parse_args().unit
+    from native_factory_reference import FactoryReference
+    reference = FactoryReference if unit == 'armmakr' else SolarReference
+    native = reference(Path('local/original/TotalA.exe').read_bytes(), Path(f'local/unit-assets/{unit}/script.cob').read_bytes())
     events = {0: 'Create', 31: 'Activate', 180: 'Deactivate', 190: 'Activate', 350: 'Deactivate', 440: 'Activate'}
     snapshots = []
     for tick in range(601):
@@ -36,7 +42,7 @@ def main():
         if tick in events:
             native.invoke(events[tick], [])
             snapshots.append(dict(tick=tick, action=events[tick], state=native.snapshot()))
-    folder = Path('local/solar')
+    folder = Path('local/solar' if unit == 'armsolar' else 'local/metal-maker')
     folder.mkdir(exist_ok=True)
     (folder / 'native-trace.json').write_text(json.dumps(dict(exe_sha256=EXE_HASH, snapshots=snapshots)), encoding='utf-8')
     print(f'NATIVE_SOLAR_REFERENCE {len(snapshots)} snapshots')
