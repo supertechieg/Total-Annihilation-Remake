@@ -121,10 +121,19 @@ func build_base() -> void:
 					return
 
 func build_extractor() -> void:
-	# First expansion: use normal movement, placement, construction and upkeep.
+	# Expand again when normal construction accumulates unpaid metal debt.
+	var has_extractor := false
+	var metal_debt := 0.0
 	for unit: Dictionary in world.units.values():
-		if int(unit.get("team", 0)) == team and unit.type == "armmex":
-			return
+		if int(unit.get("team", 0)) != team:
+			continue
+		metal_debt += float(unit.metal_ledger.debt)
+		if unit.type == "armmex":
+			has_extractor = true
+			if float(unit.remaining) > 0:
+				return
+	if has_extractor and metal_debt <= 0:
+		return
 	for id: int in world.units.keys():
 		var unit: Dictionary = world.units[id]
 		if int(unit.get("team", 0)) != team or not world.can_build(id) or world.builder_jobs.has(id):

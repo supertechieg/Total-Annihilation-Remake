@@ -128,11 +128,20 @@ on a known metal deposit. An idle construction vehicle/kbot searches deposit
 cells by distance, rejects invalid/occupied sites through normal placement
 checks, moves to an approach point and starts construction once in range.
 The extractor uses the normal deferred economy, terrain yield and COB script.
-An existing unfinished or completed extractor prevents duplicate expansion.
+An unfinished extractor prevents duplicate expansion. Once it is complete,
+unpaid metal debt permits another expansion to an unoccupied deposit.
 
 The policy has full map knowledge and is provisional, not a reconstruction of
-the original AI. It does not yet optimize yield, expand to multiple deposits,
-balance additional power or recover all stranded/blocked builders.
+the original AI. It does not yet optimize yield, predict resource demand or
+recover all stranded/blocked builders.
 test_opponent_extractor.gd verifies movement to a distant deposit, completion,
 team ownership, nontrivial yield, actual income and no duplicate extractor
 without script faults (6 checks). The full normal suite also passes.
+
+test_opponent_metal_expansion.gd starts with one working extractor, low stock,
+adequate power and a factory consuming resources. The old one-extractor policy
+failed to expand across 18000 ticks. The revised policy observes actual metal
+debt, moves to a second deposit, completes its extractor and receives income.
+All seven checks pass, including ownership, yield, script health and exactly
+two extractors when new income starts. This tests a specific expansion cycle,
+not unlimited economic stability or original AI equivalence.
