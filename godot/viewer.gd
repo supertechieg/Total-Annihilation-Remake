@@ -143,13 +143,17 @@ func start_world_movement() -> void:
 		if not run_duel_demo("--verify-duel" in OS.get_cmdline_user_args()):
 			push_error("Tank duel failed")
 			get_tree().quit(1)
+	if "--verify-stumpy" in OS.get_cmdline_user_args():
+		if not run_duel_demo(true, "armstump"):
+			push_error("Stumpy duel failed")
+			get_tree().quit(1)
 
-func run_duel_demo(verify: bool) -> bool:
-	if not run_factory_demo("armvp", "armflash", 1):
+func run_duel_demo(verify: bool, player_type := "armflash") -> bool:
+	if not run_factory_demo("armvp", player_type, 1):
 		return false
 	var source := 0
 	for unit: Dictionary in economy.units.values():
-		if unit.type == "armflash":
+		if unit.type == player_type:
 			source = unit.id
 			break
 	select_unit(source)
@@ -172,12 +176,12 @@ func run_duel_demo(verify: bool) -> bool:
 		for cycle in combat.cycles.values():
 			if not cycle.fault.is_empty():
 				return false
-		print("DUEL_VERIFY_OK factory-produced Flash and armed Raider exchanged damage; one tank destroyed")
+		print("DUEL_VERIFY_OK factory-produced %s and armed Raider exchanged damage; one tank destroyed" % player_type)
 	return true
 
 func add_practice_target() -> int:
-	if selected_unit == 0 or not economy.units.has(selected_unit) or economy.units[selected_unit].type != "armflash":
-		status_label.text = "  Select a Flash tank to add a practice target"
+	if selected_unit == 0 or not economy.units.has(selected_unit) or economy.units[selected_unit].type not in ["armflash", "armstump"]:
+		status_label.text = "  Select a Flash or Stumpy to add a practice target"
 		return 0
 	for offset: Vector2 in [Vector2(128, 0), Vector2(-128, 0), Vector2(0, 128), Vector2(0, -128)]:
 		var point: Vector2 = (economy.units[selected_unit].position + offset).snapped(Vector2(16, 16))
@@ -192,7 +196,7 @@ func add_practice_target() -> int:
 		var id: int = economy.add_unit("corraid", point, 0.0)
 		economy.units[id].team = 1
 		add_structure_sprite(id)
-		status_label.text = "  Click the red-ringed target to attack with the selected Flash"
+		status_label.text = "  Click the red-ringed target to attack with the selected tank"
 		combat_overlay.queue_redraw()
 		return id
 	status_label.text = "  No clear nearby target location"
@@ -203,7 +207,7 @@ func add_armed_raider() -> void:
 	if raider != 0:
 		combat.enable_guard(raider)
 		combat.attack(selected_unit, raider, true)
-		status_label.text = "  Raider engages nearby enemies; your Flash is attacking"
+		status_label.text = "  Raider engages nearby enemies; your tank is attacking"
 
 func run_combat_demo(verify: bool) -> bool:
 	if not run_factory_demo():

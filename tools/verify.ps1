@@ -80,7 +80,13 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-duel
     if ($LASTEXITCODE -ne 0) { throw 'Real-map armed tank duel failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-stumpy
+    if ($LASTEXITCODE -ne 0) { throw 'Real-map Stumpy duel failed' }
     if ($Native) {
+        python tools\native_firing_reference.py --unit armstump
+        if ($LASTEXITCODE -ne 0) { throw 'Original Stumpy firing reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --armstump
+        if ($LASTEXITCODE -ne 0) { throw 'Stumpy firing differs from original interpreter' }
         python tools\native_ballistic_deadline.py
         if ($LASTEXITCODE -ne 0) { throw 'Original ballistic deadline reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_ballistic_deadline.gd

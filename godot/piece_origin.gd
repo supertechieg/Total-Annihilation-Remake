@@ -12,7 +12,8 @@ static func model_origin(model: Dictionary, poses: Array, name: String, angles: 
 		var pose: Dictionary = by_name.get(str(item.name).to_lower(), {})
 		if str(item.name).to_lower() == name.to_lower():
 			target = pieces.size()
-		pieces.append({"parent": item.parent, "offset": item.offset,
+		# Original model loader 0x4cb590 reverses X/Z before runtime traversal.
+		pieces.append({"parent": item.parent, "offset": [-int(item.offset[0]), int(item.offset[1]), -int(item.offset[2])],
 			"move": pose.get("position", [0, 0, 0]), "rotation": pose.get("rotation", [0, 0, 0])})
 	return origin(pieces, target, angles)
 

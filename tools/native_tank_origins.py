@@ -14,7 +14,7 @@ MODEL, GEOMETRY, OUTPUT = 0x100a000, 0x100c000, 0x100b000
 
 def main():
     cases = []
-    for unit in ['armflash', 'corraid']:
+    for unit in ['armflash', 'corraid', 'armstump']:
         root = Path('local/unit-assets') / unit
         model = json.loads((root / 'unit.json').read_text())['model']
         program = json.loads((root / 'script.json').read_text())
@@ -39,7 +39,8 @@ def main():
             native.write(record + 0x32, 0 if parent < 0 else MODEL + 0x22 + names.index(model['pieces'][parent]['name'].lower()) * 0x36)
             for axis in range(3):
                 native.write(geom + 0x10 + axis * 4, piece['offset'][axis])
-        trace_path = Path('local/firing/native-trace.json') if unit == 'armflash' else Path('local/firing/corraid/native-trace.json')
+            native.call(0x4cb590, [geom])
+        trace_path = Path('local/firing/native-trace.json') if unit == 'armflash' else Path(f'local/firing/{unit}/native-trace.json')
         trace = json.loads(trace_path.read_text())
         for item in trace['snapshots']:
             if 'query_piece' not in item:

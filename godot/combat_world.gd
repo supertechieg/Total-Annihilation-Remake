@@ -8,6 +8,7 @@ const Launch = preload("res://ballistic_launch.gd")
 const Motion = preload("res://ballistic_motion.gd")
 const Splash = preload("res://splash_damage.gd")
 const Mobile = preload("res://mobile_unit.gd")
+const SUPPORTED_UNITS = ["armflash", "corraid", "armstump"]
 var launch := Launch.new()
 var gravity := 8155
 var tick := 0
@@ -34,7 +35,7 @@ func stop(id: int, stop_movement := true) -> void:
 		cycles[id].stop()
 
 func enable_guard(id: int) -> bool:
-	if not world.units.has(id) or world.units[id].type not in ["armflash", "corraid"] or float(world.units[id].remaining) > 0:
+	if not world.units.has(id) or world.units[id].type not in SUPPORTED_UNITS or float(world.units[id].remaining) > 0:
 		return false
 	guards[id] = tick
 	return true
@@ -73,16 +74,17 @@ func step_guards() -> void:
 func attack(source: int, target: int, pursue := false) -> bool:
 	if not world.units.has(source) or not world.units.has(target) or source == target:
 		return false
-	if world.units[source].type not in ["armflash", "corraid"] or float(world.units[source].remaining) > 0:
-		status = "Combat currently supports completed Flash and Raider tanks"
+	if world.units[source].type not in SUPPORTED_UNITS or float(world.units[source].remaining) > 0:
+		status = "Combat currently supports completed Flash, Stumpy and Raider tanks"
 		return false
 	if world.units[source].get("team", 0) == world.units[target].get("team", 0):
 		status = "Select an enemy target"
 		return false
 	if not cycles.has(source):
-		cycles[source] = Cycle.new(world.scripts[source], world.catalog.weapon("EMG" if world.units[source].type == "armflash" else "CORE_LIGHTCANNON"))
+		cycles[source] = Cycle.new(world.scripts[source], world.catalog.weapon(str(world.catalog.definition(world.units[source].type).weapon1)))
 	if not world.mobile_units.has(source):
 		world.mobile_units[source] = Mobile.new(world.unit_navigation(world.units[source].type), world.catalog.definition(world.units[source].type), world.units[source].position, world.scripts[source])
+		world.mobile_units[source].heading = 32768
 	if not launch_offsets.has(source):
 		var query = cycles[source].queries
 		var muzzle_piece: String = query.piece_name(false)
@@ -96,7 +98,10 @@ func attack(source: int, target: int, pursue := false) -> bool:
 
 func center(id: int) -> Vector3:
 	var unit: Dictionary = world.units[id]
-	return Vector3(unit.position.x, world.navigation.height_at(unit.position) + 12.0, unit.position.y)
+	var height := 12.0
+	if world.collision.records.has(id):
+		height = float(world.collision.records[id].bounds.upper[1]) / 131072.0
+	return Vector3(unit.position.x, world.navigation.height_at(unit.position) + height, unit.position.y)
 
 func muzzle(source: int, piece: String) -> Vector3:
 	var unit: Dictionary = world.units[source]
