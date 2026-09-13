@@ -36,6 +36,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Mobile builder checks failed' }
     & $godotPath --headless --path godot --script res://test_weapon_cycle.gd
     if ($LASTEXITCODE -ne 0) { throw 'Weapon cycle checks failed' }
+    & $godotPath --headless --path godot --script res://test_ballistic_motion.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Ballistic motion checks failed' }
     & $godotPath --headless --path godot --script res://test_combat_world.gd
     if ($LASTEXITCODE -ne 0) { throw 'Combat host checks failed' }
     & $godotPath --headless --path godot -- --verify
@@ -47,6 +49,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     if ($Native) {
+        python tools\native_ballistic_reference.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original ballistic integration reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_ballistics.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Ballistic integration differs from original executable' }
         python tools\native_firing_reference.py --unit corraid
         if ($LASTEXITCODE -ne 0) { throw 'Original Raider firing reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --corraid
