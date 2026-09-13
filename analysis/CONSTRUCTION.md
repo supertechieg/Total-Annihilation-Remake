@@ -2,7 +2,7 @@
 
 The Commander can now place nearby structures, spend metal and energy over time, finish construction, stop and resume unfinished work, and gain production/storage from completed structures. Select a unit from the build dropdown, choose **Place selected structure**, then click nearby terrain. Right-click/S pauses work; click an unfinished structure to resume. Move the Commander closer if placement or resumption is out of range.
 
-The first verified playable example is the Arm Solar Collector on Comet Catcher. The Commander uses its original StartBuilding/StopBuilding pose callbacks. The new structure uses its original model and textures, with transparency showing progress. It does not yet execute its own building script, so the solar panels currently remain in the unanimated model pose.
+The first verified playable example is the Arm Solar Collector on Comet Catcher. The Commander uses its original StartBuilding/StopBuilding pose callbacks. The new structure uses its original model and textures, with transparency showing progress. Arm solar collectors now run Create during construction and Activate on completion. Clicking a completed collector toggles its energy production and original opening/closing script. Each collector has an independent VM and animated model instance.
 
 ## Native comparison
 
@@ -18,17 +18,19 @@ All 1,000 seeded cases match, including zero work, already-complete targets, par
 
 - Work rate is WorkerTime / 30 per simulation tick. The original caller's timing is not yet verified.
 - Resources settle immediately per tick. Insufficient funds stall the full work increment. Original deferred debt settlement (identified at `0x00401360`) is not yet reconstructed.
-- Production/storage use the selected definitions. Negative EnergyUse produces energy while active; e.g. the Commander plus completed solar produce 45 energy/second. Extractor terrain-metal sampling, wind, tide, metal conversion, activation scripts and special-unit production remain unfinished.
+- Production/storage use the selected definitions. Negative EnergyUse produces energy while active; e.g. the Commander plus completed solar produce 45 energy/second, or 25 with solar disabled. Extractor terrain-metal sampling, wind, tide, metal conversion, other activation scripts and special-unit production remain unfinished.
 - Starting resources/storage are 1,000 each. They are prototype host defaults, not recovered game setup rules.
 - Build range measures to a footprint edge. Footprints, height-range slope checks, water checks, collision-grid reservations and arrival/placement semantics need original-engine comparison.
 - One Commander task runs at a time. New build orders leave prior unfinished structures paused. Factories and construction units do not yet build their own menu entries.
 - The host has a configurable `unit_limit` field, default 1,000 including the Commander. This is a capacity setting, not a demonstrated battle-performance limit.
-- Building presentation uses a static viewport cached per unit type. Per-building animated poses, depth sorting, original construction effects and exact scale/projection are unfinished.
+- Arm solar presentation uses an animated viewport per instance; other building types retain static viewports cached per type. Viewport-per-instance performance has not been benchmarked for large armies. Depth sorting, original construction effects and exact scale/projection remain unfinished.
 
 ## Verification
 
-`tools/verify.ps1 -Native` passes the existing parser/catalog/model/COB/navigation checks, 15 construction host checks, 1,000 native construction cases, and a real-map integration test. The integration test completes a nearby solar collector, verifies zero remaining work, nonnegative balances, a fully visible structure and a fault-free Commander script returning from construction. A rendered completed-structure capture was inspected.
+`tools/verify.ps1 -Native` passes the existing parser/catalog/model/COB/navigation checks, 22 construction host checks, 1,000 native construction cases, 606 solar interpreter snapshots, and a real-map integration test. Host checks include production while enabled/disabled, closed panel rotations, independent collector states and reactivation. The integration test completes a nearby solar collector, verifies zero remaining work, nonnegative balances, a fully visible structure and fault-free scripts, then disables and re-enables it. A rendered completed-structure capture was inspected.
 
-Capture a completed example with Godot `--path godot -- --construction-demo --capture ABSOLUTE_PNG_PATH`. This demo fast-forwards 450 ticks before capture; ordinary play advances at 30 ticks per second.
+`native_solar_reference.py` executes the original interpreter with healthy (property 4 = 100) and build-percent (17) host inputs. The trace covers Create, construction completion input, Activate, Deactivate, and reactivation while closing. Every piece position, rotation, speed, target, visibility, static, thread PC/state and written value matches in 606 snapshots. This proves script execution with those supplied inputs, not original world callback timing or damage behavior. The host currently supplies healthy status throughout construction; damaged smoke (RAND/EMIT_SFX), destruction, HitByWeapon activation coupling and property 20's damage effects remain unimplemented. Native world rounding of property 17 is also unverified.
 
-Next: building COB engine callbacks and activation, more faithful resource settlement/production, factory build orders, unit selection, weapons and actual combat. The full-game goal remains active; this is a playable construction checkpoint, not completion of Total Annihilation.
+Capture a completed example with Godot `--path godot -- --construction-demo --capture ABSOLUTE_PNG_PATH`. This demo fast-forwards 600 ticks before capture; ordinary play advances at 30 ticks per second.
+
+Next: remaining building COB callbacks, more faithful resource settlement/production, factory build orders, unit selection, weapons and actual combat. The full-game goal remains active; this is a playable construction checkpoint, not completion of Total Annihilation.

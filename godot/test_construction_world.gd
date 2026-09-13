@@ -40,9 +40,31 @@ func _initialize() -> void:
 	for tick in range(30):
 		world.step()
 	check(is_equal_approx(world.energy, 45.0), "Commander plus solar produce 45 energy per second")
+	check(world.scripts[id].fault.is_empty() and world.scripts[id].values.get(20) == 0, "Completed solar opens without VM fault")
+	check(world.set_active(id, false), "Completed solar accepts off command")
+	world.energy = 0.0
+	for tick in range(30):
+		world.step()
+	check(is_equal_approx(world.energy, 25.0), "Disabled solar stops its energy production")
+	for tick in range(70):
+		world.step()
+	var closed := true
+	for piece: Dictionary in world.scripts[id].pieces:
+		if str(piece.name).begins_with("dish"):
+			closed = closed and piece.rotation == [0, 0, 0]
+	check(closed, "All four solar panels reach closed pose")
+	var second: int = world.add_unit("armsolar", Vector2(400, 400), 0.0)
+	for tick in range(100):
+		world.step()
+	check(world.scripts[id].values.get(20) == 1 and world.scripts[second].values.get(20) == 0, "Collectors maintain independent activation state")
+	world.set_active(id, true)
+	for tick in range(100):
+		world.step()
+	check(world.scripts[id].values.get(20) == 0 and world.scripts[id].fault.is_empty(), "Solar reopens after reactivation")
 	check(not world.resume_build(id), "Cannot rebuild completed structure")
 	world = World.new(catalog, navigation, Vector2(512, 512))
 	id = world.begin_build("armsolar", Vector2(576, 512))
+	check(not world.set_active(id, false), "Unfinished structure rejects activation command")
 	world.energy = 0.0
 	world.metal = 0.0
 	world.step()
@@ -56,4 +78,3 @@ func _initialize() -> void:
 	check(world.begin_build("armsolar", Vector2(464, 512)) == 0, "Configured unit limit is enforced")
 	print("CONSTRUCTION_WORLD %d / %d checks pass" % [checks - failures, checks])
 	quit(0 if failures == 0 else 1)
-

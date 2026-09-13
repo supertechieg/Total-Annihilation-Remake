@@ -29,6 +29,10 @@ try {
     & $godotPath --headless --path godot -- --verify
     if ($LASTEXITCODE -ne 0) { throw 'Viewer checks failed' }
     if ($Native) {
+        python tools\native_solar_reference.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original solar reference run failed' }
+        & $godotPath --headless --path godot --script res://compare_native_solar.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Solar script differs from original interpreter' }
         python tools\native_cob_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original interpreter reference run failed' }
         & $godotPath --headless --path godot --script res://compare_native_cob.gd

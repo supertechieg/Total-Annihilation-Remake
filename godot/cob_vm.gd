@@ -13,6 +13,8 @@ var slots: Array = []
 var statics: Array = []
 var pieces: Array = []
 var values: Dictionary = {}
+var read_values: Dictionary = {}
+var writable_values: Array[int] = [5]
 var completions: Dictionary = {}
 var events: Array = []
 var fault := ""
@@ -268,10 +270,16 @@ func run_slot(slot: int) -> void:
 				for other in range(SLOT_COUNT):
 					if slots[other] != null and (int(slots[other].mask) & mask) != 0:
 						finish(other, 0, "signal")
+			"GET_VALUE":
+				var key := pop(thread)
+				if not read_values.has(key):
+					fail("Unsupported simulation read: %d" % key)
+				else:
+					push(thread, int(read_values[key]))
 			"SET_VALUE":
 				var value := pop(thread)
 				var key := pop(thread)
-				if key != 5:
+				if key not in writable_values:
 					fail("Unsupported simulation value: %d" % key)
 				else:
 					values[key] = value

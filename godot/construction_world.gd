@@ -1,6 +1,8 @@
 extends RefCounted
 ## First construction/economy host. Accounting settlement and placement are provisional.
 const BuildMath = preload("res://construction_math.gd")
+const VM = preload("res://cob_vm.gd")
+var scripts: Dictionary = {}
 var catalog: RefCounted
 var navigation: RefCounted
 var units: Dictionary = {}
@@ -30,7 +32,24 @@ func add_unit(type: String, position: Vector2, remaining: float) -> int:
 	var definition: Dictionary = catalog.definition(type)
 	units[id] = {"id": id, "type": type, "position": position, "remaining": remaining,
 		"health": 1 if remaining > 0 else int(definition.get("maxdamage", "1")), "active": true}
+	# Enable only the building script whose healthy lifecycle has a native oracle.
+	if type == "armsolar":
+		var vm = VM.new(catalog.load_script(type))
+		vm.read_values = {4: 100, 17: ceili(remaining * 100)}
+		vm.writable_values.assign([1, 5, 20])
+		vm.invoke("Create")
+		if remaining == 0:
+			vm.invoke("Activate")
+		scripts[id] = vm
 	return id
+
+func set_active(id: int, active: bool) -> bool:
+	if not scripts.has(id) or float(units[id].remaining) > 0:
+		return false
+	if bool(units[id].active) != active:
+		units[id].active = active
+		scripts[id].invoke("Activate" if active else "Deactivate")
+	return true
 
 func footprint(type: String, position: Vector2) -> Rect2:
 	var definition: Dictionary = catalog.definition(type)
@@ -101,6 +120,10 @@ func resume_build(id: int) -> bool:
 func step() -> void:
 	ticks += 1
 	completed.clear()
+	for id: int in scripts:
+		# Construction health is not combat damage. Damaged smoke awaits its opcodes.
+		scripts[id].read_values[17] = ceili(float(units[id].remaining) * 100)
+		scripts[id].step()
 	var energy_income := 0.0
 	var metal_income := 0.0
 	energy_storage = base_energy_storage
@@ -142,6 +165,9 @@ func step() -> void:
 		unit.health = result.health
 		status = "Building %s · %d%%" % [catalog.definition(unit.type).get("name", unit.type), roundi((1.0 - float(unit.remaining)) * 100)]
 		if float(unit.remaining) == 0:
+			if scripts.has(task_id):
+				scripts[task_id].read_values[17] = 0
+				scripts[task_id].invoke("Activate")
 			completed.append(task_id)
 			task_id = 0
 			status = "Construction complete"

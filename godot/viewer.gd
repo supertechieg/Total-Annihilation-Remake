@@ -16,6 +16,7 @@ var resource_label: Label
 var placement_type := ""
 var structure_sprites: Dictionary = {}
 var structure_views: Dictionary = {}
+var structure_models: Dictionary = {}
 var navigation: RefCounted
 var mobile: RefCounted
 var route_line: Line2D
@@ -106,7 +107,7 @@ func start_world_movement() -> void:
 		issue_move(unit_position + Vector2(128, -96))
 	if "--construction-demo" in OS.get_cmdline_user_args():
 		place_structure("armsolar", unit_position + Vector2(80, 0))
-		for tick in range(450):
+		for tick in range(600):
 			step_script()
 
 func issue_move(target: Vector2) -> bool:
@@ -159,7 +160,7 @@ func place_structure(type: String, point: Vector2) -> bool:
 	placement_type = ""
 	var unit: Dictionary = economy.units[id]
 	var sprite := Sprite2D.new()
-	sprite.texture = structure_texture(type)
+	sprite.texture = structure_texture(type, id)
 	sprite.position = unit.position
 	sprite.scale = Vector2.ONE * (0.28 * 192.0 / 55.0)
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -174,16 +175,21 @@ func place_structure(type: String, point: Vector2) -> bool:
 		toggle_build()
 	return true
 
-func structure_texture(type: String) -> Texture2D:
-	if structure_views.has(type):
-		return structure_views[type].get_texture()
+func structure_texture(type: String, id: int) -> Texture2D:
+	var key := str(id) if economy.scripts.has(id) else type
+	if structure_views.has(key):
+		return structure_views[key].get_texture()
 	var view := SubViewport.new()
 	view.size = Vector2i(256, 256)
 	view.transparent_bg = true
 	view.own_world_3d = true
 	view.render_target_update_mode = SubViewport.UPDATE_ONCE
 	add_child(view)
-	view.add_child(unit_visuals.instantiate(type))
+	var model: Node3D = unit_visuals.instantiate(type)
+	view.add_child(model)
+	if economy.scripts.has(id):
+		structure_models[id] = model
+		view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	var camera := Camera3D.new()
 	view.add_child(camera)
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
@@ -191,7 +197,7 @@ func structure_texture(type: String) -> Texture2D:
 	camera.position = Vector3(0, 130, 180)
 	camera.look_at(Vector3.ZERO)
 	camera.current = true
-	structure_views[type] = view
+	structure_views[key] = view
 	return view.get_texture()
 
 func build_model() -> void:
@@ -330,6 +336,8 @@ func step_script() -> void:
 		for id: int in structure_sprites:
 			var remaining := float(economy.units[id].remaining)
 			structure_sprites[id].modulate = Color(1, 1, 1, 0.25 + 0.75 * (1.0 - remaining))
+			if structure_models.has(id):
+				UnitVisuals.apply_pose(structure_models[id], economy.scripts[id].pieces)
 		if was_building:
 			status_label.text = "  " + economy.status
 		if not economy.completed.is_empty() and building:
@@ -481,7 +489,7 @@ func build_interface() -> void:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(spacer)
 	column.add_child(label("Drag to pan · Scroll to zoom\nClick terrain to move commander", 13))
-	var note := label("Development build · Movement & construction\nCombat and building scripts are next.", 12, Color("a1aba9"))
+	var note := label("Development build · Movement & construction\nClick a finished solar collector to toggle power.", 12, Color("a1aba9"))
 	column.add_child(note)
 	var footer := PanelContainer.new()
 	footer.custom_minimum_size.y = 34
@@ -532,6 +540,10 @@ func map_input(event: InputEvent) -> void:
 					var resumed := false
 					for id: int in structure_sprites:
 						var unit: Dictionary = economy.units[id]
+						if economy.footprint(unit.type, unit.position).has_point(pos) and economy.set_active(id, not bool(unit.active)):
+							status_label.text = "  Solar collector " + ("on" if unit.active else "off")
+							resumed = true
+							break
 						if economy.footprint(unit.type, unit.position).has_point(pos) and economy.resume_build(id):
 							mobile.stop()
 							if not building:
@@ -643,6 +655,16 @@ func _process(delta: float) -> void:
 		assert(not building and script_vm.fault.is_empty())
 		assert(structure_sprites[built_id].modulate.a == 1.0)
 		assert(economy.metal >= 0 and economy.energy >= 0)
+		assert(economy.scripts[built_id].fault.is_empty())
+		assert(economy.scripts[built_id].values.get(20) == 0)
+		assert(economy.set_active(built_id, false))
+		for _tick in range(100):
+			step_script()
+		assert(economy.scripts[built_id].values.get(20) == 1)
+		assert(economy.set_active(built_id, true))
+		for _tick in range(100):
+			step_script()
+		assert(economy.scripts[built_id].values.get(20) == 0)
 		print("CONSTRUCTION_VERIFY_OK structure=armsolar id=%d" % built_id)
 		print("VIEWER_VERIFY_OK")
 		get_tree().quit()
