@@ -1,5 +1,30 @@
 # Original projectile-owned bursts
 
+## Live Flash integration
+
+WeaponCycle now dispatches one burst source with one QueryPrimary/FirePrimary
+pair per reload. Combat advances that source independently of subsequent orders,
+uses its cached piece name for position refresh, and applies verified source
+spread after copying. Flash rounds appear at dispatch +3/+6/+9 ticks. Copies are
+appended after current projectile movement, matching the pool snapshot boundary.
+Stop prevents new dispatches while already-created bursts finish.
+
+`test_burst_combat.gd` checks the exact emission ticks, deferred movement and
+post-Stop completion using a live Flash script. The normal suite and Flash,
+Stumpy and Hammer factory duels pass. The existing weapon-cycle tests now assert
+dispatch counts instead of the obsolete per-round script callback policy.
+
+Remaining host limitations: the initial EMG direction still uses the existing
+normalized-vector approximation; emitted rounds retain the previous range-based
+expiration instead of consuming the verified copied deadline. RNG starts at a
+fixed seed independent of other world random consumers. Source death currently
+cancels outstanding bursts as a provisional teardown rule. Original pool capacity,
+sounds, duration randomness and health/experience reload settlement remain pending.
+The currently supported cannons have no burst field; their single-shot path is
+unchanged. Arbitrary ballistic bursts are not yet connected.
+
+## Recovered native behavior
+
 Tracing `0x49b720` changes the implementation plan for weapon cadence. Burst
 scheduling belongs to projectile records, rather than repeated script firing
 callbacks in the unit weapon controller. This is static executable/decompiler

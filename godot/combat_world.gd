@@ -10,6 +10,10 @@ const Splash = preload("res://splash_damage.gd")
 const Mobile = preload("res://mobile_unit.gd")
 const TargetPoint = preload("res://target_point.gd")
 const Queries = preload("res://weapon_queries.gd")
+const Burst = preload("res://burst_schedule.gd")
+const GameRandom = preload("res://wind_state.gd")
+var burst_random := GameRandom.new()
+var bursts: Array = []
 const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham"]
 var launch := Launch.new()
 var gravity := 8155
@@ -134,6 +138,7 @@ static func render_point(raw: Array) -> Vector3:
 
 func step() -> void:
 	tick += 1
+	var burst_copies := advance_bursts()
 	step_guards()
 	destroyed.clear()
 	for effect: Dictionary in effects:
@@ -198,10 +203,21 @@ func step() -> void:
 				continue
 			var direction := (center(target) - start).normalized()
 			var velocity_raw := [int(direction.x * int(shot.velocity_raw_per_tick)), int(direction.y * int(shot.velocity_raw_per_tick)), int(direction.z * int(shot.velocity_raw_per_tick))]
-			projectiles.append({"source": source, "owner": int(world.units[source].get("team", 0)), "position": start, "previous": start,
+			var projectile := {"source": source, "owner": int(world.units[source].get("team", 0)), "position": start, "previous": start,
 				"position_raw": raw_point(start), "velocity_raw": velocity_raw,
-				"distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"})})
-			shots_fired += 1
+				"distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"})}
+			if int(shot.burst) > 0:
+				var delta := start - center(target)
+				var horizontal := Vector2(delta.x, delta.z).length()
+				bursts.append({"source": source, "piece_name": shot.piece_name, "projectile": projectile,
+					"interval": int(cycle.runtime.burst_interval_ticks), "timer": int(float(cycle.definition.get("weapontimer", "0")) * 30),
+					"speed": int(shot.velocity_raw_per_tick), "distance": roundi(horizontal * 65536.0), "spray": int(cycle.definition.get("sprayangle", "0")),
+					"state": {"position": raw_point(start), "velocity": velocity_raw, "remaining": int(shot.burst), "timestamp": tick, "deadline": 0, "removed": false,
+						"heading": roundi(atan2(delta.x, delta.z) * 10430.37835047) & 65535,
+						"pitch": roundi(atan2(-delta.y, horizontal) * 10430.37835047) & 65535}})
+			else:
+				projectiles.append(projectile)
+				shots_fired += 1
 	var survivors: Array = []
 	for projectile: Dictionary in projectiles:
 		if projectile.get("ballistic", false):
@@ -240,6 +256,33 @@ func step() -> void:
 		if float(projectile.distance) < float(projectile.range) and end.y >= world.navigation.height_at(Vector2(end.x, end.z)):
 			survivors.append(projectile)
 	projectiles = survivors
+	# Native updater snapshots its pool size: newly copied rounds move next tick.
+	projectiles.append_array(burst_copies)
+
+func advance_bursts() -> Array:
+	var copies: Array = []
+	var pending: Array = []
+	for burst: Dictionary in bursts:
+		# Source teardown is provisional until native death cleanup is reconstructed.
+		if not world.units.has(burst.source) or not world.scripts.has(burst.source):
+			continue
+		var fresh := raw_point(muzzle(int(burst.source), str(burst.piece_name)))
+		var result := Burst.advance(burst.state, tick, int(burst.interval), int(burst.timer), int(burst.speed), int(burst.distance), fresh)
+		burst.state = result.source
+		if result.copy != null:
+			var projectile: Dictionary = burst.projectile.duplicate(true)
+			projectile.position_raw = result.copy.position
+			projectile.position = render_point(result.copy.position)
+			projectile.previous = projectile.position
+			projectile.velocity_raw = result.copy.velocity
+			copies.append(projectile)
+			shots_fired += 1
+			if int(burst.spray) != 0:
+				Burst.apply_spread(burst.state, int(burst.speed), int(burst.spray), burst_random.bounded_random(int(burst.spray)))
+		if not burst.state.removed:
+			pending.append(burst)
+	bursts = pending
+	return copies
 
 func step_shell(projectile: Dictionary) -> bool:
 	var expired := Motion.expiration(tick, int(projectile.deadline), int(projectile.timer), projectile.burnblow)

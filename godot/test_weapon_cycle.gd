@@ -59,14 +59,14 @@ func _initialize() -> void:
 		shots.append_array(cycle.shots)
 		if not cycle.shots.is_empty():
 			aim_correct = aim_correct and int(vm.pieces[2].rotation[1]) == 8192
-		if shots.size() == 6:
+		if shots.size() == 2:
 			break
-	check(shots.size() == 6, "Two three-shot EMG bursts emitted")
+	check(shots.size() == 2, "Two EMG burst sources dispatched")
 	check(aim_correct, "Turret remains aimed during repeated bursts")
-	if shots.size() == 6:
-		check(shots[1].tick - shots[0].tick == 3 and shots[2].tick - shots[1].tick == 3, "Burst uses original converted interval")
-		check(shots[3].tick - shots[0].tick == 12, "Host reload policy uses original converted reload")
-		check([shots[0].piece, shots[1].piece, shots[2].piece] == [0, 0, 1], "Overlapping shots use native-compared queried barrels")
+	if shots.size() == 2:
+		check(shots[0].burst == 3 and shots[1].burst == 3, "Each dispatch carries the three-round projectile burst count")
+		check(shots[1].tick - shots[0].tick == 12, "Dispatch reload uses original converted reload")
+		check(shots[0].piece >= 0 and shots[1].piece >= 0, "Each burst source has a queried cached piece")
 		check(shots[0].velocity_raw_per_tick == 655359, "Shot carries original converted velocity")
 	cycle.stop()
 	var stopped_shots := 0
@@ -99,7 +99,7 @@ func _initialize() -> void:
 		vm.step()
 		cycle.step()
 		sustained_shots += cycle.shots.size()
-	check(sustained_shots >= 100, "Sustained firing continues without accumulating blocked callbacks")
+	check(sustained_shots >= 40, "Sustained dispatch continues without accumulating blocked callbacks")
 	check(cycle.fault.is_empty() and vm.fault.is_empty(), "Repeated aiming and firing remain fault-free")
 	var raider_vm = VM.new(catalog.load_script("corraid"))
 	raider_vm.read_values = {4: 100, 17: 0}

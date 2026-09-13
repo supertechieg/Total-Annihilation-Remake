@@ -69,7 +69,8 @@ func step(can_fire := true, resolve_muzzle := Callable()) -> void:
 	if remaining == 0:
 		if tick < next_burst:
 			return
-		remaining = maxi(1, int(definition.get("burst", "1")))
+		# One script dispatch creates a projectile-owned burst source.
+		remaining = 1
 		next_shot = tick
 		# Provisional policy: reload starts at burst start, not its final shot.
 		next_burst = tick + maxi(1, int(runtime.reload_ticks))
@@ -85,7 +86,7 @@ func step(can_fire := true, resolve_muzzle := Callable()) -> void:
 		return
 	# Native launch consumes the queried position before FirePrimary can alter pose.
 	var shot := {"tick": tick, "piece": piece, "piece_name": vm.pieces[piece].name,
-		"velocity_raw_per_tick": int(runtime.velocity_raw_per_tick)}
+		"velocity_raw_per_tick": int(runtime.velocity_raw_per_tick), "burst": int(definition.get("burst", "0"))}
 	if resolve_muzzle.is_valid():
 		shot.position = resolve_muzzle.call(str(shot.piece_name))
 	vm.invoke("FirePrimary")

@@ -62,6 +62,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'World collision lifecycle checks failed' }
     & $godotPath --headless --path godot --script res://test_combat_world.gd
     if ($LASTEXITCODE -ne 0) { throw 'Combat host checks failed' }
+    & $godotPath --headless --path godot --script res://test_burst_combat.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Burst combat checks failed' }
     & $godotPath --headless --path godot --script res://test_cannon_combat.gd
     if ($LASTEXITCODE -ne 0) { throw 'Cannon combat checks failed' }
     & $godotPath --headless --path godot --script res://test_guard_combat.gd

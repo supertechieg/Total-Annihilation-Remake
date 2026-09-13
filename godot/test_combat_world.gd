@@ -42,10 +42,14 @@ func _initialize() -> void:
 	check(combat.cycles[source].fault.is_empty(), "Combat leaves the firing VM fault-free")
 	combat.stop(source)
 	var count: int = combat.shots_fired
+	var pending_rounds := 0
+	for burst: Dictionary in combat.bursts:
+		pending_rounds += int(burst.state.remaining)
 	for tick in range(30):
 		world.step()
 		combat.step()
-	check(combat.shots_fired == count, "Stop cancels new shots while existing projectiles finish")
+	check(combat.shots_fired == count + pending_rounds and combat.bursts.is_empty(), "Stop prevents dispatch while already-created burst rounds finish")
+	count = combat.shots_fired
 	world.units[target].position = Vector2(800, 256)
 	combat.attack(source, target)
 	for tick in range(80):
