@@ -82,7 +82,13 @@ func step() -> void:
 		var origin: Vector2 = world.units[source].position
 		var destination: Vector2 = world.units[target].position
 		var cycle = cycles[source]
-		var heading := roundi(atan2(origin.x - destination.x, origin.y - destination.y) * 65536.0 / TAU) - int(world.mobile_units[source].heading)
+		var aim_piece: String = cycle.queries.piece_name(true)
+		if aim_piece.is_empty():
+			status = cycle.queries.fault
+			stop(source)
+			continue
+		var aim_origin := muzzle(source, aim_piece)
+		var heading := roundi(atan2(aim_origin.x - destination.x, aim_origin.z - destination.y) * 65536.0 / TAU) - int(world.mobile_units[source].heading)
 		var within_range := origin.distance_to(destination) <= float(cycle.definition.get("range", "0"))
 		if cycle.aim_id < 0 and (not cycle.requested or heading != int(order.heading)):
 			cycle.aim(heading, 0)

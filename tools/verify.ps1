@@ -38,6 +38,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Mobile builder checks failed' }
     & $godotPath --headless --path godot --script res://test_weapon_cycle.gd
     if ($LASTEXITCODE -ne 0) { throw 'Weapon cycle checks failed' }
+    & $godotPath --headless --path godot --script res://test_weapon_queries.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Weapon piece query checks failed' }
     & $godotPath --headless --path godot --script res://test_ballistic_motion.gd
     if ($LASTEXITCODE -ne 0) { throw 'Ballistic motion checks failed' }
     & $godotPath --headless --path godot --script res://test_ballistic_aim.gd

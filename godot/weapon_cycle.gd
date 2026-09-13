@@ -2,6 +2,8 @@ extends RefCounted
 ## First primary-weapon host. Countdown ordering is provisional; VM callbacks are native-compared.
 ## The caller advances the VM before step(), and owns targeting, resources and projectiles.
 var vm: RefCounted
+const Queries = preload("res://weapon_queries.gd")
+var queries: RefCounted
 var definition: Dictionary
 var runtime: Dictionary
 var tick := 0
@@ -19,6 +21,7 @@ var denied := false
 
 func _init(script: RefCounted, weapon: Dictionary) -> void:
 	vm = script
+	queries = Queries.new(vm)
 	definition = weapon.definition
 	runtime = weapon.runtime
 	for callback: String in ["AimPrimary", "QueryPrimary", "FirePrimary"]:

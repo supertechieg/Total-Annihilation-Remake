@@ -1,6 +1,6 @@
 {
-  "cases": 72,
+  "cases": 216,
   "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
   "mismatches": 0,
-  "scope": "Flash/Raider native firing poses through original move/rotation setters and origin traversal; four headings; prepared model geometry, synthetic name ordering; excludes original loader execution and renderer"
+  "scope": "Flash/Raider muzzle and original AimFromPrimary helper queries with native firing poses and four headings; original setters/traversal; prepared geometry and synthetic name ordering; excludes original loader execution and renderer"
 }

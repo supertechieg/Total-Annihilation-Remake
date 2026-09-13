@@ -6,6 +6,8 @@ Use Light/low by default, including reverse engineering when it can be done reli
 
 ## Completed
 
+AimFrom helper integration: weapon_queries.gd handles synchronous output, -1 AimFrom fallback to QueryPrimary(default0), fault checks and completion cleanup. Tank origin oracle now216/216 including72 original AimFrom calls and72 forced-missing fallbacks. Native harness now relocates COB name strings for name-based calls. Combat heading uses queried aim-origin position; normal queries6checks and combat regressions pass. Next environment/ballistic integration and lifetime/collision/splash for armed Raider.
+
 Flash muzzle integration: piece_origin.model_origin matches72 real Flash/Raider firing query cases through original setters/traversal, four headings. Native setter movement direct, rotationlow16; name-order binding supported by loader inspection, original loader not executed. Combat now uses native-compared origins instead of renderer matrices. Normal combat and real-map destruction still pass. Host roll/pitch remainzero; rendererunchanged. See PIECE_ORIGINS.md/native-tank-origin-validation.json. Next AimFrom integration and cannon lifetime/collision/splash.
 
 Native piece origins: piece_origin.gd matches600 original0x43def0 hierarchy cases with original0x4b7173 rotations. Six normal checks. Parent order Z/XY thenX/YZ thenY/XZ with integer nearest/even rounding each; root parent adds unit angles; finalZ negated. Distinct from current renderer matrices. See PIECE_ORIGINS.md/native-piece-origin-validation.json. Next verify real model/COB pose binding, then use simulation origins in combat muzzle/AimFrom calculations. Still unconnected intentionally pending that binding check.
