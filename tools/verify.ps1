@@ -99,6 +99,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-warrior
     if ($LASTEXITCODE -ne 0) { throw 'Warrior factory duel failed' }
     if ($Native) {
+        python tools\native_direct_deadline.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original direct deadline failed' }
+        & $godotPath --headless --path godot --script res://compare_native_direct_deadline.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Direct deadline differs from original executable' }
         foreach ($missileUnit in @('armsam', 'armjeth')) {
             python tools\native_firing_reference.py --unit $missileUnit
             if ($LASTEXITCODE -ne 0) { throw "Original $missileUnit firing reference failed" }

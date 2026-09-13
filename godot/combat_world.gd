@@ -14,6 +14,7 @@ const Burst = preload("res://burst_schedule.gd")
 const GameRandom = preload("res://wind_state.gd")
 const Reload = preload("res://weapon_reload.gd")
 const Ground = preload("res://ground_motion.gd")
+const DirectDeadline = preload("res://direct_deadline.gd")
 const RocketMotion = preload("res://rocket_motion.gd")
 const DirectLaunch = preload("res://direct_launch.gd")
 var burst_random := GameRandom.new()
@@ -216,7 +217,7 @@ func step() -> void:
 				projectile.merge({"rocket": true, "speed": int(direct.initial_speed),
 					"maximum": int(shot.velocity_raw_per_tick), "acceleration": int(cycle.runtime.acceleration_raw_per_tick_squared),
 					"heading": int(direct.heading), "pitch": int(direct.pitch),
-					"deadline": (tick + int(float(cycle.definition.get("weapontimer", "0")) * 30.0)) & 0xffffffff,
+					"deadline": DirectDeadline.deadline(tick, int(shot.velocity_raw_per_tick), int(cycle.definition.range), int(float(cycle.definition.get("weapontimer", "0")) * 30.0), int(cycle.definition.get("noautorange", "0")) != 0),
 					"area": int(cycle.definition.get("areaofeffect", "0")), "edge": float(cycle.definition.get("edgeeffectiveness", "0"))})
 				projectiles.append(projectile)
 				shots_fired += 1

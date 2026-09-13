@@ -18,14 +18,18 @@ func _initialize() -> void:
 	var checks := [combat.attack(raider, flash)]
 	var initial_health: int = world.units[flash].health
 	var airborne := false
+	var first_deadline := -1
 	for tick in range(450):
 		world.step()
 		combat.step()
 		for projectile: Dictionary in combat.projectiles:
 			airborne = airborne or projectile.get("rocket", false)
+			if first_deadline < 0 and projectile.get("rocket", false):
+				first_deadline = int(projectile.deadline) - combat.tick
 		if not world.units.has(flash):
 			break
 	checks.append(combat.shots_fired > 0 and airborne)
+	checks.append(first_deadline == 48)
 	checks.append(not world.units.has(flash) or world.units[flash].health < initial_health)
 	checks.append(combat.cycles[raider].fault.is_empty())
 	var duel = World.new(catalog, Navigation.new(64, 64, heights), Vector2(128, 128))

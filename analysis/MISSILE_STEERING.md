@@ -111,3 +111,10 @@ caller/weapon field mapping and native launch deadline need verification; the
 motion comparisons above supply deadlines and do not validate their creation.
 
 Samson/Jethro firing-pose model queries now pass: all 972 muzzle/AimFrom and 324 SweetSpot cases match across nine units and four headings. Full model loading and cache timing remain outside these fixtures.
+
+
+The launch deadline question above is now resolved for the direct launcher:
+240 native block cases match direct_deadline.gd, including override, zero speed
+and wrap. Live Rocko was corrected to 48 powered ticks. Ordinary Samson and
+Jethro will likewise use range/maximum speed rather than their five-second timer
+when connected to this path. Full launcher/caller timing remains separate.

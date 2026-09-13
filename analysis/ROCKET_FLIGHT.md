@@ -71,7 +71,7 @@ The native verification suite includes this comparison.
 
 Rocko now participates in attack orders and guard combat. Its direct launch uses
 prepared start speed and acceleration; each flight tick runs the native-compared
-unguided rocket motion. On the 60-tick motor deadline it begins falling under map
+unguided rocket motion. On the 48-tick range-derived motor deadline it begins falling under map
 gravity. Endpoint unit/terrain impacts use shared splash damage. The supported
 rocket is KBOT_ROCKET only: guided missiles, cruise, burnblow, water transitions,
 smoke trails, original explosion art/audio and full host timing remain unfinished.
@@ -79,9 +79,21 @@ The current nonballistic script aim pitch remains zero, while actual projectile
 heading/pitch are calculated from muzzle to target; script elevation fidelity
 still needs investigation.
 
-The 16-check rocket combat test covers shots, damage, an armed duel, four firing
+The 17-check rocket combat test covers shots, damage, an armed duel, four firing
 directions, elevated targets and survival/fall at the motor deadline. The viewer
 `--verify-rocko` builds an Arm Kbot Lab, produces and moves a Rocko, then verifies
 that it and an armed Raider exchange damage and one is destroyed on Comet Catcher.
 Both are included in the normal verification suite. Practice-target controls
 accept a selected Rocko. Projectile visuals remain the existing simple trails.
+
+
+## Corrected launch deadline
+
+Native direct-launch block 0x49cb1c..0x49cb61 passes 240 cases. With nonzero
+maximum speed and noautorange clear, duration is unsigned
+((range << 16) & 0xffffffff) / maximum speed, truncated to an integer. Otherwise
+it uses the unsigned 16-bit weapon timer. Tick addition wraps to 32 bits.
+Loader string references identify +0xdc as range and flag 0x08000000 as
+noautorange. Rocko therefore powers for 48 ticks, not 60. Live combat now uses
+this calculation. The rocket test checks the emitted deadline and still passes
+all 17 checks; the factory-produced Comet Catcher duel also passes.
