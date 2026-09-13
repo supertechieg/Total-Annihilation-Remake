@@ -3,7 +3,7 @@
 Tracing `0x49b720` changes the implementation plan for weapon cadence. Burst
 scheduling belongs to projectile records, rather than repeated script firing
 callbacks in the unit weapon controller. This is static executable/decompiler
-evidence; the complete burst update still needs a native execution oracle.
+evidence, now supported by the controlled native transition test below.
 
 The loader stores `burst` at weapon `+0xea`, `burstrate` at `+0xec` and
 `sprayangle` at `+0xee`. Launchers including `0x49c9c0` and `0x49cde0` copy burst
@@ -39,3 +39,19 @@ Next build a native `0x49b720` fixture containing a burst source with movement,
 collision, sounds and random-spread paths controlled explicitly. Compare successive
 ticks, copy contents, callback counts and source removal, including odd/even rounds,
 interval boundaries, capacity exhaustion and timestamp wraparound.
+
+## Controlled native transition validation
+
+`native_burst_update.py` executes complete `0x49b720` on one burst source, with
+the muzzle-position callback supplied and final pool consolidation disabled.
+`burst_schedule.gd` matches 240 cases for source/copy positions, timestamps,
+remaining counts, expiration, removal flags and refresh invocation. Cases cover
+counts one through five, intervals 0/1/3/4/5/30, explicit and calculated lifetime,
+and unsigned due boundaries. The source and copy are inspected separately.
+
+This verifies one update per supplied state. Consecutive updates, random spread,
+sounds, full pool capacity, source death and exact cached piece resolution still
+need coverage. It does not verify all copied bytes or replace the live burst host.
+Run `python tools/native_burst_update.py` followed by Godot headless with
+`--path godot --script res://compare_native_burst.gd`. The optional native suite
+includes both; raw traces remain under ignored `local/burst`.

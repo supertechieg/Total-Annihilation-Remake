@@ -1,0 +1,6 @@
+{
+  "cases": 240,
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "mismatches": [],
+  "scope": "Original 0x49b720 with one burst source: due check, odd/even position refresh, copied state, expiry and removal; controlled muzzle callback, disabled pool consolidation, no sounds/random spread/capacity exhaustion"
+}

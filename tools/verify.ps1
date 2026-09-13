@@ -85,6 +85,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-hammer
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Hammer duel failed' }
     if ($Native) {
+        python tools\native_burst_update.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original burst update failed' }
+        & $godotPath --headless --path godot --script res://compare_native_burst.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Burst transition differs from original executable' }
         python tools\native_weapon_reload.py
         if ($LASTEXITCODE -ne 0) { throw 'Original weapon reload reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_weapon_reload.gd
