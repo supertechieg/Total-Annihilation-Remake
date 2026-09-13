@@ -98,6 +98,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Warrior cannon combat failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-warrior
     if ($LASTEXITCODE -ne 0) { throw 'Warrior factory duel failed' }
+    foreach ($missileUnit in @('armsam', 'armjeth')) {
+        & $godotPath --headless --path godot --quit-after 2 -- "--verify-$missileUnit"
+        if ($LASTEXITCODE -ne 0) { throw "$missileUnit factory duel failed" }
+    }
     if ($Native) {
         python tools\native_direct_deadline.py
         if ($LASTEXITCODE -ne 0) { throw 'Original direct deadline failed' }

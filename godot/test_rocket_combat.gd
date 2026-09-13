@@ -96,6 +96,17 @@ func _initialize() -> void:
 		"deadline": combat.tick, "area": 48, "edge": 0.0, "damage": {"default": "105"}}
 	checks.append(combat.step_rocket(spent))
 	checks.append(int(spent.velocity_raw[1]) == -4369 and spent.position.y < 100.0)
+	var tracking_target: int = world.add_unit("armflash", Vector2(800, 800), 0)
+	var guided := spent.duplicate(true)
+	guided.merge({"guided": true, "target_id": tracking_target, "saved_target": [700 * 65536, 0, 800 * 65536],
+		"turn": 999, "deadline": combat.tick + 30, "heading": 0, "pitch": 0}, true)
+	checks.append(combat.step_rocket(guided))
+	var previous_heading := int(guided.heading)
+	world.units[tracking_target].position = Vector2(600, 800)
+	checks.append(combat.step_rocket(guided) and int(guided.heading) != previous_heading)
+	world.remove_unit(tracking_target)
+	checks.append(combat.step_rocket(guided))
+	checks.append(guided.saved_target == [700 * 65536, 0, 800 * 65536])
 	var failures := checks.count(false)
 	print("ROCKET_COMBAT %d / %d checks pass; shots=%d hits=%d" % [checks.size() - failures, checks.size(), combat.shots_fired, combat.hits])
 	quit(0 if failures == 0 else 1)

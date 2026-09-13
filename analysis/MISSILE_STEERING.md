@@ -118,3 +118,27 @@ The launch deadline question above is now resolved for the direct launcher:
 and wrap. Live Rocko was corrected to 48 powered ticks. Ordinary Samson and
 Jethro will likewise use range/maximum speed rather than their five-second timer
 when connected to this path. Full launcher/caller timing remains separate.
+
+
+## Live Samson and Jethro
+
+Samson and Jethro now participate in the combat host. Their factory-produced
+units use original firing scripts, muzzle queries, launch velocity, range-derived
+deadlines and per-tick turn allowances. Powered flight follows a live unit's
+position; absent targets fall back to the saved launch point. Ground impacts
+and unit endpoint collisions use shared splash damage. After the deadline,
+guidance stops and gravity applies. Practice-target controls accept both units.
+
+The viewer checks --verify-armsam and --verify-armjeth build the appropriate
+factory, produce and move the unit, and require mutual damage and one destruction
+against an armed Raider on Comet Catcher. The rocket host test additionally
+changes a target position between updates, checks heading changes, removes the
+target, and checks continued flight without overwriting the saved launch point.
+
+Limitations: the host treats a present unit as target-valid; original native
+validity flags and destruction-reference cleanup timing remain unverified.
+The tracking test changes position directly and is not a moving-target hit-rate
+test. Aircraft, anti-missile projectile references, visibility, damage/death
+callbacks, script elevation aiming, smoke, missile meshes and original explosion
+art/audio remain unfinished. This checkpoint supports ground combat with these
+units; it does not claim complete anti-air behavior.

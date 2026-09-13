@@ -15,11 +15,13 @@ const GameRandom = preload("res://wind_state.gd")
 const Reload = preload("res://weapon_reload.gd")
 const Ground = preload("res://ground_motion.gd")
 const DirectDeadline = preload("res://direct_deadline.gd")
+const GuidedMotion = preload("res://guided_motion.gd")
+const MissileTarget = preload("res://missile_target.gd")
 const RocketMotion = preload("res://rocket_motion.gd")
 const DirectLaunch = preload("res://direct_launch.gd")
 var burst_random := GameRandom.new()
 var bursts: Array = []
-const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham", "armpw", "armrock", "armwar"]
+const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham", "armpw", "armrock", "armwar", "armsam", "armjeth"]
 var launch := Launch.new()
 var gravity := 8155
 var tick := 0
@@ -86,7 +88,7 @@ func attack(source: int, target: int, pursue := false) -> bool:
 	if not world.units.has(source) or not world.units.has(target) or source == target:
 		return false
 	if world.units[source].type not in SUPPORTED_UNITS or float(world.units[source].remaining) > 0:
-		status = "Combat currently supports completed Flash, Stumpy, Raider, Hammer, Peewee, Rocko and Warrior units"
+		status = "Combat currently supports completed Flash, Stumpy, Raider, Hammer, Peewee, Rocko, Warrior, Samson and Jethro units"
 		return false
 	if world.units[source].get("team", 0) == world.units[target].get("team", 0):
 		status = "Select an enemy target"
@@ -214,7 +216,8 @@ func step() -> void:
 				"position_raw": raw_point(start), "velocity_raw": velocity_raw,
 				"distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"})}
 			if int(cycle.definition.get("selfprop", "0")) != 0:
-				projectile.merge({"rocket": true, "speed": int(direct.initial_speed),
+				projectile.merge({"rocket": true, "guided": int(cycle.definition.get("guidance", "0")) != 0,
+					"target_id": target, "saved_target": raw_point(center(target)), "turn": int(cycle.runtime.turn_raw_per_tick), "speed": int(direct.initial_speed),
 					"maximum": int(shot.velocity_raw_per_tick), "acceleration": int(cycle.runtime.acceleration_raw_per_tick_squared),
 					"heading": int(direct.heading), "pitch": int(direct.pitch),
 					"deadline": DirectDeadline.deadline(tick, int(shot.velocity_raw_per_tick), int(cycle.definition.range), int(float(cycle.definition.get("weapontimer", "0")) * 30.0), int(cycle.definition.get("noautorange", "0")) != 0),
@@ -306,9 +309,22 @@ func advance_bursts() -> Array:
 	return copies
 
 func step_rocket(projectile: Dictionary) -> bool:
-	var next := RocketMotion.advance({"position": projectile.position_raw, "velocity": projectile.velocity_raw,
+	var state := {"position": projectile.position_raw, "velocity": projectile.velocity_raw,
 		"speed": projectile.speed, "maximum": projectile.maximum, "acceleration": projectile.acceleration,
-		"heading": projectile.heading, "pitch": projectile.pitch, "tick": tick, "deadline": projectile.deadline, "gravity": gravity})
+		"heading": projectile.heading, "pitch": projectile.pitch, "tick": tick, "deadline": projectile.deadline, "gravity": gravity}
+	var next: Dictionary
+	if projectile.get("guided", false):
+		var target_point = null
+		if world.units.has(int(projectile.target_id)):
+			var target_unit: Dictionary = world.units[int(projectile.target_id)]
+			target_point = raw_point(Vector3(target_unit.position.x, world.navigation.height_at(target_unit.position), target_unit.position.y))
+		state.target = MissileTarget.select({"projectile": null, "unit": target_point, "unit_valid": target_point != null, "saved": projectile.saved_target}).point
+		state.turn = projectile.turn
+		next = GuidedMotion.advance(state)
+		projectile.heading = next.heading
+		projectile.pitch = next.pitch
+	else:
+		next = RocketMotion.advance(state)
 	projectile.previous = projectile.position
 	projectile.position_raw = next.position
 	projectile.velocity_raw = next.velocity
