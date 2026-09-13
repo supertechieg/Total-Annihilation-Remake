@@ -133,6 +133,8 @@ try {
     if ($Native) {
         python tools\native_map_tidal.py
         if ($LASTEXITCODE -ne 0) { throw 'Original tidal environment differs' }
+        python tools\native_placement_defaults.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original placement defaults differ' }
         foreach ($generator in @('armwin', 'armtide')) {
             python tools\native_solar_reference.py --unit $generator
             if ($LASTEXITCODE -ne 0) { throw 'Original generator script failed' }

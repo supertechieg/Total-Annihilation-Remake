@@ -278,9 +278,10 @@ func placement_error(type: String, point: Vector2, source_id := 0) -> String:
 			low = mini(low, value)
 			high = maxi(high, value)
 	var definition: Dictionary = catalog.definition(type)
-	if high - low > int(definition.get("maxslope", "10")):
+	if high - low > int(definition.get("maxslope", "255")):
 		return "Terrain is too steep"
-	if navigation.sea_level - low > int(definition.get("maxwaterdepth", "0")) or navigation.sea_level - high < int(definition.get("minwaterdepth", "-255")):
+	# Original movement-definition initializer 0x4402e0 supplies omitted limits.
+	if navigation.sea_level - low > int(definition.get("maxwaterdepth", "10000")) or navigation.sea_level - high < int(definition.get("minwaterdepth", "-10000")):
 		return "Invalid water depth"
 	for unit: Dictionary in units.values():
 		if bounds.intersects(footprint(unit.type, unit.position)):

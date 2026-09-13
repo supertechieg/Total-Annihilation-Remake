@@ -34,3 +34,9 @@ All 1,000 seeded cases match, including zero work, already-complete targets, par
 Capture a completed example with Godot `--path godot -- --construction-demo --capture ABSOLUTE_PNG_PATH`. This demo fast-forwards 600 ticks before capture; ordinary play advances at 30 ticks per second.
 
 Next: remaining building/unit COB callbacks, more faithful resource settlement/production, mobile builders, weapons and actual combat. Initial factory queues and product selection now work; see FACTORIES.md. The full-game goal remains active.
+
+## Water placement defaults
+
+The omitted FBI limits now use the original movement-definition initializer values: maximum water depth 10000, minimum -10000, and maximum slope 255. `tools/native_placement_defaults.py` executes 0x4402e0 and checks those three fields. The original definition loader copies the initialized limits to unit fields +0x1be/+0x1c0 and slope +0x228 when no movement class resolves; explicit FBI values override the defaults.
+
+This fixes Arm tidal placement: its definition sets minimum water depth 20 but omits the maximum. The previous maximum fallback of zero rejected every site. `test_live_tidal.gd` now covers normal Commander construction to completion and subsequent 45 energy per second (25 Commander + 20 tidal), shallow-water rejection, and underwater solar rejection, alongside generator activation/environment checks (10 total). Movement-class inheritance, footprint sampling, slope geometry and build-site snapping remain provisional; this initializer comparison does not establish full original placement fidelity.
