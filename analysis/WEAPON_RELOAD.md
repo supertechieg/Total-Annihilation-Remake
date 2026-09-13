@@ -22,6 +22,10 @@ start, while original settlement occurs after successful dispatch. Stockpiled
 weapons use a different branch and are excluded. Experience accrual and exact
 unit health storage are separate unfinished host work.
 
+Further tracing found that original bursts are scheduled by projectile records,
+not repeated unit firing callbacks. See [BURST_SCHEDULING.md](BURST_SCHEDULING.md)
+for the recovered branch and the native fixture needed before integration.
+
 Reproduce using `python tools/native_weapon_reload.py` and Godot headless with
 `--path godot --script res://compare_native_weapon_reload.gd`. Both steps are in
 the optional native suite; raw test inputs remain ignored under `local/`.
