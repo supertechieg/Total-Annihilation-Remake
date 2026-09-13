@@ -81,3 +81,20 @@ enabled by this checkpoint.
 
 Reproduce using native_guided_motion.py and compare_native_guided_motion.gd;
 both are included in the native verification suite.
+
+
+## Samson and Jethro firing scripts
+
+The native supplied-event firing fixture now includes armsam and armjeth. Each
+matches all 323 original-interpreter snapshots, including piece transformations,
+visibility, threads, static variables and synchronous QueryPrimary output.
+Jethro returns pieces 1,2,1,2,1,2,1,2,1 for the nine supplied query/fire pairs;
+Samson returns 0,0,1,1,1,0,0,0,1. No VM changes were needed. Their weapon data
+confirms ordinary selfprop/guidance/tracks with five-second timers and no cruise,
+vertical-launch or burnblow field in the prepared definitions.
+
+These checks use healthy scripts with supplied callback timing. They do not prove
+native host firing cadence, moving/air targets, damaged script behavior or live
+missile combat. Native real-model muzzle comparisons for these two units and
+live integration remain outstanding. The native suite now runs both firing
+comparisons; full traces and original script data remain excluded from Git.

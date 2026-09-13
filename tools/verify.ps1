@@ -99,6 +99,12 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-warrior
     if ($LASTEXITCODE -ne 0) { throw 'Warrior factory duel failed' }
     if ($Native) {
+        foreach ($missileUnit in @('armsam', 'armjeth')) {
+            python tools\native_firing_reference.py --unit $missileUnit
+            if ($LASTEXITCODE -ne 0) { throw "Original $missileUnit firing reference failed" }
+            & $godotPath --headless --path godot --script res://compare_native_firing.gd -- "--$missileUnit"
+            if ($LASTEXITCODE -ne 0) { throw "$missileUnit firing differs from original executable" }
+        }
         python tools\native_guided_motion.py
         if ($LASTEXITCODE -ne 0) { throw 'Original guided motion failed' }
         & $godotPath --headless --path godot --script res://compare_native_guided_motion.gd
