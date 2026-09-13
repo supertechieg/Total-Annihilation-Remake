@@ -54,6 +54,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Splash falloff checks failed' }
     & $godotPath --headless --path godot --script res://test_combat_world.gd
     if ($LASTEXITCODE -ne 0) { throw 'Combat host checks failed' }
+    & $godotPath --headless --path godot --script res://test_weapon_damage.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Weapon damage checks failed' }
     & $godotPath --headless --path godot -- --verify
     if ($LASTEXITCODE -ne 0) { throw 'Viewer checks failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --kbot-demo
@@ -63,6 +65,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     if ($Native) {
+        python tools\native_damage_reference.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original damage reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_damage.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Weapon damage differs from original executable' }
         python tools\native_splash_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original splash reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_splash.gd

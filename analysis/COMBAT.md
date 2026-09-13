@@ -10,6 +10,8 @@ The overlay displays temporary line trails, impact circles, enemy rings and heal
 
 ## Evidence
 
+Direct hits now use `weapon_damage.gd` for unit-specific base damage and scaling. The isolated calculation matches 600 original-executable cases (see SPLASH_DAMAGE.md). Current world hits use multiplier1, zero experience and no global modifiers. Experience accrual, armor and original health/death dispatch are still absent.
+
 The native prerequisites remain 618 weapon-loader scalar comparisons, 323 Flash firing/query/recoil snapshots, and the earlier movement/COB comparisons. These do not validate the new world combat rules.
 
 18 combat host checks cover supported/enemy orders, aim gating, projectile hits, health reduction, VM faults, stop, range gating, destruction/order cleanup, swept collision and near misses, nearest-hit ordering, fixed-point integration, projectile expiration and destroyed construction cleanup. Normal regression checks pass. A real Comet Catcher integration builds the factory, produces two Flash tanks, selects one, spawns/attacks a target and verifies destruction and scene removal. A live rendered capture was inspected.

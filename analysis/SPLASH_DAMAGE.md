@@ -8,4 +8,10 @@ Targets at or beyond the radius are excluded. Distance zero receives multiplier1
 
 This does not yet connect splash to world combat. Native box generation, spatial enumeration/deduplication, feature damage, source exclusion and the damage dispatcher need integration. The dispatcher also applies unit-specific damage, float multiplier truncation, attacker experience and global damage flags before health handling; those are not implemented by this falloff primitive. Coordinate overflow and signed16 extracted distances beyond normal weapon ranges are outside the tested domain. Binary64 geometry is compared to the original x87 calculation for these cases, not proven for every precision boundary.
 
-Next recover unit bounds and damage dispatch, then connect Raider shell collisions and area damage with the ballistic and environment primitives. Existing Flash direct hits remain unchanged by this checkpoint.
+## Damage selection and scaling
+
+`weapon_damage.gd` reconstructs `0x499cd0` up to health dispatch. A matching unit-name override replaces the unsigned16 default damage. Prepared definition keys are lowercase; native lookup is case-insensitive. The integer base is multiplied by a float32 multiplier and truncated. With an attacker, the result receives a bonus of six percent for each five experience points, capped at thirty percent, with integer truncation after multiplication. Global flags 0x80 and 0x100 then double and halve damage, respectively, in that order.
+
+`native_damage_reference.py` executes the whole original routine with only health dispatch `0x489bb0` stubbed. All 600 cases match, covering absent/matching/nonmatching overrides, five multipliers, experience values, both global flags and absent attackers. Nine native-derived regression checks run without the executable. See `native-damage-validation.json`. This covers the sampled positive damage domain, not every overflow or x87 precision boundary.
+
+Flash direct hits now use this helper with multiplier1 and zero experience/flags. Experience accrual and game-mode flags are not yet world systems; armor, health handling, kills and damage callbacks remain unverified. Splash itself remains unconnected. Next recover unit bounds and remaining health dispatch, then connect Raider shell collisions and area damage with the ballistic and environment primitives.

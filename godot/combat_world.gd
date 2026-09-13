@@ -2,6 +2,7 @@ extends RefCounted
 ## Initial EMG combat host. See analysis/COMBAT.md for provisional simulation rules.
 const Cycle = preload("res://weapon_cycle.gd")
 const Origin = preload("res://piece_origin.gd")
+const Damage = preload("res://weapon_damage.gd")
 var world: RefCounted
 var orders: Dictionary = {}
 var cycles: Dictionary = {}
@@ -130,7 +131,7 @@ func step() -> void:
 				nearest = contact
 				target = id
 		if target != 0:
-			var damage := int(projectile.damage.get(world.units[target].type, projectile.damage.get("default", "0")))
+			var damage := Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0)
 			world.units[target].health = maxi(0, int(world.units[target].health) - damage)
 			hits += 1
 			effects.append({"position": start.lerp(end, nearest), "life": 8})
