@@ -98,3 +98,16 @@ native host firing cadence, moving/air targets, damaged script behavior or live
 missile combat. Native real-model muzzle comparisons for these two units and
 live integration remain outstanding. The native suite now runs both firing
 comparisons; full traces and original script data remain excluded from Git.
+
+
+## Launch-path follow-up
+
+Inspection of decompiled 0x49c9c0 shows the unit target argument assigned to
+projectile +0x4e after initialization. It also exposes a deadline question that
+must be resolved before guided combat: this launcher chooses either weapon
++0xe6 or (weapon +0xdc shifted left 16)/maximum speed, depending on zero speed
+and flag 0x08000000. Current live Rocko uses weapontimer directly. The relevant
+caller/weapon field mapping and native launch deadline need verification; the
+motion comparisons above supply deadlines and do not validate their creation.
+
+Samson/Jethro firing-pose model queries now pass: all 972 muzzle/AimFrom and 324 SweetSpot cases match across nine units and four headings. Full model loading and cache timing remain outside these fixtures.
