@@ -9,6 +9,13 @@ var unit_catalog: RefCounted
 var unit_visuals: RefCounted
 const Navigation = preload("res://terrain_navigation.gd")
 const MobileUnit = preload("res://mobile_unit.gd")
+const ConstructionWorld = preload("res://construction_world.gd")
+var economy: RefCounted
+var build_picker: OptionButton
+var resource_label: Label
+var placement_type := ""
+var structure_sprites: Dictionary = {}
+var structure_views: Dictionary = {}
 var navigation: RefCounted
 var mobile: RefCounted
 var route_line: Line2D
@@ -93,13 +100,20 @@ func start_world_movement() -> void:
 	unit_position = navigation.nearest_open(unit_position)
 	assert(unit_position.x >= 0, "Map has no passable starting point")
 	mobile = MobileUnit.new(navigation, fields, unit_position, script_vm)
+	economy = ConstructionWorld.new(unit_catalog, navigation, unit_position)
 	map_center = unit_position
 	if "--move" in OS.get_cmdline_user_args():
 		issue_move(unit_position + Vector2(128, -96))
+	if "--construction-demo" in OS.get_cmdline_user_args():
+		place_structure("armsolar", unit_position + Vector2(80, 0))
+		for tick in range(450):
+			step_script()
 
 func issue_move(target: Vector2) -> bool:
 	if mobile == null:
 		return false
+	if economy != null:
+		economy.stop_build()
 	if building:
 		toggle_build()
 	if not mobile.move_to(target):
@@ -114,6 +128,11 @@ func issue_move(target: Vector2) -> bool:
 	return true
 
 func stop_order() -> void:
+	placement_type = ""
+	if economy != null:
+		economy.stop_build()
+	if building:
+		toggle_build()
 	if walking:
 		walking = false
 		script_vm.invoke("StopMoving")
@@ -122,6 +141,58 @@ func stop_order() -> void:
 		mobile.stop()
 		route_line.clear_points()
 		status_label.text = "  Stop order — braking"
+
+func choose_build() -> void:
+	stop_order()
+	placement_type = str(build_picker.get_item_metadata(build_picker.selected))
+	var fields: Dictionary = unit_catalog.definition(placement_type)
+	status_label.text = "  Place %s nearby · %s metal / %s energy · Right-click cancels" % [fields.name, fields.get("buildcostmetal", "0"), fields.get("buildcostenergy", "0")]
+
+func place_structure(type: String, point: Vector2) -> bool:
+	if mobile.speed != 0:
+		status_label.text = "  Wait for Commander to stop before placing"
+		return false
+	var id: int = economy.begin_build(type, point)
+	if id == 0:
+		status_label.text = "  " + economy.status
+		return false
+	placement_type = ""
+	var unit: Dictionary = economy.units[id]
+	var sprite := Sprite2D.new()
+	sprite.texture = structure_texture(type)
+	sprite.position = unit.position
+	sprite.scale = Vector2.ONE * (0.28 * 192.0 / 55.0)
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	world.add_child(sprite)
+	structure_sprites[id] = sprite
+	var footprint: Rect2 = economy.footprint(type, unit.position)
+	for y in range(maxi(0, int(footprint.position.y / 16) - 1), mini(navigation.height, int(ceil(footprint.end.y / 16)) + 2)):
+		for x in range(maxi(0, int(footprint.position.x / 16) - 1), mini(navigation.width, int(ceil(footprint.end.x / 16)) + 2)):
+			if footprint.intersects(Rect2(Vector2(x * 16 - 16, y * 16 - 16), Vector2(32, 32))):
+				navigation.blocked[y * navigation.width + x] = 1
+	if not building:
+		toggle_build()
+	return true
+
+func structure_texture(type: String) -> Texture2D:
+	if structure_views.has(type):
+		return structure_views[type].get_texture()
+	var view := SubViewport.new()
+	view.size = Vector2i(256, 256)
+	view.transparent_bg = true
+	view.own_world_3d = true
+	view.render_target_update_mode = SubViewport.UPDATE_ONCE
+	add_child(view)
+	view.add_child(unit_visuals.instantiate(type))
+	var camera := Camera3D.new()
+	view.add_child(camera)
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.size = 192
+	camera.position = Vector3(0, 130, 180)
+	camera.look_at(Vector3.ZERO)
+	camera.current = true
+	structure_views[type] = view
+	return view.get_texture()
 
 func build_model() -> void:
 	model_view = SubViewport.new()
@@ -233,7 +304,7 @@ func toggle_build() -> void:
 		set_meta("pending_build", -1)
 		script_vm.invoke("StopBuilding")
 	build_button.text = "Leave build pose  [B]" if building else "Preview build pose  [B]"
-	status_label.text = "  Construction pose preview — no resource or build simulation"
+	status_label.text = "  Original Commander construction pose"
 
 func step_script() -> void:
 	if script_vm == null or not script_vm.fault.is_empty():
@@ -250,11 +321,29 @@ func step_script() -> void:
 		if mobile.route.is_empty():
 			route_line.clear_points()
 		update_world()
+	if economy != null:
+		economy.units[economy.builder_id].position = unit_position
+		economy.builder_ready = mobile.speed == 0 and script_vm.values.get(5, 0) == 1
+		var was_building: bool = economy.task_id != 0
+		economy.step()
+		resource_label.text = "Metal %.0f / %.0f\nEnergy %.0f / %.0f" % [economy.metal, economy.metal_storage, economy.energy, economy.energy_storage]
+		for id: int in structure_sprites:
+			var remaining := float(economy.units[id].remaining)
+			structure_sprites[id].modulate = Color(1, 1, 1, 0.25 + 0.75 * (1.0 - remaining))
+		if was_building:
+			status_label.text = "  " + economy.status
+		if not economy.completed.is_empty() and building:
+			toggle_build()
+			status_label.text = "  Construction complete"
 	var restore_id := int(get_meta("pending_build", -1))
 	if restore_id >= 0 and script_vm.completions.has(restore_id):
 		set_meta("pending_build", -1)
 		if script_vm.completions[restore_id].reason == "return":
-			script_vm.invoke("StartBuilding", [4096, 0])
+			var build_angle := 4096
+			if economy != null and economy.task_id != 0:
+				var target: Vector2 = economy.units[economy.task_id].position
+				build_angle = roundi(atan2(unit_position.x - target.x, unit_position.y - target.y) * 65536.0 / TAU) - mobile.heading
+			script_vm.invoke("StartBuilding", [build_angle, 0])
 	if not pending_shot.is_empty() and script_vm.completions.has(int(pending_shot.id)):
 		var result: Dictionary = script_vm.completions[int(pending_shot.id)]
 		if result.reason == "return" and int(result.result) == 1:
@@ -286,8 +375,8 @@ func build_interface() -> void:
 	title_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header_row.add_child(title_box)
 	title_box.add_child(label("TOTAL ANNIHILATION", 27, Color("e9eee4")))
-	title_box.add_child(label("RECONSTRUCTION  /  COMMANDER MOVEMENT", 12, Color("a6b98d")))
-	header_row.add_child(label("MOVE ORDERS   •   TERRAIN ROUTING", 12, Color("b7bdab")))
+	title_box.add_child(label("RECONSTRUCTION  /  MOVEMENT & CONSTRUCTION", 12, Color("a6b98d")))
+	header_row.add_child(label("BUILD ORDERS   •   RESOURCE ECONOMY", 12, Color("b7bdab")))
 	var middle := HBoxContainer.new()
 	middle.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	middle.add_theme_constant_override("separation", 0)
@@ -347,6 +436,14 @@ func build_interface() -> void:
 	column.add_child(preview)
 	column.add_child(label("ARM COMMANDER", 20, Color("d5e4ac")))
 	column.add_child(label("Original geometry, textures & script", 13))
+	resource_label = label("Metal 1000\nEnergy 1000", 14, Color("d5e4ac"))
+	column.add_child(resource_label)
+	build_picker = OptionButton.new()
+	for type: String in unit_catalog.build_options("armcom"):
+		build_picker.add_item(unit_catalog.definition(type).get("name", type))
+		build_picker.set_item_metadata(build_picker.item_count - 1, type)
+	column.add_child(build_picker)
+	column.add_child(button("Place selected structure", choose_build))
 	column.add_child(label("Click terrain to move · Right-click / S to stop", 11))
 	column.add_child(button("Stop movement  [S]", stop_order))
 	walk_button = button("Play walk cycle  [Space]", toggle_walk)
@@ -384,7 +481,7 @@ func build_interface() -> void:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(spacer)
 	column.add_child(label("Drag to pan · Scroll to zoom\nClick terrain to move commander", 13))
-	var note := label("Development build · Movement available\nConstruction and combat are next.", 12, Color("a1aba9"))
+	var note := label("Development build · Movement & construction\nCombat and building scripts are next.", 12, Color("a1aba9"))
 	column.add_child(note)
 	var footer := PanelContainer.new()
 	footer.custom_minimum_size.y = 34
@@ -429,7 +526,20 @@ func map_input(event: InputEvent) -> void:
 				set_meta("press_position", event.position)
 			elif event.position.distance_to(get_meta("press_position", event.position)) < 5:
 				var pos: Vector2 = (event.position - world.position) / map_zoom
-				issue_move(pos)
+				if not placement_type.is_empty():
+					place_structure(placement_type, pos)
+				else:
+					var resumed := false
+					for id: int in structure_sprites:
+						var unit: Dictionary = economy.units[id]
+						if economy.footprint(unit.type, unit.position).has_point(pos) and economy.resume_build(id):
+							mobile.stop()
+							if not building:
+								toggle_build()
+							resumed = true
+							break
+					if not resumed:
+						issue_move(pos)
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			stop_order()
 		if event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
@@ -525,6 +635,15 @@ func _process(delta: float) -> void:
 		assert(script_vm.fault.is_empty() and script_vm.statics[1] == 0)
 		assert(is_zero_approx(rig_nodes["lthigh"].rotation.x))
 		print("MOVEMENT_VERIFY_OK start=%s end=%s" % [start_position, unit_position])
+		assert(place_structure("armsolar", unit_position + Vector2(80, 0)), economy.status)
+		var built_id: int = economy.task_id
+		for _tick in range(600):
+			step_script()
+		assert(economy.units[built_id].remaining == 0 and economy.task_id == 0)
+		assert(not building and script_vm.fault.is_empty())
+		assert(structure_sprites[built_id].modulate.a == 1.0)
+		assert(economy.metal >= 0 and economy.energy >= 0)
+		print("CONSTRUCTION_VERIFY_OK structure=armsolar id=%d" % built_id)
 		print("VIEWER_VERIFY_OK")
 		get_tree().quit()
 	if frames == 20 and "--capture" in args:

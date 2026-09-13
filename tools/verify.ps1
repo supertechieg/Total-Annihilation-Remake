@@ -24,6 +24,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Ground motion checks failed' }
     & $godotPath --headless --path godot --script res://test_navigation.gd
     if ($LASTEXITCODE -ne 0) { throw 'Terrain navigation checks failed' }
+    & $godotPath --headless --path godot --script res://test_construction_world.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Construction checks failed' }
     & $godotPath --headless --path godot -- --verify
     if ($LASTEXITCODE -ne 0) { throw 'Viewer checks failed' }
     if ($Native) {
@@ -35,5 +37,9 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original movement reference run failed' }
         & $godotPath --headless --path godot --script res://compare_native_movement.gd
         if ($LASTEXITCODE -ne 0) { throw 'Movement primitives differ from original executable' }
+        python tools\native_construction_reference.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original construction reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_construction.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Construction primitive differs from original executable' }
     }
 } finally { Pop-Location }

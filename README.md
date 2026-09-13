@@ -24,7 +24,9 @@ The viewer displays Comet Catcher's original terrain and a controllable Arm Comm
 | Q / E | Rotate whole model |
 | F / R | Center commander / reset zoom |
 
-Original renderer fidelity and world simulation are still under reconstruction. Terrain routing and arrival handling are provisional; there is no projectile, damage, or resource simulation yet.
+Original renderer fidelity and world simulation are still under reconstruction. Terrain routing and arrival handling are provisional. A first construction/resource loop is available; projectile and damage simulation are not yet implemented.
+
+Choose a structure in the dropdown, press **Place selected structure**, and click nearby terrain. Right-click/S pauses construction; click an unfinished structure to resume. Completed solar collectors generate energy. Building scripts, factory production and several resource sources remain unfinished; see [construction scope and native validation](analysis/CONSTRUCTION.md).
 
 Original speed caps, heading-to-velocity rounding, supplied-waypoint steering and movement-animation transitions match 6,837 native comparison checks. See [ground movement evidence and remaining work](analysis/GROUND_MOVEMENT.md) and [playable movement scope](analysis/PLAYABLE_MOVEMENT.md).
 
@@ -41,7 +43,7 @@ Run all normal checks with `.\tools\verify.ps1`. See [COB_VM.md](analysis/COB_VM
 
 Generated assets stay in Git-ignored `local/viewer-assets/` and are prepared from your installed game. Source selection, validation, and limitations are in [asset notes](analysis/ASSET_FORMATS.md); the next-work checkpoint is in [HANDOFF.md](HANDOFF.md).
 
-The shared unit bundle in `local/unit-assets/` now supplies 272 units from both factions, their models/scripts, weapon definitions and build relationships. The launcher prepares it automatically; see [unit bundle scope and validation](analysis/UNIT_BUNDLE.md). Construction and combat simulation are still being implemented.
+The shared unit bundle in `local/unit-assets/` now supplies 272 units from both factions, their models/scripts, weapon definitions and build relationships. The launcher prepares it automatically; see [unit bundle scope and validation](analysis/UNIT_BUNDLE.md). Complete construction behavior and combat simulation are still being implemented.
 
 ## Installation under study
 
