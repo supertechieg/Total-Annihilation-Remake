@@ -1,0 +1,7 @@
+{
+  "maps": 60,
+  "cells": 34560,
+  "differences": [],
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "scope": "Original 0x440500 plus original cell predicate on unoccupied feature-free Boolean terrain; allocator/free stubbed; footprints 1 to 6; excludes query-to-unit coordinate mapping and dynamic updates"
+}
