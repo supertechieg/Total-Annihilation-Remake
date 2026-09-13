@@ -1,0 +1,5 @@
+{
+  "failures": [],
+  "scope": "Godot WAV decoding, sample-duration agreement and stream cache identity for locally prepared weapon sounds; excludes audible playback and event timing",
+  "sounds": 60
+}
