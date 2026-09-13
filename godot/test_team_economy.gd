@@ -13,19 +13,24 @@ func _initialize() -> void:
 	world.add_unit("armsolar", Vector2(800, 800), 0, 1)
 	world.store_resources(1, {"energy": 0.0, "metal": 0.0, "energy_storage": 1000.0, "metal_storage": 1000.0})
 	world.step()
-	var checks: Array = [is_equal_approx(float(world.resources(1).energy), 20.0 / 30.0)]
+	var checks: Array = [is_equal_approx(float(world.resources(1).energy), 20.0)]
 	var commander: Dictionary = catalog.definition("armcom")
-	checks.append(is_equal_approx(world.energy, float(commander.get("energymake", "0")) / 30.0))
+	checks.append(is_equal_approx(world.energy, float(commander.get("energymake", "0"))))
 	var factory: int = world.add_unit("armvp", Vector2(512, 512), 0, 1)
 	var product: int = world.add_unit("armflash", Vector2(512, 512), 1, 1)
 	world.energy = 1000
 	world.metal = 1000
 	world.store_resources(1, {"energy": 0.0, "metal": 0.0, "energy_storage": 1000.0, "metal_storage": 1000.0})
 	world.advance_construction(product, factory)
-	checks.append(world.units[product].remaining == 1.0 and world.energy == 1000 and world.metal == 1000)
-	world.store_resources(1, {"energy": 1000.0, "metal": 1000.0, "energy_storage": 1000.0, "metal_storage": 1000.0})
+	checks.append(world.units[product].remaining < 1.0 and world.resources(1).energy == 0 and world.energy == 1000 and world.metal == 1000)
+	world.settle_economy()
+	var unpaid_remaining: float = world.units[product].remaining
 	world.advance_construction(product, factory)
-	checks.append(world.units[product].remaining < 1.0 and world.resources(1).metal < 1000)
+	checks.append(world.units[product].remaining == unpaid_remaining and world.units[factory].metal_ledger.debt > 0)
+	world.store_resources(1, {"energy": 1000.0, "metal": 1000.0, "energy_storage": 1000.0, "metal_storage": 1000.0})
+	world.settle_economy()
+	world.advance_construction(product, factory)
+	checks.append(world.units[product].remaining < unpaid_remaining and world.resources(1).metal < 1000)
 	checks.append(world.energy == 1000 and world.metal == 1000)
 	world.remove_unit(product)
 	world.queue_unit(factory, "armflash")

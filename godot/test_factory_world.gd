@@ -54,7 +54,13 @@ func _initialize() -> void:
 				break
 		var next_product: int = world.factories[id].product
 		check(next_product != product and next_product > 0, type + " begins next item only after pad clears")
-		check(world.units[next_product].remaining == 1.0, type + " resource shortage stalls work")
+		for tick in range(60):
+			world.energy = 0
+			world.metal = 0
+			world.step()
+		var unpaid_remaining: float = world.units[next_product].remaining
+		world.advance_construction(next_product, id)
+		check(world.units[next_product].remaining == unpaid_remaining and world.units[id].metal_ledger.debt > 0, type + " unpaid debt stalls work")
 		world.queue_unit(id, product_type)
 		world.clear_factory_queue(id)
 		check(world.factories[id].queue.is_empty() and world.factories[id].product == next_product, type + " clear pending queue retains current product")

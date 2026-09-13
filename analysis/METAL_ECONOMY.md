@@ -68,3 +68,27 @@ Run native_maker_economy.py and compare_native_maker_economy.gd, also included i
 the native suite. This materially extends isolated arithmetic checks but does
 not cover construction accounting, extractor yield, AI handicap, cloak upkeep,
 nonzero external ledgers or full scheduler eligibility. It is not yet live.
+
+## Live integration
+
+ConstructionWorld now uses these ledgers and settlement helpers. Passive income,
+upkeep and accepted construction costs settle at ticks 0, 30, 60 and so on.
+Construction accumulates requested/accepted work on the builder or factory;
+unpaid debt gates later work. Completed Arm metal makers produce through the
+verified upkeep gate and run their healthy Create/Activate/Deactivate scripts.
+The existing structure toggle control accepts them as well as solar collectors.
+
+compare_native_live_makers.gd drives actual World.step calls and real maker
+scripts against all 80 native fixture snapshots, matching stock and unit debt
+without script faults. Test definitions match the native fixture, including
+its changing generator output. The full normal verification suite passes with
+updated construction/factory tests for deferred acceptance, debt stalls and
+recovery, and team isolation tests for the new settlement behavior.
+
+This supersedes earlier notes that these helpers were not live. Fidelity gaps
+remain: extractor map yield, wind/tidal income, cloak and AI handicap branches,
+external ledgers, player-specific initial deadline phases, and original unit
+update ordering. The current scenario shares a deadline starting at tick zero
+and retains its configurable base storage. Construction math is native-tested,
+but its complete scheduling interleave with the original economy is not yet
+validated by a combined original construction trace.

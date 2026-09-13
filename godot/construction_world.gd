@@ -1,5 +1,9 @@
 extends RefCounted
-## First construction/economy host. Accounting settlement and placement are provisional.
+## Construction host with deferred resource settlement. Placement and some income sources remain provisional.
+const Allocation = preload("res://resource_allocation.gd")
+const ResourceSchedule = preload("res://resource_schedule.gd")
+const Upkeep = preload("res://upkeep_gate.gd")
+var resource_deadline := 0
 const BuildMath = preload("res://construction_math.gd")
 const VM = preload("res://cob_vm.gd")
 const Navigation = preload("res://terrain_navigation.gd")
@@ -10,7 +14,7 @@ const WeaponQueries = preload("res://weapon_queries.gd")
 const PieceOrigin = preload("res://piece_origin.gd")
 const BallisticLaunch = preload("res://ballistic_launch.gd")
 var collision: RefCounted
-const SCRIPTED_UNITS = ["armsolar", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv", "corraid"]
+const SCRIPTED_UNITS = ["armmakr", "armsolar", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv", "corraid"]
 var mobile_units: Dictionary = {}
 var navigation_cache: Dictionary = {}
 var yard_signature := ""
@@ -53,19 +57,20 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 	next_id += 1
 	var definition: Dictionary = catalog.definition(type)
 	units[id] = {"id": id, "team": team, "type": type, "position": position, "remaining": remaining,
+		"energy_ledger": empty_ledger(), "metal_ledger": empty_ledger(),
 		"health": 1 if remaining > 0 else int(definition.get("maxdamage", "1")), "active": true}
 	# Only these healthy scripts currently have native lifecycle comparisons.
 	if type in SCRIPTED_UNITS:
 		var vm = VM.new(catalog.load_script(type))
 		vm.read_values = {4: 100, 17: ceili(remaining * 100)}
-		if type == "armsolar":
+		if type in ["armsolar", "armmakr"]:
 			vm.writable_values.assign([1, 5, 20])
 		elif type in ["armvp", "armlab"]:
 			vm.writable_values.assign([5, 18, 19])
 			vm.readback_values.assign([18])
 			factories[id] = {"queue": [], "product": 0, "opening": false, "status": "Idle"}
 		vm.invoke("Create")
-		if remaining == 0 and type == "armsolar":
+		if remaining == 0 and type in ["armsolar", "armmakr"]:
 			vm.invoke("Activate")
 		scripts[id] = vm
 		if not str(definition.get("weapon1", "")).is_empty():
@@ -81,7 +86,7 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 	return id
 
 func set_active(id: int, active: bool) -> bool:
-	if not scripts.has(id) or units[id].type != "armsolar" or float(units[id].remaining) > 0:
+	if not scripts.has(id) or units[id].type not in ["armsolar", "armmakr"] or float(units[id].remaining) > 0:
 		return false
 	if bool(units[id].active) != active:
 		units[id].active = active
@@ -366,34 +371,10 @@ func step() -> void:
 		mobile_units[id].step()
 		units[id].position = mobile_units[id].point()
 	collision.sync(self)
-	var accounts: Dictionary = {0: resources(0)}
-	for team: int in team_resources:
-		accounts[team] = resources(team)
-	for unit: Dictionary in units.values():
-		var team := int(unit.get("team", 0))
-		if not accounts.has(team):
-			accounts[team] = resources(team)
-	for account: Dictionary in accounts.values():
-		account.energy_income = 0.0
-		account.metal_income = 0.0
-		account.energy_storage = base_energy_storage
-		account.metal_storage = base_metal_storage
-	for unit: Dictionary in units.values():
-		if float(unit.remaining) > 0:
-			continue
-		var fields: Dictionary = catalog.definition(unit.type)
-		var account: Dictionary = accounts[int(unit.get("team", 0))]
-		account.energy_storage += float(fields.get("energystorage", "0"))
-		account.metal_storage += float(fields.get("metalstorage", "0"))
-		account.energy_income += float(fields.get("energymake", "0"))
-		account.metal_income += float(fields.get("metalmake", "0"))
-		if bool(unit.active):
-			account.energy_income -= float(fields.get("energyuse", "0"))
-	for team: int in accounts:
-		var account: Dictionary = accounts[team]
-		account.energy = clampf(account.energy + account.energy_income / 30.0, 0.0, account.energy_storage)
-		account.metal = clampf(account.metal + account.metal_income / 30.0, 0.0, account.metal_storage)
-		store_resources(team, account)
+	var schedule := ResourceSchedule.poll(ticks - 1, resource_deadline)
+	resource_deadline = schedule.deadline
+	if schedule.due:
+		settle_economy()
 	step_factories()
 	step_builders()
 	if task_id == 0 or not builder_ready:
@@ -417,25 +398,22 @@ func advance_construction(target_id: int, source_id: int) -> bool:
 	var input := {"remaining": unit.remaining, "health": unit.health,
 		"energy_cost": float(fields.get("buildcostenergy", "0")), "metal_cost": float(fields.get("buildcostmetal", "0")),
 		"build_time": int(fields.buildtime), "max_health": int(fields.get("maxdamage", "1")),
-		"work": float(builder_fields.get("workertime", "0")) / 30.0, "energy_debt": 0.0, "metal_debt": 0.0}
+		"work": float(builder_fields.get("workertime", "0")) / 30.0, "energy_debt": units[source_id].energy_ledger.debt, "metal_debt": units[source_id].metal_ledger.debt}
 	var result := BuildMath.advance(input)
-	# Temporary immediate-payment host, distinct from TA's deferred debt settlement.
-	var team := int(units[source_id].get("team", 0))
-	var account := resources(team)
-	if result.energy_requested > float(account.energy) or result.metal_requested > float(account.metal):
-		status = "Build paused: insufficient resources"
-		return false
+	for resource: String in ["energy", "metal"]:
+		var ledger: Dictionary = units[source_id][resource + "_ledger"]
+		ledger.requested = Upkeep.float32(ledger.requested + result[resource + "_requested"])
+		ledger.accepted = Upkeep.float32(ledger.accepted + result[resource + "_accepted"])
+	if not result.accepted:
+		status = "Build paused: unpaid resource debt"
 	if result.accepted:
-		account.energy -= result.energy_accepted
-		account.metal -= result.metal_accepted
-		store_resources(team, account)
 		unit.remaining = result.remaining
 		unit.health = result.health
 		status = "Building %s · %d%%" % [catalog.definition(unit.type).get("name", unit.type), roundi((1.0 - float(unit.remaining)) * 100)]
 		if float(unit.remaining) == 0:
 			if scripts.has(target_id):
 				scripts[target_id].read_values[17] = 0
-				if unit.type == "armsolar":
+				if unit.type in ["armsolar", "armmakr"]:
 					scripts[target_id].invoke("Activate")
 			completed.append(target_id)
 			status = "Construction complete"
@@ -464,3 +442,54 @@ func team_unit_count(team: int) -> int:
 		if int(unit.get("team", 0)) == team:
 			count += 1
 	return count
+
+static func empty_ledger() -> Dictionary:
+	return {"income": 0.0, "requested": 0.0, "accepted": 0.0, "debt": 0.0}
+
+func settle_economy() -> void:
+	var accounts: Dictionary = {0: resources(0)}
+	for team: int in team_resources:
+		accounts[team] = resources(team)
+	for unit: Dictionary in units.values():
+		var team := int(unit.get("team", 0))
+		if not accounts.has(team):
+			accounts[team] = resources(team)
+	for account: Dictionary in accounts.values():
+		account.energy_storage = base_energy_storage
+		account.metal_storage = base_metal_storage
+	for unit: Dictionary in units.values():
+		if float(unit.remaining) > 0:
+			continue
+		var fields: Dictionary = catalog.definition(unit.type)
+		var account: Dictionary = accounts[int(unit.get("team", 0))]
+		account.energy_storage = Upkeep.float32(account.energy_storage + float(fields.get("energystorage", "0")))
+		account.metal_storage = Upkeep.float32(account.metal_storage + float(fields.get("metalstorage", "0")))
+		var e: Dictionary = unit.energy_ledger
+		var m: Dictionary = unit.metal_ledger
+		if bool(unit.active):
+			var upkeep := float(fields.get("energyuse", "0"))
+			if upkeep < 0:
+				e.income = Upkeep.float32(e.income - upkeep)
+			else:
+				var gate := Upkeep.apply(upkeep, e.debt, e.requested, e.accepted)
+				e.requested = gate.requested
+				e.accepted = gate.accepted
+				if gate.productive and float(fields.get("extractsmetal", "0")) <= 0:
+					m.income = Upkeep.float32(m.income + (int(fields.get("makesmetal", "0")) & 255))
+		e.income = Upkeep.float32(e.income + float(fields.get("energymake", "0")))
+		m.income = Upkeep.float32(m.income + float(fields.get("metalmake", "0")))
+	for team: int in accounts:
+		var account: Dictionary = accounts[team]
+		for resource: String in ["energy", "metal"]:
+			var ids: Array[int] = []
+			var ledgers: Array = []
+			for id: int in units:
+				if int(units[id].get("team", 0)) == team:
+					ids.append(id)
+					ledgers.append(units[id][resource + "_ledger"])
+			var result := Allocation.settle_account(account[resource], account[resource + "_storage"], ledgers)
+			account[resource] = result.stock
+			account[resource + "_income"] = result.income
+			for i in range(ids.size()):
+				units[ids[i]][resource + "_ledger"] = result.ledgers[i]
+		store_resources(team, account)

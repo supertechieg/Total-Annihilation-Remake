@@ -68,12 +68,22 @@ func _initialize() -> void:
 	world.energy = 0.0
 	world.metal = 0.0
 	world.step()
-	check(world.units[id].remaining == 1.0, "Insufficient resources stall work")
+	check(world.units[id].remaining < 1.0, "Debt-free work is accepted before settlement")
+	for tick in range(29):
+		world.step()
+	world.energy = 0
+	world.metal = 0
+	world.settle_economy()
+	world.resource_deadline = world.ticks + 30
+	var debt_remaining: float = world.units[id].remaining
+	world.step()
+	check(world.units[id].remaining == debt_remaining, "Unpaid debt stalls construction")
 	check(world.energy >= 0 and world.metal >= 0, "Resource shortage cannot create negative balances")
 	world.energy = 1000
 	world.metal = 1000
+	world.settle_economy()
 	world.step()
-	check(world.units[id].remaining < 1.0, "Work resumes when resources recover")
+	check(world.units[id].remaining < debt_remaining, "Work resumes when resources recover")
 	world.unit_limit = world.units.size()
 	check(world.begin_build("armsolar", Vector2(464, 512)) == 0, "Configured unit limit is enforced")
 	print("CONSTRUCTION_WORLD %d / %d checks pass" % [checks - failures, checks])

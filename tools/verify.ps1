@@ -123,6 +123,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Native maker economy failed' }
         & $godotPath --headless --path godot --script res://compare_native_maker_economy.gd
         if ($LASTEXITCODE -ne 0) { throw 'Maker economy differs from original' }
+        & $godotPath --headless --path godot --script res://compare_native_live_makers.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Live maker economy differs from original' }
         python tools\native_resource_schedule.py
         if ($LASTEXITCODE -ne 0) { throw 'Native resource schedule failed' }
         & $godotPath --headless --path godot --script res://compare_native_resource_schedule.gd
