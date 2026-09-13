@@ -35,6 +35,16 @@ func _initialize() -> void:
 		if combat.shots_fired > 1:
 			break
 	checks.append(combat.shots_fired == 2 and cycle.next_burst - cycle.tick == 31)
+	combat.stop(source)
+	var deadline: int = cycle.next_burst
+	for tick in range(40):
+		world.step()
+		combat.step()
+	checks.append(combat.shots_fired == 2 and combat.tick > deadline)
+	combat.attack(source, target)
+	world.step()
+	combat.step()
+	checks.append(cycle.tick == combat.tick and cycle.tick > deadline)
 	checks.append(cycle.fault.is_empty())
 	var failures := checks.count(false)
 	print("RELOAD_COMBAT %d / %d checks pass" % [checks.size() - failures, checks.size()])

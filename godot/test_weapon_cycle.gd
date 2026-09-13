@@ -43,6 +43,15 @@ func _initialize() -> void:
 	check(recoil.position == Vector3(40, 50, 60), "Firing callback applies immediate recoil")
 	check(recoil_cycle.shots.size() == 1 and recoil_cycle.shots[0].position == Vector3(10, 20, 30), "Shot retains muzzle position from before firing callback")
 	check(resolutions[0] == 1, "Muzzle resolves once per emitted shot")
+	recoil_cycle.stop()
+	var settled_reload: int = recoil_cycle.next_burst
+	recoil_cycle.aim(0, 0)
+	recoil_cycle.step(true, resolver, -1, settled_reload - 1)
+	check(recoil_cycle.shots.is_empty(), "Reissuing attack before reload expiry cannot bypass the timer")
+	recoil_cycle.stop()
+	recoil_cycle.aim(0, 0)
+	recoil_cycle.step(true, resolver, -1, settled_reload + 60)
+	check(recoil_cycle.shots.size() == 1, "Elapsed world time permits dispatch after idle reload expiry")
 	var vm = VM.new(catalog.load_script("armflash"))
 	vm.read_values = {4: 100, 17: 0}
 	vm.invoke("Create")

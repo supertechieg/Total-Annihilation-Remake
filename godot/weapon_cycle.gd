@@ -50,8 +50,8 @@ func stop() -> void:
 	remaining = 0
 	shots.clear()
 
-func step(can_fire := true, resolve_muzzle := Callable(), reload_delay := -1) -> void:
-	tick += 1
+func step(can_fire := true, resolve_muzzle := Callable(), reload_delay := -1, world_tick := -1) -> void:
+	tick = tick + 1 if world_tick < 0 else world_tick
 	shots.clear()
 	if not vm.fault.is_empty():
 		fault = vm.fault

@@ -14,6 +14,14 @@ the timer unchanged; the next dispatch settles 31 ticks. All five regression
 checks, the normal suite and three factory duels pass. Original global countdown
 scheduling and stopped-unit timer advancement still need broader host comparison.
 
+Combat now passes the world tick into WeaponCycle. Previously its private tick
+advanced only while an attack order existed, freezing reload after Stop or target
+loss. Absolute dispatch deadlines now age while the unit is idle. Regression
+checks cover early reissue (cannot bypass the deadline), late reissue (expired
+reload permits dispatch), and a stopped live Raider resuming on the world clock.
+Isolated cycle callers can still omit the world tick and advance one step per call.
+Exact global update ordering and tick wraparound remain outside this correction.
+
 ## Native arithmetic evidence
 
 Original host `0x49e1a0` settles reload after a successful weapon dispatch.

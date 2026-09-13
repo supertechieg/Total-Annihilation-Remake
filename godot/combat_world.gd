@@ -182,7 +182,7 @@ func step() -> void:
 			order.pitch = pitch
 		var unit: Dictionary = world.units[source]
 		var reload_delay := Reload.ticks(int(cycle.runtime.reload_ticks), int(unit.health), int(world.catalog.definition(unit.type).maxdamage), int(unit.get("experience", 0)))
-		cycle.step(within_range and world.mobile_units[source].speed == 0, func(piece: String) -> Vector3: return muzzle(source, piece), reload_delay)
+		cycle.step(within_range and world.mobile_units[source].speed == 0, func(piece: String) -> Vector3: return muzzle(source, piece), reload_delay, tick)
 		if not cycle.fault.is_empty():
 			status = cycle.fault
 			stop(source)
