@@ -52,3 +52,19 @@ not execute those eligibility branches. Static inspection also finds the
 deadline initialized to the current game tick in 0x464700 and restored from
 the save field UpdateTime. Those initialization/load paths are not yet
 native-tested. Live economy still uses provisional per-tick income.
+
+The combined maker fixture executes the entire original 0x401360 routine without
+patching its economy instructions. A type-3 player bypasses the unrelated cloak
+callback and avoids AI handicap branches. A completed generator and two active
+makers run through 16 settlement periods for each of five starting stocks;
+generation rises from 20 to 200 after eight periods, and one maker is switched
+off for two recovery periods. All 80 snapshots match stock, aggregate income,
+requested energy, metal income and each unit's energy debt. This includes storage
+saturation and debt-gated production across consecutive updates. The Godot
+settle_account helper aggregates ledgers in order, allocates available resources,
+clamps storage and settles each ledger using the shared payment fractions.
+
+Run native_maker_economy.py and compare_native_maker_economy.gd, also included in
+the native suite. This materially extends isolated arithmetic checks but does
+not cover construction accounting, extractor yield, AI handicap, cloak upkeep,
+nonzero external ledgers or full scheduler eligibility. It is not yet live.
