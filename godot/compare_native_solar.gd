@@ -4,8 +4,12 @@ const VM = preload("res://cob_vm.gd")
 func _initialize() -> void:
 	var folder := ProjectSettings.globalize_path("res://../local/")
 	var metal_maker := "--armmakr" in OS.get_cmdline_user_args()
+	var extractor := "--armmex" in OS.get_cmdline_user_args()
 	var trace_folder := "metal-maker" if metal_maker else "solar"
 	var unit := "armmakr" if metal_maker else "armsolar"
+	if extractor:
+		trace_folder = "extractor"
+		unit = "armmex"
 	var trace: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(folder.path_join(trace_folder + "/native-trace.json")))
 	var program: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(folder.path_join("unit-assets/" + unit + "/script.json")))
 	var vm = VM.new(program)
@@ -19,7 +23,7 @@ func _initialize() -> void:
 		if item.action == "step":
 			vm.step()
 		else:
-			vm.invoke(item.action)
+			vm.invoke(item.action, item.get("args", []))
 		var threads: Array = []
 		for slot in range(vm.slots.size()):
 			if vm.slots[slot] != null:
@@ -28,14 +32,16 @@ func _initialize() -> void:
 		for key in vm.values:
 			values[str(key)] = vm.values[key]
 		var actual: Dictionary = JSON.parse_string(JSON.stringify({"statics": vm.statics, "pieces": vm.pieces, "threads": threads, "values": values}))
-		if metal_maker:
+		if metal_maker or extractor:
 			actual.merge(JSON.parse_string(JSON.stringify({"shading": vm.shading, "caching": vm.caching, "spin_targets": vm.spin_targets, "spin_acceleration": vm.spin_acceleration})))
 		if actual != item.state or not vm.fault.is_empty():
 			failures += 1
 			if differences.size() < 3:
 				differences.append({"tick": item.tick, "action": item.action, "fault": vm.fault, "actual": actual, "expected": item.state})
 	var report := {"snapshots": trace.snapshots.size(), "mismatches": failures, "exe_sha256": trace.exe_sha256,
-		"scope": "Healthy solar/metal-maker script activation/deactivation with supplied host reads; excludes damaged smoke, destruction and world lifecycle", "differences": differences}
+		"scope": "Healthy solar/maker/extractor script activation/deactivation and supplied SetSpeed/host reads; excludes damaged smoke, destruction and world lifecycle", "differences": differences}
+	if extractor:
+		FileAccess.open(folder.path_join("../analysis/native-extractor-script-validation.json"), FileAccess.WRITE).store_string(JSON.stringify(report, "  ") + "\n")
 	FileAccess.open(folder.path_join(trace_folder + "/native-comparison.json"), FileAccess.WRITE).store_string(JSON.stringify(report, "  "))
 	print("NATIVE_SOLAR_COMPARISON %d / %d snapshots match" % [trace.snapshots.size() - failures, trace.snapshots.size()])
 	quit(0 if failures == 0 else 1)

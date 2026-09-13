@@ -141,3 +141,24 @@ placements and matches all 184320 cells. This verifies overlay application acros
 the whole map, while TNT decoding and definition loading remain reconstructed
 outside the native routine. Both preparation and comparison are in the native
 suite. The live world still needs to consume this bundle for extractor income.
+
+## Live extractors
+
+Arm extractor scripts now match 609 native snapshots, including Create, build
+completion input, Activate/Deactivate and SetSpeed inputs 4, 896 and 452. The
+comparison includes spin, shading, caching, threads, statics and poses. Healthy
+extractor scripts are enabled in ConstructionWorld alongside metal makers.
+
+The viewer loads metal.bin and rejects a missing/wrong-sized grid. The launcher
+prepares that bundle when absent or when preparation is requested. Each extractor
+computes footprint yield and supplies the corresponding signed sum to SetSpeed;
+completed active extractors add yield only when the energy-debt upkeep gate
+accepts their cost. The existing toggle control supports extractors. Installing
+a terrain grid refreshes existing extractors as well as subsequently added ones.
+
+The normal suite passes; test_live_extractor.gd adds 11 checks covering a 3x3
+deposit, first-period deferred acceptance, starvation, debt repayment, recovery,
+unfinished structures, grid size and on/off commands without script faults.
+Placement uses the current world footprint-to-cell conversion, whose full native
+alignment behavior remains unverified. Damaged scripts, terrain-metal changes
+during play and the full original construction/callback ordering remain open.

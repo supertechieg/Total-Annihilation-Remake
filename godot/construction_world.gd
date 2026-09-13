@@ -3,6 +3,8 @@ extends RefCounted
 const Allocation = preload("res://resource_allocation.gd")
 const ResourceSchedule = preload("res://resource_schedule.gd")
 const Upkeep = preload("res://upkeep_gate.gd")
+const ExtractorYield = preload("res://extractor_yield.gd")
+var terrain_metal := PackedByteArray()
 var resource_deadline := 0
 const BuildMath = preload("res://construction_math.gd")
 const VM = preload("res://cob_vm.gd")
@@ -14,7 +16,7 @@ const WeaponQueries = preload("res://weapon_queries.gd")
 const PieceOrigin = preload("res://piece_origin.gd")
 const BallisticLaunch = preload("res://ballistic_launch.gd")
 var collision: RefCounted
-const SCRIPTED_UNITS = ["armmakr", "armsolar", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv", "corraid"]
+const SCRIPTED_UNITS = ["armmex", "armmakr", "armsolar", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv", "corraid"]
 var mobile_units: Dictionary = {}
 var navigation_cache: Dictionary = {}
 var yard_signature := ""
@@ -63,14 +65,14 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 	if type in SCRIPTED_UNITS:
 		var vm = VM.new(catalog.load_script(type))
 		vm.read_values = {4: 100, 17: ceili(remaining * 100)}
-		if type in ["armsolar", "armmakr"]:
+		if type in ["armsolar", "armmakr", "armmex"]:
 			vm.writable_values.assign([1, 5, 20])
 		elif type in ["armvp", "armlab"]:
 			vm.writable_values.assign([5, 18, 19])
 			vm.readback_values.assign([18])
 			factories[id] = {"queue": [], "product": 0, "opening": false, "status": "Idle"}
 		vm.invoke("Create")
-		if remaining == 0 and type in ["armsolar", "armmakr"]:
+		if remaining == 0 and type in ["armsolar", "armmakr", "armmex"]:
 			vm.invoke("Activate")
 		scripts[id] = vm
 		if not str(definition.get("weapon1", "")).is_empty():
@@ -82,11 +84,12 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 				var muzzle := PieceOrigin.model_origin(model, vm.pieces, muzzle_name, [0, 32768, 0])
 				var aim := PieceOrigin.model_origin(model, vm.pieces, aim_name, [0, 32768, 0])
 				units[id].weapon_launch_offset = BallisticLaunch.initial_offset(int(muzzle[2]), int(aim[2]))
+	refresh_extractor(id)
 	collision.sync_unit(self, id)
 	return id
 
 func set_active(id: int, active: bool) -> bool:
-	if not scripts.has(id) or units[id].type not in ["armsolar", "armmakr"] or float(units[id].remaining) > 0:
+	if not scripts.has(id) or units[id].type not in ["armsolar", "armmakr", "armmex"] or float(units[id].remaining) > 0:
 		return false
 	if bool(units[id].active) != active:
 		units[id].active = active
@@ -413,7 +416,7 @@ func advance_construction(target_id: int, source_id: int) -> bool:
 		if float(unit.remaining) == 0:
 			if scripts.has(target_id):
 				scripts[target_id].read_values[17] = 0
-				if unit.type in ["armsolar", "armmakr"]:
+				if unit.type in ["armsolar", "armmakr", "armmex"]:
 					scripts[target_id].invoke("Activate")
 			completed.append(target_id)
 			status = "Construction complete"
@@ -474,8 +477,11 @@ func settle_economy() -> void:
 				var gate := Upkeep.apply(upkeep, e.debt, e.requested, e.accepted)
 				e.requested = gate.requested
 				e.accepted = gate.accepted
-				if gate.productive and float(fields.get("extractsmetal", "0")) <= 0:
-					m.income = Upkeep.float32(m.income + (int(fields.get("makesmetal", "0")) & 255))
+				if gate.productive:
+					if float(fields.get("extractsmetal", "0")) > 0:
+						m.income = Upkeep.float32(m.income + float(unit.get("extractor_yield", 0.0)))
+					else:
+						m.income = Upkeep.float32(m.income + (int(fields.get("makesmetal", "0")) & 255))
 		e.income = Upkeep.float32(e.income + float(fields.get("energymake", "0")))
 		m.income = Upkeep.float32(m.income + float(fields.get("metalmake", "0")))
 	for team: int in accounts:
@@ -493,3 +499,23 @@ func settle_economy() -> void:
 			for i in range(ids.size()):
 				units[ids[i]][resource + "_ledger"] = result.ledgers[i]
 		store_resources(team, account)
+
+func set_terrain_metal(data: PackedByteArray) -> bool:
+	if data.size() != navigation.width * navigation.height:
+		return false
+	terrain_metal = data.duplicate()
+	for id: int in units:
+		refresh_extractor(id)
+	return true
+
+func refresh_extractor(id: int) -> void:
+	var unit: Dictionary = units[id]
+	var scale := float(catalog.definition(unit.type).get("extractsmetal", "0"))
+	if scale <= 0 or terrain_metal.is_empty():
+		return
+	var bounds := footprint(unit.type, unit.position)
+	var cells := Rect2i(Vector2i(bounds.position / 16.0), Vector2i(bounds.size / 16.0))
+	unit.extractor_yield = ExtractorYield.calculate(terrain_metal, navigation.width, navigation.height, cells, scale)
+	if scripts.has(id):
+		var speed := int(ExtractorYield.calculate(terrain_metal, navigation.width, navigation.height, cells, 1.0))
+		scripts[id].invoke("SetSpeed", [speed])

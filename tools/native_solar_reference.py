@@ -26,10 +26,10 @@ class SolarReference(NativeReference):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--unit', choices=['armsolar', 'armmakr'], default='armsolar')
+    parser.add_argument('--unit', choices=['armsolar', 'armmakr', 'armmex'], default='armsolar')
     unit = parser.parse_args().unit
     from native_factory_reference import FactoryReference
-    reference = FactoryReference if unit == 'armmakr' else SolarReference
+    reference = FactoryReference if unit != 'armsolar' else SolarReference
     native = reference(Path('local/original/TotalA.exe').read_bytes(), Path(f'local/unit-assets/{unit}/script.cob').read_bytes())
     events = {0: 'Create', 31: 'Activate', 180: 'Deactivate', 190: 'Activate', 350: 'Deactivate', 440: 'Activate'}
     snapshots = []
@@ -42,7 +42,11 @@ def main():
         if tick in events:
             native.invoke(events[tick], [])
             snapshots.append(dict(tick=tick, action=events[tick], state=native.snapshot()))
-    folder = Path('local/solar' if unit == 'armsolar' else 'local/metal-maker')
+        if unit == 'armmex' and tick in [1, 200, 400]:
+            args = [{1: 4, 200: 896, 400: 452}[tick]]
+            native.invoke('SetSpeed', args)
+            snapshots.append(dict(tick=tick, action='SetSpeed', args=args, state=native.snapshot()))
+    folder = Path({'armsolar': 'local/solar', 'armmakr': 'local/metal-maker', 'armmex': 'local/extractor'}[unit])
     folder.mkdir(exist_ok=True)
     (folder / 'native-trace.json').write_text(json.dumps(dict(exe_sha256=EXE_HASH, snapshots=snapshots)), encoding='utf-8')
     print(f'NATIVE_SOLAR_REFERENCE {len(snapshots)} snapshots')

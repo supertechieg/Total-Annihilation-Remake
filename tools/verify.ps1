@@ -8,6 +8,8 @@ $godotPath = if ($godotCommand) { $godotCommand.Source } else {
 if (-not $godotPath) { throw 'Godot 4 is required. Add godot to PATH.' }
 Push-Location $workspacePath
 try {
+    & $godotPath --headless --path godot --script res://test_live_extractor.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Live extractor checks failed' }
     & $godotPath --headless --path godot --script res://test_weapon_effects.gd
     if ($LASTEXITCODE -ne 0) { throw 'Weapon effect checks failed; prepare effects with tools/prepare_weapon_effects.py' }
     & $godotPath --headless --path godot --script res://test_weapon_audio.gd
@@ -119,6 +121,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "$missileUnit factory duel failed" }
     }
     if ($Native) {
+        python tools\native_solar_reference.py --unit armmex
+        if ($LASTEXITCODE -ne 0) { throw 'Original extractor lifecycle failed' }
+        & $godotPath --headless --path godot --script res://compare_native_solar.gd -- --armmex
+        if ($LASTEXITCODE -ne 0) { throw 'Extractor lifecycle differs from original' }
         python tools\prepare_map_metal.py
         if ($LASTEXITCODE -ne 0) { throw 'Comet metal preparation failed' }
         python tools\native_comet_metal.py

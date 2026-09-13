@@ -118,6 +118,10 @@ func start_world_movement() -> void:
 	assert(unit_position.x >= 0, "Map has no passable starting point")
 	mobile = MobileUnit.new(navigation, fields, unit_position, script_vm)
 	economy = ConstructionWorld.new(unit_catalog, navigation, unit_position)
+	if not economy.set_terrain_metal(FileAccess.get_file_as_bytes(assets.path_join("metal.bin"))):
+		push_error("Prepare the map metal bundle with tools/prepare_map_metal.py")
+		get_tree().quit(1)
+		return
 	combat = Combat.new(economy)
 	weapon_audio = WeaponAudio.new()
 	add_child(weapon_audio)

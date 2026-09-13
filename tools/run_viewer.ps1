@@ -26,6 +26,7 @@ if ($Prepare -or -not $unitBundleCurrent) {
     } finally { Pop-Location }
 }
 foreach ($bundle in @(
+    @{ Index = 'local\viewer-assets\metal.bin'; Script = 'prepare_map_metal.py' },
     @{ Index = 'local\weapon-sounds\index.json'; Script = 'prepare_weapon_sounds.py' },
     @{ Index = 'local\weapon-effects\index.json'; Script = 'prepare_weapon_effects.py' }
 )) {
