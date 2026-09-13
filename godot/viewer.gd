@@ -112,11 +112,16 @@ func _ready() -> void:
 func start_world_movement() -> void:
 	var fields: Dictionary = unit_data.definition
 	var terrain_fields: Dictionary = unit_catalog.movement("armcom")
+	var feature_blocking := FileAccess.get_file_as_bytes(assets.path_join("features.bin"))
+	if feature_blocking.size() != int(scene_data.height_grid_width) * int(scene_data.height_grid_height):
+		push_error("Prepare the map feature-blocking bundle with tools/prepare_map_metal.py")
+		get_tree().quit(1)
+		return
 	navigation = Navigation.new(int(scene_data.height_grid_width), int(scene_data.height_grid_height),
 		FileAccess.get_file_as_bytes(assets.path_join("heights.bin")), int(scene_data.sea_level),
 		int(terrain_fields.get("maxslope", 255)), int(terrain_fields.get("maxwaterdepth", 10000)),
 		Vector2i(int(terrain_fields.get("footprintx", 2)), int(terrain_fields.get("footprintz", 2))),
-		int(terrain_fields.get("minwaterdepth", -10000)), int(terrain_fields.get("maxwaterslope", 255)))
+		int(terrain_fields.get("minwaterdepth", -10000)), int(terrain_fields.get("maxwaterslope", 255)), feature_blocking)
 	unit_position = navigation.nearest_open(unit_position)
 	assert(unit_position.x >= 0, "Map has no passable starting point")
 	mobile = MobileUnit.new(navigation, fields, unit_position, script_vm)
@@ -976,6 +981,12 @@ func _process(delta: float) -> void:
 				step_script()
 	if frames == 8 and "--verify" in args:
 		if world == null or piece_nodes.size() != 15 or terrain.get_width() != 6144:
+			get_tree().quit(1)
+			return
+		# Commander and produced-unit navigation must both consume the prepared feature-blocking grid.
+		var cells: int = navigation.width * navigation.height
+		if navigation.features.size() != cells or economy.unit_navigation("armflash").features != navigation.features:
+			printerr("FAIL: live navigation is missing the prepared feature-blocking grid")
 			get_tree().quit(1)
 			return
 		rotate_unit(PI / 4)

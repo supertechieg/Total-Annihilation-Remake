@@ -11,16 +11,20 @@ var height: int
 var heights: PackedByteArray
 var blocked := PackedByteArray()
 var terrain_clearance := PackedByteArray()
+## Static map-feature blocking, nonzero where 0x47de60 rejects the cell; empty means no features.
+var features := PackedByteArray()
 var sea_level := 0
 var last_expanded := 0
 var failure := ""
 
-func _init(w: int, h: int, data: PackedByteArray, sea := 0, slope := 20, depth := 35, footprint := Vector2i(2, 2), minimum_depth := -10000, water_slope := -1) -> void:
+func _init(w: int, h: int, data: PackedByteArray, sea := 0, slope := 20, depth := 35, footprint := Vector2i(2, 2), minimum_depth := -10000, water_slope := -1, feature_blocking := PackedByteArray()) -> void:
 	width = w
 	height = h
 	heights = data
 	sea_level = sea
+	features = feature_blocking
 	assert(width > 0 and height > 0 and heights.size() == width * height)
+	assert(features.is_empty() or features.size() == width * height)
 	blocked.resize(width * height)
 	var extrema := Heights.prepare(heights, width, height)
 	var cell_blocked := PackedByteArray()
@@ -28,8 +32,8 @@ func _init(w: int, h: int, data: PackedByteArray, sea := 0, slope := 20, depth :
 	for y in range(height):
 		for x in range(width):
 			var index := y * width + x
-			# Last row/column have no complete terrain quad.
-			cell_blocked[index] = int(x == width - 1 or y == height - 1 or not Limits.passable(extrema.low[index], extrema.high[index], sea_level, depth, minimum_depth, slope, slope if water_slope < 0 else water_slope))
+			# Last row/column have no complete terrain quad. The predicate rejects blocking features first.
+			cell_blocked[index] = int(x == width - 1 or y == height - 1 or (not features.is_empty() and features[index] != 0) or not Limits.passable(extrema.low[index], extrema.high[index], sea_level, depth, minimum_depth, slope, slope if water_slope < 0 else water_slope))
 	for index in range(cell_blocked.size()):
 		cell_blocked[index] = 1 - cell_blocked[index]
 	var map_values := Footprint.prepare(cell_blocked, width, height, footprint)

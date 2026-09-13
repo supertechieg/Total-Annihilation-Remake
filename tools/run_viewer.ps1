@@ -27,12 +27,19 @@ if ($Prepare -or -not $unitBundleCurrent) {
         if ($LASTEXITCODE -ne 0) { throw 'Unit bundle preparation failed' }
     } finally { Pop-Location }
 }
+$mapMetadataPath = Join-Path $workspacePath 'local\viewer-assets\metal.json'
+$mapBundleCurrent = $false
+if ((Test-Path -LiteralPath $mapMetadataPath) -and (Test-Path -LiteralPath (Join-Path $workspacePath 'local\viewer-assets\features.bin'))) {
+    $mapMetadata = Get-Content -LiteralPath $mapMetadataPath -Raw | ConvertFrom-Json
+    $mapBundleCurrent = $mapMetadata.feature_blocking_version -eq 1
+}
 foreach ($bundle in @(
-    @{ Index = 'local\viewer-assets\metal.bin'; Script = 'prepare_map_metal.py' },
-    @{ Index = 'local\weapon-sounds\index.json'; Script = 'prepare_weapon_sounds.py' },
-    @{ Index = 'local\weapon-effects\index.json'; Script = 'prepare_weapon_effects.py' }
+    # Older map bundles predate the static feature-blocking grid.
+    @{ Index = 'local\viewer-assets\metal.bin'; Script = 'prepare_map_metal.py'; Current = $mapBundleCurrent },
+    @{ Index = 'local\weapon-sounds\index.json'; Script = 'prepare_weapon_sounds.py'; Current = $true },
+    @{ Index = 'local\weapon-effects\index.json'; Script = 'prepare_weapon_effects.py'; Current = $true }
 )) {
-    if ($Prepare -or -not $unitBundleCurrent -or -not (Test-Path -LiteralPath (Join-Path $workspacePath $bundle.Index))) {
+    if ($Prepare -or -not $unitBundleCurrent -or -not $bundle.Current -or -not (Test-Path -LiteralPath (Join-Path $workspacePath $bundle.Index))) {
         Push-Location $workspacePath
         try {
             python (Join-Path $PSScriptRoot $bundle.Script)

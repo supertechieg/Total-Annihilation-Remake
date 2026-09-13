@@ -37,5 +37,18 @@ func _initialize() -> void:
 	var exposed := Navigation.new(64, 64, ridge, 0, 12, 10000, Vector2i(2, 2), -10000, 255)
 	checks.append(submerged.passable(Vector2i(32, 32)))
 	checks.append(not exposed.passable(Vector2i(32, 32)))
+	# Produced-unit navigation caches inherit the live feature grid, and yard overlays keep it.
+	var features := PackedByteArray()
+	features.resize(64 * 64)
+	features[40 * 64 + 40] = 1
+	var featured := World.new(catalog, Navigation.new(64, 64, heights, 0, 20, 35, Vector2i(2, 2), -10000, -1, features), Vector2(128, 128))
+	var tank_nav = featured.unit_navigation("armflash")
+	checks.append(tank_nav.features == features and not tank_nav.passable(Vector2i(40, 40)) and tank_nav.passable(Vector2i(43, 40)))
+	checks.append(not featured.unit_navigation("armcv").passable(Vector2i(41, 41)))
+	var plant := featured.add_unit("armvp", Vector2(256, 512), 0)
+	featured.refresh_navigation(true)
+	checks.append(not tank_nav.passable(Vector2i(40, 40)) and not tank_nav.passable(Vector2i(16, 32)))
+	featured.remove_unit(plant)
+	checks.append(not tank_nav.passable(Vector2i(40, 40)) and tank_nav.passable(Vector2i(16, 32)))
 	print("MOVEMENT_CLASSES %d / %d checks pass" % [checks.size() - checks.count(false), checks.size()])
 	quit(0 if checks.count(false) == 0 else 1)

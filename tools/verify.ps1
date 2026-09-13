@@ -48,6 +48,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Weapon scalar checks failed' }
     python tools\test_map_environment.py
     if ($LASTEXITCODE -ne 0) { throw 'Map environment checks failed' }
+    python tools\test_feature_blocking.py
+    if ($LASTEXITCODE -ne 0) { throw 'Feature blocking grid checks failed' }
     & $godotPath --headless --path godot --script res://test_unit_catalog.gd
     if ($LASTEXITCODE -ne 0) { throw 'Unit catalog checks failed' }
     & $godotPath --headless --path godot --script res://test_unit_visuals.gd
@@ -179,6 +181,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Comet metal grid differs from original feature pass' }
         python tools\native_feature_metal.py
         if ($LASTEXITCODE -ne 0) { throw 'Feature metal overlay differs from original' }
+        python tools\native_feature_blocking.py
+        if ($LASTEXITCODE -ne 0) { throw 'Feature blocking differs from original terrain predicate' }
         python tools\native_extractor_yield.py
         if ($LASTEXITCODE -ne 0) { throw 'Native extractor yield failed' }
         & $godotPath --headless --path godot --script res://compare_native_extractor_yield.gd

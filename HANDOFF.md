@@ -4,7 +4,13 @@ User goal: faithful Total Annihilation recreation first; graphics improvements l
 
 Use Light/low by default, including reverse engineering when it can be done reliably with more time. The user permits Medium only for a concrete problem that truly requires it, followed immediately by Light. No other modes or model substitutions are authorized. Do not escalate by broad task category.
 
+## Workflow
+
+Codex investigates, plans, and reviews; Claude implements assigned changes. A CLI session can be continued by Codex without losing context. Do not commit credentials or private session identifiers to tracked files.
+
 ## Completed
+
+Static feature blocking: prepare_map_metal.py also writes features.bin plus feature_blocking_version1 in metal.json. The launcher regenerates older bundles, and metal.bin is unchanged. terrain_navigation ORs the grid into each cell before footprint aggregation. The viewer Commander and every produced-unit cache receive it, and yard overlays keep it. native_feature_blocking.py matches 1,585 cases: 49 predicate cases and 1,536 layout cells versus feature_blocking.py; it is in -Native. Comet Catcher places only nonblocking moonmetal features, so its grid is all open; tests use synthetic grids. Unverified: TNT reserved-code loading (now rejected), overlap resolution, destruction/reclaim updates, projectile/feature collision and construction placement effects. See PLAYABLE_MOVEMENT.md.
 
 Splash falloff: splash_damage.gd matches600 native0x49a2aa..0x49a3ee cases, six normalfixtures. Distance to translated axis-aligned unit bounds, truncate towholeunits, reject>=AoE/2, quadratic edgefalloff storedfloat32. RaiderAoE32=>radius16. Not world-integrated: nativebounds generation/targetenumeration/damage dispatcher still needed. See SPLASH_DAMAGE.md/native-splash-validation.json. Damage dispatch0x499cd0 has multipliertruncation thenattacker experience/globalflags; originalimpact0x499eb0 usesdirectunitdamage whenAoE<17.
 

@@ -10,6 +10,68 @@ func check(value: bool, message: String) -> void:
 		failures += 1
 		printerr("FAIL: " + message)
 
+static func feature_grid(width: int, height: int, rects: Array) -> PackedByteArray:
+	# Synthetic prepared grids: Comet Catcher places no blocking features.
+	var grid := PackedByteArray()
+	grid.resize(width * height)
+	for rect: Rect2i in rects:
+		for y in range(rect.position.y, rect.end.y):
+			for x in range(rect.position.x, rect.end.x):
+				grid[y * width + x] = 1
+	return grid
+
+func feature_checks() -> void:
+	var flat := PackedByteArray()
+	flat.resize(32 * 32)
+	var plain = Navigation.new(32, 32, flat, 0, 20, 35, Vector2i.ONE)
+	var nonblocking = Navigation.new(32, 32, flat, 0, 20, 35, Vector2i.ONE, -10000, -1, feature_grid(32, 32, []))
+	check(nonblocking.blocked == plain.blocked and nonblocking.terrain_clearance == plain.terrain_clearance, "Nonblocking feature grid leaves navigation unchanged")
+	# A four-by-three blocking feature: every covered cell blocks a single-cell unit.
+	var single = Navigation.new(32, 32, flat, 0, 20, 35, Vector2i.ONE, -10000, -1, feature_grid(32, 32, [Rect2i(10, 10, 4, 3)]))
+	var covered_blocked := true
+	for y in range(10, 13):
+		for x in range(10, 14):
+			covered_blocked = covered_blocked and not single.passable(Vector2i(x, y)) and single.terrain_clearance[y * 32 + x] == 0
+	check(covered_blocked, "Every continuation cell of a multi-cell feature blocks")
+	check(single.passable(Vector2i(9, 10)) and single.passable(Vector2i(14, 12)) and single.passable(Vector2i(10, 13)), "Cells beside a multi-cell feature stay open")
+	check(single.terrain_clearance[10 * 32 + 9] == 1 and single.terrain_clearance[10 * 32 + 8] == 3, "Feature reduces neighboring clearance like blocked terrain")
+	# One blocking cell rejects every three-by-three footprint that covers it.
+	var wide = Navigation.new(32, 32, flat, 0, 20, 35, Vector2i(3, 3), -10000, -1, feature_grid(32, 32, [Rect2i(16, 16, 1, 1)]))
+	var wide_blocked := true
+	for y in range(15, 18):
+		for x in range(15, 18):
+			wide_blocked = wide_blocked and not wide.passable(Vector2i(x, y))
+	check(wide_blocked, "Wide footprint is blocked whenever any covered cell has a blocking feature")
+	check(wide.passable(Vector2i(14, 16)) and wide.passable(Vector2i(18, 16)) and wide.passable(Vector2i(16, 14)), "Wide footprint fits beside a single blocking cell")
+	check(wide.terrain_clearance[16 * 32 + 14] == 1 and wide.terrain_clearance[16 * 32 + 13] == 3, "Wide footprint clearance border sees the feature")
+	# Route around a feature wall with a single opening, using a two-cell-wide unit.
+	var heights := PackedByteArray()
+	heights.resize(64 * 64)
+	var walls := [Rect2i(32, 0, 2, 40), Rect2i(32, 47, 2, 17)]
+	var nav = Navigation.new(64, 64, heights, 0, 20, 35, Vector2i(2, 2), -10000, -1, feature_grid(64, 64, walls))
+	var start := Vector2(128, 128)
+	var end := Vector2(800, 128)
+	check(Navigation.new(64, 64, heights).path(start, end).size() == 2, "Without features the route is direct")
+	var route: PackedVector2Array = nav.path(start, end)
+	var through_opening := false
+	for p: Vector2 in route:
+		through_opening = through_opening or p.y >= 640
+	check(route.size() > 2 and through_opening, "Route bends through the opening in a feature wall")
+	var unit = Mobile.new(nav, {}, start)
+	unit.move_to(end)
+	var clear_of_features := true
+	for tick in range(3500):
+		unit.step()
+		var cell: Vector2i = nav.cell_at(unit.point())
+		for y in range(cell.y - 1, cell.y + 1):
+			for x in range(cell.x - 1, cell.x + 1):
+				clear_of_features = clear_of_features and nav.features[y * 64 + x] == 0
+	check(clear_of_features, "Moving footprint never covers a blocking feature")
+	check(unit.point().distance_to(end) < 3, "Unit follows the route around the feature wall: " + str(unit.point()))
+	walls.append(Rect2i(32, 40, 2, 7))
+	nav = Navigation.new(64, 64, heights, 0, 20, 35, Vector2i(2, 2), -10000, -1, feature_grid(64, 64, walls))
+	check(nav.path(start, end).is_empty(), "Closed feature wall rejects the route")
+
 func _initialize() -> void:
 	var heights := PackedByteArray()
 	heights.resize(64 * 64)
@@ -78,5 +140,6 @@ func _initialize() -> void:
 	ramp[8 * 16 + 8] = 200
 	nav = Navigation.new(16, 16, ramp, 0, 12, 35, Vector2i(3, 3))
 	check(not nav.passable(Vector2i(8, 8)), "Sharp local rise blocks wide footprint")
+	feature_checks()
 	print("NAVIGATION %d / %d checks pass" % [checks - failures, checks])
 	quit(0 if failures == 0 else 1)

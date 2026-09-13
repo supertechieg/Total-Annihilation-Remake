@@ -135,6 +135,9 @@ crossing the map boundary rather than guessing placement resolution. Comet has
 81 accepted 3x3 metal deposits: 55 at byte value 223, 19 at 112, and 7 at 56.
 There are 729 nonzero cells and no overlapping placements. metal.bin and metal.json
 remain in ignored local/viewer-assets; metadata includes source hashes.
+The same preparation now writes the static feature-blocking grid features.bin.
+It also rejects negative footprints and reserved TNT codes 0xfffb..0xfffe. The
+metal output is unchanged; see PLAYABLE_MOVEMENT.md.
 
 native_comet_metal.py executes the original full feature pass over these imported
 placements and matches all 184320 cells. This verifies overlay application across
