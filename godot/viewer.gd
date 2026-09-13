@@ -203,7 +203,7 @@ func add_armed_raider() -> void:
 	if raider != 0:
 		combat.enable_guard(raider)
 		combat.attack(selected_unit, raider)
-		status_label.text = "  Raider guards this area; your Flash is attacking"
+		status_label.text = "  Raider engages nearby enemies; your Flash is attacking"
 
 func run_combat_demo(verify: bool) -> bool:
 	if not run_factory_demo():

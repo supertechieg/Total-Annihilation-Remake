@@ -27,6 +27,8 @@ func _init(source: RefCounted) -> void:
 	world = source
 
 func stop(id: int) -> void:
+	if orders.has(id) and orders[id].get("chasing", false) and world.mobile_units.has(id):
+		world.mobile_units[id].stop()
 	orders.erase(id)
 	if cycles.has(id):
 		cycles[id].stop()
@@ -49,8 +51,7 @@ func step_guards() -> void:
 			continue
 		guards[id] = tick + 15
 		var unit: Dictionary = world.units[id]
-		var weapon: Dictionary = world.catalog.weapon("EMG" if unit.type == "armflash" else "CORE_LIGHTCANNON").definition
-		var radius := minf(float(weapon.range), float(world.catalog.definition(unit.type).get("sightdistance", "0")))
+		var radius := float(world.catalog.definition(unit.type).get("sightdistance", "0"))
 		if orders.has(id):
 			var previous := int(orders[id].target)
 			if world.units.has(previous) and world.units[previous].get("team", 0) != unit.get("team", 0) and unit.position.distance_to(world.units[previous].position) <= radius:
@@ -67,9 +68,9 @@ func step_guards() -> void:
 				chosen = candidate
 				nearest = distance
 		if chosen != 0:
-			attack(id, chosen)
+			attack(id, chosen, true)
 
-func attack(source: int, target: int) -> bool:
+func attack(source: int, target: int, pursue := false) -> bool:
 	if not world.units.has(source) or not world.units.has(target) or source == target:
 		return false
 	if world.units[source].type not in ["armflash", "corraid"] or float(world.units[source].remaining) > 0:
@@ -88,7 +89,8 @@ func attack(source: int, target: int) -> bool:
 		var aim_piece: String = query.piece_name(true)
 		launch_offsets[source] = Launch.initial_offset(raw_point(muzzle(source, muzzle_piece))[2], raw_point(muzzle(source, aim_piece))[2])
 	world.mobile_units[source].stop()
-	orders[source] = {"target": target, "heading": -999999, "pitch": -999999}
+	orders[source] = {"target": target, "heading": -999999, "pitch": -999999,
+		"pursue": pursue, "chasing": false, "next_path": 0}
 	status = "Attacking target"
 	return true
 
@@ -132,6 +134,16 @@ func step() -> void:
 		var aim_origin := muzzle(source, aim_piece)
 		var heading := roundi(atan2(aim_origin.x - destination.x, aim_origin.z - destination.y) * 65536.0 / TAU) - int(world.mobile_units[source].heading)
 		var within_range := origin.distance_to(destination) <= float(cycle.definition.get("range", "0"))
+		if order.pursue:
+			if not within_range and tick >= int(order.next_path):
+				var approach: Vector2 = destination + (origin - destination).normalized() * float(cycle.definition.range) * 0.85
+				order.chasing = world.mobile_units[source].move_to(approach)
+				if not order.chasing:
+					world.mobile_units[source].stop()
+				order.next_path = tick + 30
+			elif within_range and order.chasing:
+				world.mobile_units[source].stop()
+				order.chasing = false
 		var ballistic := int(cycle.definition.get("ballistic", "0")) != 0
 		var pitch := Aim.solve(raw_point(aim_origin - center(target)), int(cycle.runtime.velocity_raw_per_tick), gravity, float(cycle.runtime.minimum_barrel_angle)) if ballistic else 0
 		within_range = within_range and pitch != 0x8000

@@ -2,6 +2,8 @@
 
 ## Raider cannon and two-way duel
 
+Armed guards now search their sight radius and pursue a visible target outside weapon range. The provisional approach point is85 percent of weapon range from the target; paths refresh at most once per30 ticks. They stop on entering range and wait for speed zero before firing. Lost targets cancel the pursuit route; failed paths stop movement and may retry. Eleven guard checks include advancing from outside cannon range, stationary firing after approach, target damage and cancellation on sight loss. Explicit attack calls remain stationary unless pursuit is requested. This is provisional opponent behavior using the current terrain pathfinder, without fog/occlusion or original AI scoring.
+
 **Add armed Raider** now enables a provisional stationary guard controller on the spawned enemy. Every15 simulation ticks it keeps a valid enemy target or selects the nearest enemy within the lesser of weapon range and sight distance, breaking distance ties by unit ID. It reacquires after a kill/removal and releases targets outside that radius. Six integration checks cover acquisition, allied-unit exclusion, damage, reacquisition, range loss and destroyed-controller cleanup. This behavior is not reconstructed original AI: visibility/occlusion, threat scoring, alliances, pursuit and base economy remain absent. Passive practice targets and explicitly scripted duel checks retain their existing behavior.
 
 Select a produced Flash and use **Add armed Raider** to spawn an enemy Raider and order both tanks to attack each other. The existing practice target remains passive. This is a development duel control, not autonomous skirmish AI.
