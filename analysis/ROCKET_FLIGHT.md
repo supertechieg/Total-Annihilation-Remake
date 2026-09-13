@@ -65,3 +65,23 @@ outside these checks. Live rocket combat remains to be connected.
 Reproduce with `python tools/native_firing_reference.py --unit armrock` and Godot
 `--headless --path godot --script res://compare_native_firing.gd -- --armrock`.
 The native verification suite includes this comparison.
+
+
+## Live Rocko combat
+
+Rocko now participates in attack orders and guard combat. Its direct launch uses
+prepared start speed and acceleration; each flight tick runs the native-compared
+unguided rocket motion. On the 60-tick motor deadline it begins falling under map
+gravity. Endpoint unit/terrain impacts use shared splash damage. The supported
+rocket is KBOT_ROCKET only: guided missiles, cruise, burnblow, water transitions,
+smoke trails, original explosion art/audio and full host timing remain unfinished.
+The current nonballistic script aim pitch remains zero, while actual projectile
+heading/pitch are calculated from muzzle to target; script elevation fidelity
+still needs investigation.
+
+The 16-check rocket combat test covers shots, damage, an armed duel, four firing
+directions, elevated targets and survival/fall at the motor deadline. The viewer
+`--verify-rocko` builds an Arm Kbot Lab, produces and moves a Rocko, then verifies
+that it and an armed Raider exchange damage and one is destroyed on Comet Catcher.
+Both are included in the normal verification suite. Practice-target controls
+accept a selected Rocko. Projectile visuals remain the existing simple trails.

@@ -147,6 +147,10 @@ func start_world_movement() -> void:
 		if not run_duel_demo(true, "armstump"):
 			push_error("Stumpy duel failed")
 			get_tree().quit(1)
+	if "--verify-rocko" in OS.get_cmdline_user_args():
+		if not run_duel_demo(true, "armrock"):
+			get_tree().quit(1)
+			return
 	if "--verify-peewee" in OS.get_cmdline_user_args():
 		if not run_duel_demo(true, "armpw"):
 			push_error("Peewee duel failed")
@@ -157,7 +161,7 @@ func start_world_movement() -> void:
 			get_tree().quit(1)
 
 func run_duel_demo(verify: bool, player_type := "armflash") -> bool:
-	if not run_factory_demo("armlab" if player_type in ["armham", "armpw"] else "armvp", player_type, 1):
+	if not run_factory_demo("armlab" if player_type in ["armham", "armpw", "armrock"] else "armvp", player_type, 1):
 		return false
 	var source := 0
 	for unit: Dictionary in economy.units.values():
@@ -188,8 +192,8 @@ func run_duel_demo(verify: bool, player_type := "armflash") -> bool:
 	return true
 
 func add_practice_target() -> int:
-	if selected_unit == 0 or not economy.units.has(selected_unit) or economy.units[selected_unit].type not in ["armflash", "armstump", "armham", "armpw"]:
-		status_label.text = "  Select a Flash, Stumpy, Hammer or Peewee to add a practice target"
+	if selected_unit == 0 or not economy.units.has(selected_unit) or economy.units[selected_unit].type not in ["armflash", "armstump", "armham", "armpw", "armrock"]:
+		status_label.text = "  Select a Flash, Stumpy, Hammer, Peewee or Rocko to add a practice target"
 		return 0
 	for offset: Vector2 in [Vector2(128, 0), Vector2(-128, 0), Vector2(0, 128), Vector2(0, -128)]:
 		var point: Vector2 = (economy.units[selected_unit].position + offset).snapped(Vector2(16, 16))

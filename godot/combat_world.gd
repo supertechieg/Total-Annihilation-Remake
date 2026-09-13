@@ -14,10 +14,11 @@ const Burst = preload("res://burst_schedule.gd")
 const GameRandom = preload("res://wind_state.gd")
 const Reload = preload("res://weapon_reload.gd")
 const Ground = preload("res://ground_motion.gd")
+const RocketMotion = preload("res://rocket_motion.gd")
 const DirectLaunch = preload("res://direct_launch.gd")
 var burst_random := GameRandom.new()
 var bursts: Array = []
-const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham", "armpw"]
+const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham", "armpw", "armrock"]
 var launch := Launch.new()
 var gravity := 8155
 var tick := 0
@@ -84,7 +85,7 @@ func attack(source: int, target: int, pursue := false) -> bool:
 	if not world.units.has(source) or not world.units.has(target) or source == target:
 		return false
 	if world.units[source].type not in SUPPORTED_UNITS or float(world.units[source].remaining) > 0:
-		status = "Combat currently supports completed Flash, Stumpy, Raider, Hammer and Peewee units"
+		status = "Combat currently supports completed Flash, Stumpy, Raider, Hammer, Peewee and Rocko units"
 		return false
 	if world.units[source].get("team", 0) == world.units[target].get("team", 0):
 		status = "Select an enemy target"
@@ -206,11 +207,20 @@ func step() -> void:
 					"damage": cycle.definition.get("damage", {})})
 				shots_fired += 1
 				continue
-			var direct := DirectLaunch.solve(raw_point(start), raw_point(center(target)), int(shot.velocity_raw_per_tick))
+			var direct := DirectLaunch.solve(raw_point(start), raw_point(center(target)), int(shot.velocity_raw_per_tick), int(cycle.runtime.start_velocity_raw_per_tick), int(cycle.runtime.acceleration_raw_per_tick_squared))
 			var velocity_raw: Array = direct.velocity
 			var projectile := {"source": source, "owner": int(world.units[source].get("team", 0)), "position": start, "previous": start,
 				"position_raw": raw_point(start), "velocity_raw": velocity_raw,
 				"distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"})}
+			if int(cycle.definition.get("selfprop", "0")) != 0:
+				projectile.merge({"rocket": true, "speed": int(direct.initial_speed),
+					"maximum": int(shot.velocity_raw_per_tick), "acceleration": int(cycle.runtime.acceleration_raw_per_tick_squared),
+					"heading": int(direct.heading), "pitch": int(direct.pitch),
+					"deadline": (tick + int(float(cycle.definition.get("weapontimer", "0")) * 30.0)) & 0xffffffff,
+					"area": int(cycle.definition.get("areaofeffect", "0")), "edge": float(cycle.definition.get("edgeeffectiveness", "0"))})
+				projectiles.append(projectile)
+				shots_fired += 1
+				continue
 			if int(shot.burst) > 0:
 				bursts.append({"source": source, "piece_name": shot.piece_name, "projectile": projectile,
 					"interval": int(cycle.runtime.burst_interval_ticks), "timer": int(float(cycle.definition.get("weapontimer", "0")) * 30),
@@ -222,6 +232,10 @@ func step() -> void:
 				shots_fired += 1
 	var survivors: Array = []
 	for projectile: Dictionary in projectiles:
+		if projectile.get("rocket", false):
+			if step_rocket(projectile):
+				survivors.append(projectile)
+			continue
 		if projectile.get("ballistic", false):
 			if step_shell(projectile):
 				survivors.append(projectile)
@@ -289,6 +303,23 @@ func advance_bursts() -> Array:
 			pending.append(burst)
 	bursts = pending
 	return copies
+
+func step_rocket(projectile: Dictionary) -> bool:
+	var next := RocketMotion.advance({"position": projectile.position_raw, "velocity": projectile.velocity_raw,
+		"speed": projectile.speed, "maximum": projectile.maximum, "acceleration": projectile.acceleration,
+		"heading": projectile.heading, "pitch": projectile.pitch, "tick": tick, "deadline": projectile.deadline, "gravity": gravity})
+	projectile.previous = projectile.position
+	projectile.position_raw = next.position
+	projectile.velocity_raw = next.velocity
+	projectile.speed = next.speed
+	projectile.position = render_point(next.position)
+	if world.collision.projectile_cell(next.position) < 0:
+		return false
+	var target: int = world.collision.target_at(world, next.position, int(projectile.owner))
+	if target != 0 or projectile.position.y < world.navigation.height_at(Vector2(projectile.position.x, projectile.position.z)):
+		blast(projectile)
+		return false
+	return true
 
 func step_shell(projectile: Dictionary) -> bool:
 	var expired := Motion.expiration(tick, int(projectile.deadline), int(projectile.timer), projectile.burnblow)

@@ -90,6 +90,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Hammer duel failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-peewee
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Peewee duel failed' }
+    & $godotPath --headless --path godot --script res://test_rocket_combat.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Rocket combat failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-rocko
+    if ($LASTEXITCODE -ne 0) { throw 'Rocko factory duel failed' }
     if ($Native) {
         python tools\native_firing_reference.py --unit armrock
         if ($LASTEXITCODE -ne 0) { throw 'Original Rocko firing reference failed' }
