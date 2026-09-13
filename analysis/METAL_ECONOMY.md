@@ -41,3 +41,14 @@ remain unrounded until the final float32 debt store, matching the tested x87
 results. resource_allocation.gd now exposes this as settle(); the native suite
 runs native_resource_debt.py and compare_native_resource_debt.gd. This check
 supplies payment fractions directly and does not prove aggregation or cadence.
+
+The economy deadline gate at 0x465077..0x465098 compares the player's unsigned
+32-bit deadline (+0xf0) to the game tick (+0x38a47). When due, it advances the
+old deadline by 30, wrapping at 32 bits. It advances only once per invocation,
+including overdue calls. resource_schedule.gd matches 100 native boundary,
+overdue and wraparound cases. This gate precedes the player/session checks
+that decide whether to call resource settlement at 0x401360; the fixture does
+not execute those eligibility branches. Static inspection also finds the
+deadline initialized to the current game tick in 0x464700 and restored from
+the save field UpdateTime. Those initialization/load paths are not yet
+native-tested. Live economy still uses provisional per-tick income.

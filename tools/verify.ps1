@@ -119,6 +119,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "$missileUnit factory duel failed" }
     }
     if ($Native) {
+        python tools\native_resource_schedule.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native resource schedule failed' }
+        & $godotPath --headless --path godot --script res://compare_native_resource_schedule.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Resource schedule differs from original' }
         python tools\native_resource_debt.py
         if ($LASTEXITCODE -ne 0) { throw 'Native resource debt settlement failed' }
         & $godotPath --headless --path godot --script res://compare_native_resource_debt.gd
