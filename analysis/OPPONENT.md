@@ -81,3 +81,17 @@ elimination and result latching. The viewer test additionally removes remaining
 enemies after its production/combat verification, requires victory and checks
 that another step does not advance simulation. Both pass. The modal/restart
 interaction itself has not yet received interactive visual verification.
+
+
+## Rendered result and restart verification
+
+The display-backed test_scenario_restart.gd fixture instantiates the real viewer,
+starts the opponent, removes its forces to trigger victory, captures the embedded
+result dialog and invokes its confirmation signal. Reload succeeds with a new
+scene, a living Commander, no opponent and no scenario result. The captured
+local/result-dialog.png was visually inspected: the centered victory message
+and Restart button are legible over the battlefield. This verifies the dialog's
+signal-to-reload path, not a physical mouse click. Run with Godot `--path godot
+--rendering-method gl_compatibility --minimized --script res://test_scenario_restart.gd`.
+It requires a rendering display and is separate from normal headless checks.
+The capture stays ignored because it includes original game artwork.
