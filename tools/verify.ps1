@@ -12,6 +12,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Weapon effect checks failed; prepare effects with tools/prepare_weapon_effects.py' }
     & $godotPath --headless --path godot --script res://test_weapon_audio.gd
     if ($LASTEXITCODE -ne 0) { throw 'Weapon audio playback checks failed; prepare sounds with tools/prepare_weapon_sounds.py' }
+    & $godotPath --headless --path godot --script res://test_team_economy.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Team economy checks failed' }
     python tools\test_assets.py
     if ($LASTEXITCODE -ne 0) { throw 'Asset parser tests failed' }
     python tools\test_cob.py

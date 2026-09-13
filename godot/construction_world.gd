@@ -29,6 +29,7 @@ var base_energy_storage := 1000.0
 var base_metal_storage := 1000.0
 var energy_storage := 1000.0
 var metal_storage := 1000.0
+var team_resources: Dictionary = {}
 var completed: Array[int] = []
 var status := "Idle"
 var ticks := 0
@@ -47,11 +48,11 @@ func _init(source: RefCounted, terrain: RefCounted, commander_position: Vector2,
 	navigation_cache[commander] = {"nav": terrain, "terrain": terrain.blocked.duplicate(), "footprint": Vector2i(2, 2)}
 	builder_id = add_unit(commander, commander_position, 0.0)
 
-func add_unit(type: String, position: Vector2, remaining: float) -> int:
+func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> int:
 	var id := next_id
 	next_id += 1
 	var definition: Dictionary = catalog.definition(type)
-	units[id] = {"id": id, "type": type, "position": position, "remaining": remaining,
+	units[id] = {"id": id, "team": team, "type": type, "position": position, "remaining": remaining,
 		"health": 1 if remaining > 0 else int(definition.get("maxdamage", "1")), "active": true}
 	# Only these healthy scripts currently have native lifecycle comparisons.
 	if type in SCRIPTED_UNITS:
@@ -217,7 +218,7 @@ func step_factories() -> void:
 			if not point.is_finite():
 				factory.status = "Factory build-piece query failed"
 				continue
-			product = add_unit(str(factory.queue.pop_front()), point, 1.0)
+			product = add_unit(str(factory.queue.pop_front()), point, 1.0, int(units[id].get("team", 0)))
 			units[product]["produced_by"] = id
 			factory.product = product
 			vm.invoke("StartBuilding")
@@ -283,7 +284,7 @@ func begin_build(type: String, point: Vector2, source_id := 0) -> int:
 	if float(catalog.definition(type).get("buildtime", "0")) <= 0:
 		status = "Unit has no valid build time"
 		return 0
-	var target := add_unit(type, point, 1.0)
+	var target := add_unit(type, point, 1.0, int(units[source_id].get("team", 0)))
 	assign_build(source_id, target)
 	status = "Building " + catalog.definition(type).get("name", type)
 	return target
@@ -362,22 +363,34 @@ func step() -> void:
 		mobile_units[id].step()
 		units[id].position = mobile_units[id].point()
 	collision.sync(self)
-	var energy_income := 0.0
-	var metal_income := 0.0
-	energy_storage = base_energy_storage
-	metal_storage = base_metal_storage
+	var accounts: Dictionary = {0: resources(0)}
+	for team: int in team_resources:
+		accounts[team] = resources(team)
+	for unit: Dictionary in units.values():
+		var team := int(unit.get("team", 0))
+		if not accounts.has(team):
+			accounts[team] = resources(team)
+	for account: Dictionary in accounts.values():
+		account.energy_income = 0.0
+		account.metal_income = 0.0
+		account.energy_storage = base_energy_storage
+		account.metal_storage = base_metal_storage
 	for unit: Dictionary in units.values():
 		if float(unit.remaining) > 0:
 			continue
 		var fields: Dictionary = catalog.definition(unit.type)
-		energy_storage += float(fields.get("energystorage", "0"))
-		metal_storage += float(fields.get("metalstorage", "0"))
-		energy_income += float(fields.get("energymake", "0"))
-		metal_income += float(fields.get("metalmake", "0"))
+		var account: Dictionary = accounts[int(unit.get("team", 0))]
+		account.energy_storage += float(fields.get("energystorage", "0"))
+		account.metal_storage += float(fields.get("metalstorage", "0"))
+		account.energy_income += float(fields.get("energymake", "0"))
+		account.metal_income += float(fields.get("metalmake", "0"))
 		if bool(unit.active):
-			energy_income -= float(fields.get("energyuse", "0"))
-	energy = clampf(energy + energy_income / 30.0, 0.0, energy_storage)
-	metal = clampf(metal + metal_income / 30.0, 0.0, metal_storage)
+			account.energy_income -= float(fields.get("energyuse", "0"))
+	for team: int in accounts:
+		var account: Dictionary = accounts[team]
+		account.energy = clampf(account.energy + account.energy_income / 30.0, 0.0, account.energy_storage)
+		account.metal = clampf(account.metal + account.metal_income / 30.0, 0.0, account.metal_storage)
+		store_resources(team, account)
 	step_factories()
 	step_builders()
 	if task_id == 0 or not builder_ready:
@@ -401,12 +414,15 @@ func advance_construction(target_id: int, source_id: int) -> bool:
 		"work": float(builder_fields.get("workertime", "0")) / 30.0, "energy_debt": 0.0, "metal_debt": 0.0}
 	var result := BuildMath.advance(input)
 	# Temporary immediate-payment host, distinct from TA's deferred debt settlement.
-	if result.energy_requested > energy or result.metal_requested > metal:
+	var team := int(units[source_id].get("team", 0))
+	var account := resources(team)
+	if result.energy_requested > float(account.energy) or result.metal_requested > float(account.metal):
 		status = "Build paused: insufficient resources"
 		return false
 	if result.accepted:
-		energy -= result.energy_accepted
-		metal -= result.metal_accepted
+		account.energy -= result.energy_accepted
+		account.metal -= result.metal_accepted
+		store_resources(team, account)
 		unit.remaining = result.remaining
 		unit.health = result.health
 		status = "Building %s · %d%%" % [catalog.definition(unit.type).get("name", unit.type), roundi((1.0 - float(unit.remaining)) * 100)]
@@ -419,3 +435,19 @@ func advance_construction(target_id: int, source_id: int) -> bool:
 			status = "Construction complete"
 			return true
 	return false
+
+func resources(team: int) -> Dictionary:
+	if team == 0:
+		return {"energy": energy, "metal": metal, "energy_storage": energy_storage, "metal_storage": metal_storage}
+	if not team_resources.has(team):
+		team_resources[team] = {"energy": 1000.0, "metal": 1000.0, "energy_storage": base_energy_storage, "metal_storage": base_metal_storage}
+	return team_resources[team].duplicate()
+
+func store_resources(team: int, account: Dictionary) -> void:
+	if team == 0:
+		energy = float(account.energy)
+		metal = float(account.metal)
+		energy_storage = float(account.energy_storage)
+		metal_storage = float(account.metal_storage)
+	else:
+		team_resources[team] = account.duplicate()
