@@ -8,7 +8,15 @@ Targets at or beyond the radius are excluded. Distance zero receives multiplier1
 
 This does not yet connect splash to world combat. Native box generation, spatial enumeration/deduplication, feature damage, source exclusion and the damage dispatcher need integration. The dispatcher also applies unit-specific damage, float multiplier truncation, attacker experience and global damage flags before health handling; those are not implemented by this falloff primitive. Coordinate overflow and signed16 extracted distances beyond normal weapon ranges are outside the tested domain. Binary64 geometry is compared to the original x87 calculation for these cases, not proven for every precision boundary.
 
-## Damage selection and scaling
+## Unit box reconstruction
+
+The definition loader's block `0x42d080` through `0x42d125` computes X/Z bounds as plus/minus footprint times eight world units. Y minimum is zero; the later model load calls `0x4cb5f0` to obtain Y maximum. That recursive routine starts each sibling group at zero, takes the maximum of each vertex Y plus its piece offset, and compares child-group height plus the parent's offset. It uses unanimated model geometry, not current COB pose or heading.
+
+`unit_bounds.gd` reproduces this height traversal and ordinary positive footprint bounds. `native_unit_bounds.py` relocates original 3DO vertex/child/sibling pointers, runs the original axis conversion and full recursive height routine, then executes the footprint arithmetic block. All 272 prepared units match on all six bounds. Seven native-derived checks cover the currently playable unit types. See `native-unit-bounds-validation.json`. Extreme signed16 footprint overflow is outside this reconstruction's supported domain.
+
+These are the boxes consumed by area damage. They are not yet connected to combat, and this comparison does not prove direct projectile intersection, spatial enumeration, or world placement. Existing footprint-based spheres remain provisional until the intersection path is recovered.
+
+## Damage selection and scaling details
 
 `weapon_damage.gd` reconstructs `0x499cd0` up to health dispatch. A matching unit-name override replaces the unsigned16 default damage. Prepared definition keys are lowercase; native lookup is case-insensitive. The integer base is multiplied by a float32 multiplier and truncated. With an attacker, the result receives a bonus of six percent for each five experience points, capped at thirty percent, with integer truncation after multiplication. Global flags 0x80 and 0x100 then double and halve damage, respectively, in that order.
 

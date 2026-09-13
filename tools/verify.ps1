@@ -52,6 +52,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Piece origin checks failed' }
     & $godotPath --headless --path godot --script res://test_splash_damage.gd
     if ($LASTEXITCODE -ne 0) { throw 'Splash falloff checks failed' }
+    & $godotPath --headless --path godot --script res://test_unit_bounds.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Unit bounds checks failed' }
     & $godotPath --headless --path godot --script res://test_combat_world.gd
     if ($LASTEXITCODE -ne 0) { throw 'Combat host checks failed' }
     & $godotPath --headless --path godot --script res://test_weapon_damage.gd
@@ -65,6 +67,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     if ($Native) {
+        python tools\native_unit_bounds.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original unit bounds reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_unit_bounds.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Unit bounds differ from original executable' }
         python tools\native_damage_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original damage reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_damage.gd
