@@ -31,3 +31,13 @@ reproduces these isolated calculations. The native verification suite runs the
 oracle and comparison; the report is native-resource-allocation-validation.json.
 This does not yet verify aggregation, storage clamping, per-unit debt updates or
 settlement cadence, and the helper is not connected to the live economy.
+
+Per-unit settlement at 0x401b42..0x401b9c matches 640 native cases across both
+resource lanes with zero, partial and full payment fractions. New debt is
+accepted minus paid accepted work, plus old debt minus paid old debt. Income
+and requested usage roll into their previous-period fields; current income,
+requested and accepted accumulators clear to zero. Products and subtraction
+remain unrounded until the final float32 debt store, matching the tested x87
+results. resource_allocation.gd now exposes this as settle(); the native suite
+runs native_resource_debt.py and compare_native_resource_debt.gd. This check
+supplies payment fractions directly and does not prove aggregation or cadence.
