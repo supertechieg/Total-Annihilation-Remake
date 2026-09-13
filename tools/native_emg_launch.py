@@ -26,7 +26,11 @@ def main():
         if index < 6:
             source = [0, 0, 0]
             target = [[65536, 0, 0], [0, 65536, 0], [0, 0, 65536], [-65536, 0, 0], [0, -65536, 0], [0, 0, 0]][index]
+        start_speed = [0, speed // 2, speed, speed + 10000][(index // 3) % 4]
+        acceleration = [0, 1000][(index // 12) % 2]
         native.write(DEFINITION + 0x68, speed)
+        native.write(DEFINITION + 0x6c, start_speed)
+        native.write(DEFINITION + 0x70, acceleration)
         for axis in range(3):
             native.write(SOURCE + axis * 4, source[axis])
             native.write(TARGET + axis * 4, target[axis])
@@ -35,7 +39,8 @@ def main():
         native.mu.reg_write(UC_X86_REG_EDI, CONTROLLER)
         native.mu.reg_write(UC_X86_REG_EBX, TARGET)
         native.call(0x49ca37, [])
-        cases.append(dict(source=source, target=target, speed=speed, expected=dict(
+        cases.append(dict(source=source, target=target, speed=speed, start_speed=start_speed, acceleration=acceleration, expected=dict(
+            initial_speed=native.read(PROJECTILE + 0x3a),
             heading=native.read(PROJECTILE + 0x36) & 65535, pitch=native.read(PROJECTILE + 0x38) & 65535,
             distance=native.read(PROJECTILE + 0x3e), velocity=[signed(native.read(PROJECTILE + 0x1c + axis * 4)) for axis in range(3)])))
     Path('local/ballistics/emg-launch.json').write_text(json.dumps(dict(exe_sha256=EXE_HASH, cases=cases)))
