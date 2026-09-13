@@ -1,0 +1,9 @@
+# Endpoint unit collision
+
+The projectile update reaches `0x49bd86` after position integration and calls `0x49b090`. Its map lookup `0x4815a0` shifts raw X/Z right20 (16 world units per cell), rejects coordinates outside map dimensions, and selects a 13-byte cell. An off-map projectile is marked expired by bit2 at projectile+0x69. The ordinary unit checks here are endpoint tests, not swept segment/sphere intersections.
+
+The cell's first two unsigned16 values are unit indices into the array at game+0x14357 with stride0x118. A unit whose owner byte at +0xff equals projectile+0x66 is skipped. The first slot hits when projectile Y is strictly below unit Y plus definition upper Y; it does not test the lower bound. The second slot hits when Y lies inclusively between translated lower and upper bounds. The first qualifying slot wins. Slot population and their physical interpretation still require tracing; do not assume these correspond to arbitrary nearest units or general alliance relationships.
+
+`projectile_collision.gd` implements cell addressing and unit-slot selection. `native_projectile_collision.py` runs original lookup and collision routines for 600 supplied cases, retaining the actual map lookup. Only impact dispatch is replaced by a target-pointer capture. Weapon flag0x4000 skips the subsequent terrain/feature path; projectile proximity targets are absent. All cell indices, hit targets and expiration states match. Six normal checks include captured height/owner boundaries and off-map addressing. See `native-projectile-collision-validation.json`.
+
+This is not a complete collision implementation. Grid population, terrain/features, water, special projectile proximity and any other projectile-specific paths remain to recover. The viewer still uses provisional swept spheres. Replacing them requires connecting correct cell occupants and original target aiming; retaining spheres temporarily is not a fidelity claim.
