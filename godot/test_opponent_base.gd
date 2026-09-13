@@ -18,8 +18,16 @@ func _initialize() -> void:
 	var combat = Combat.new(world)
 	var opponent := Opponent.new(world, combat, 1)
 	var spent := false
+	var interrupted := false
+	var interrupted_target := 0
 	for tick in range(6500):
 		world.step()
+		if not interrupted and world.builder_jobs.has(builder):
+			var target := int(world.builder_jobs[builder].target)
+			if float(world.units[target].remaining) < 0.9:
+				interrupted_target = target
+				world.stop_build(builder)
+				interrupted = true
 		opponent.step()
 		combat.step()
 		spent = spent or float(world.resources(1).metal) < 1000.0
@@ -27,7 +35,8 @@ func _initialize() -> void:
 			break
 	var checks: Array = [opponent.queued > 0, opponent.attacks > 0, spent,
 		not world.units.has(victim) or world.units[victim].health < initial,
-		opponent.structures_started == 2]
+		opponent.structures_started == 2, interrupted, opponent.structures_resumed == 1,
+		world.units.has(interrupted_target) and float(world.units[interrupted_target].remaining) == 0.0]
 	for unit: Dictionary in world.units.values():
 		if unit.type == "armflash":
 			checks.append(int(unit.team) == 1)

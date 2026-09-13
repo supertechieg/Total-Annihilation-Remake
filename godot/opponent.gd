@@ -7,6 +7,7 @@ var next_decision := 0
 var queued := 0
 var attacks := 0
 var structures_started := 0
+var structures_resumed := 0
 
 func _init(source: RefCounted, battle: RefCounted, owner: int) -> void:
 	world = source
@@ -50,6 +51,27 @@ func step() -> void:
 			attacks += 1
 
 func build_base() -> void:
+	var assigned: Array = []
+	for job: Dictionary in world.builder_jobs.values():
+		assigned.append(int(job.target))
+	if world.task_id != 0:
+		assigned.append(int(world.task_id))
+	for builder: int in world.units.keys():
+		if int(world.units[builder].get("team", 0)) != team or not world.can_build(builder):
+			continue
+		if world.builder_jobs.has(builder) or (builder == world.builder_id and world.task_id != 0):
+			continue
+		for target: int in world.units.keys():
+			var unfinished: Dictionary = world.units[target]
+			if target in assigned or int(unfinished.get("team", 0)) != team or float(unfinished.remaining) <= 0:
+				continue
+			if int(world.catalog.definition(unfinished.type).get("bmcode", "1")) != 0:
+				continue
+			if unfinished.type not in world.catalog.build_options(world.units[builder].type):
+				continue
+			if world.resume_build(target, builder):
+				structures_resumed += 1
+				return
 	var has_solar := false
 	var has_factory := false
 	for unit: Dictionary in world.units.values():

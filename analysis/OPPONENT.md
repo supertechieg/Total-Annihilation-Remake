@@ -51,3 +51,17 @@ starts, an attack order and actual Commander damage within 6500 ticks. It passes
 and is included in normal verification. This is an opt-in development scenario,
 not a finished skirmish mode: no victory screen, map setup, difficulty selection,
 fog, resource expansion or complete Commander weapon behavior yet.
+
+
+## Interrupted construction recovery
+
+Before starting new structures, idle owned builders now look for unassigned,
+unfinished owned buildings they can build and reach. The policy resumes the
+existing project through resume_build, preserving paid progress. It excludes
+other teams, mobile factory products and jobs already assigned to a builder.
+No relocation is attempted for out-of-range sites.
+
+The base test interrupts construction after at least ten percent progress,
+requires exactly one resume, completion of the same building and subsequent
+production/attack. All ten checks pass; the Comet Catcher opponent scenario
+also still passes. Builder replacement and long-distance recovery remain open.
