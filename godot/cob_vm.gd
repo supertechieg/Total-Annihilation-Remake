@@ -15,6 +15,11 @@ var pieces: Array = []
 var values: Dictionary = {}
 var read_values: Dictionary = {}
 var writable_values: Array[int] = [5]
+var readback_values: Array[int] = []
+var spin_targets: Array = []
+var spin_acceleration: Array = []
+var shading: Dictionary = {}
+var caching: Dictionary = {}
 var completions: Dictionary = {}
 var events: Array = []
 var fault := ""
@@ -33,6 +38,8 @@ func _init(data: Dictionary) -> void:
 	slots.resize(SLOT_COUNT)
 	slots.fill(null)
 	for piece_name: String in data.pieces:
+		spin_targets.append([0, 0, 0])
+		spin_acceleration.append([0, 0, 0])
 		pieces.append({"name": piece_name, "position": [0, 0, 0], "rotation": [0, 0, 0],
 			"move_target": [0, 0, 0], "turn_target": [0, 0, 0],
 			"move_speed": [0, 0, 0], "turn_speed": [0, 0, 0], "visible": true})
@@ -237,6 +244,22 @@ func run_slot(slot: int) -> void:
 				var piece: Dictionary = pieces[int(args[0])]
 				piece.visible = op == "SHOW"
 				record("visibility", {"piece": piece.name, "visible": piece.visible, "pc": pc})
+			"DONT_SHADE", "SHADE":
+				shading[int(args[0])] = op == "SHADE"
+			"DONT_CACHE", "CACHE":
+				caching[int(args[0])] = op == "CACHE"
+			"SPIN", "STOP_SPIN":
+				var index := int(args[0])
+				var axis := int(args[1])
+				if op == "SPIN":
+					pieces[index].turn_target[axis] = -1
+					spin_targets[index][axis] = trunc_div(pop(thread), TICK_RATE)
+					spin_acceleration[index][axis] = trunc_div(pop(thread), TICK_RATE)
+				else:
+					spin_targets[index][axis] = 0
+					spin_acceleration[index][axis] = -trunc_div(pop(thread), TICK_RATE)
+				if spin_acceleration[index][axis] == 0:
+					pieces[index].turn_speed[axis] = spin_targets[index][axis]
 			"MOVE", "TURN", "MOVE_NOW", "TURN_NOW":
 				var target := pop(thread)
 				var speed := 0
@@ -272,7 +295,9 @@ func run_slot(slot: int) -> void:
 						finish(other, 0, "signal")
 			"GET_VALUE":
 				var key := pop(thread)
-				if not read_values.has(key):
+				if key in readback_values:
+					push(thread, int(values.get(key, 0)))
+				elif not read_values.has(key):
 					fail("Unsupported simulation read: %d" % key)
 				else:
 					push(thread, int(read_values[key]))
@@ -315,8 +340,17 @@ func set_motion(index: int, axis: int, op: String, destination: int, speed: int)
 	record("motion", {"piece": piece.name, "axis": axis, "op": op, "target": target, "speed": speed})
 
 func advance_pieces() -> void:
-	for piece: Dictionary in pieces:
+	for index in range(pieces.size()):
+		var piece: Dictionary = pieces[index]
 		for axis in range(3):
+			var acceleration := int(spin_acceleration[index][axis])
+			if acceleration != 0:
+				var speed := i32(int(piece.turn_speed[axis]) + acceleration)
+				var target := int(spin_targets[index][axis])
+				if (acceleration > 0 and speed >= target) or (acceleration < 0 and speed <= target):
+					speed = target
+					spin_acceleration[index][axis] = 0
+				piece.turn_speed[axis] = speed
 			for turning: bool in [false, true]:
 				var key := "rotation" if turning else "position"
 				var speed_key := "turn_speed" if turning else "move_speed"
@@ -326,6 +360,9 @@ func advance_pieces() -> void:
 					continue
 				var current := int(piece[key][axis])
 				var target := int(piece[target_key][axis])
+				if turning and target == -1:
+					piece.rotation[axis] = (current + velocity) & 65535
+					continue
 				var remaining := target - current
 				if turning:
 					remaining = ((target - current) if velocity > 0 else (current - target)) & 65535

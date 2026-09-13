@@ -43,7 +43,9 @@ Addresses refer exclusively to `TotalA.exe` SHA-256 `3b9c0fadabf3dc67ed5f05a70f1
 - `SLEEP` computes integer `30 * milliseconds / 1000`. Thus 40 ms produces one tick and 100 ms produces three. A sleep or movement wait yields the current scheduling pass.
 - Motion is advanced after script scheduling. Waiters see completed motion on a later scheduling pass.
 - A native `MOVE` to an already-reached target retains its positive velocity until the next motion update. The native comparison exposed this detail and the new runtime was corrected to match.
-- Value 5 (`INBUILDSTANCE`) is exposed for the construction-pose preview. Other simulation properties are not fabricated.
+- Explicit host read/write allowlists support construction stance, healthy solar inputs and factory yard test inputs. Unknown properties still fault.
+- `SPIN` sets turn target to -1, divides target speed and acceleration by 30 with signed truncation, and sets speed immediately if acceleration truncates to zero. Acceleration changes speed before each rotation update and clamps at the requested speed. `STOP_SPIN` sets the speed target to zero and negates the supplied per-tick deceleration. Synthetic native comparisons include signed and sub-tick rounding cases.
+- `CACHE`/`DONT_CACHE` and `SHADE`/`DONT_SHADE` retain per-piece flags. The current unshaded mesh renderer does not yet reproduce the original caching or lighting effects.
 
 ## Native reference harness
 
@@ -74,9 +76,17 @@ Validation currently includes 8 archive/asset parser tests, 6 COB decoder tests,
 
 ## Remaining limitations
 
-Unsupported opcodes and engine properties fail explicitly. Thread exhaustion also faults instead of imitating every original failure edge case. Spin/acceleration, random values, explosions, attachment, general get/set engine properties, and other units need further implementation and comparison. The viewer's render-frame accumulator caps long delays for responsiveness; that host policy is not a lockstep simulation scheduler.
+Unsupported opcodes and engine properties fail explicitly. Thread exhaustion also faults instead of imitating every original failure edge case. Random values, explosions, attachment, general get/set engine properties, and other units need further implementation and comparison. The viewer's render-frame accumulator caps long delays for responsiveness; that host policy is not a lockstep simulation scheduler.
 
-COB-to-model axis mapping, rotation order, original camera projection, lighting, UV orientation, and scale still need renderer-level comparisons. Walking is in place. There are no simulated projectiles, damage, world pathfinding, resources, construction completion, saves, or multiplayer.
+COB-to-model axis mapping, rotation order, original camera projection, lighting, UV orientation, and scale still need renderer-level comparisons. The viewer now has controllable Commander movement, provisional terrain navigation and construction/resource accounting; see PLAYABLE_MOVEMENT.md and CONSTRUCTION.md. Simulated projectiles, damage, factory production, saves and multiplayer remain unfinished.
+
+## Factory script prerequisite
+
+`tools/native_factory_reference.py` and `godot/compare_native_factory.gd` compare 2,124 snapshots: 759 each for the original Arm vehicle plant and Kbot lab, plus 606 across six synthetic spin scenarios. Comparison includes transforms, targets, speeds, acceleration, statics, active thread PCs/states, properties, cache and shading flags. The same pinned executable is used as the Commander oracle.
+
+The factory scenario supplies health=100 and construction remaining-percent=100 then 0. Yard property 18 reads back its last written value, representing an immediately available yard; this does not validate native occupancy checks. It invokes Create, Activate, StartBuilding, StopBuilding, Deactivate, reactivation during the five-second closing delay, and final closing. StartBuilding spins the pad; StopBuilding stops it. The opening path writes construction stance 5=1 only after its animation and OpenYard request complete. These verified script states are prerequisites for the upcoming production host, not evidence that factories already produce units in the viewer.
+
+Original world callback timing, yard-map collision changes, QueryBuildInfo placement, resource settlement during production, completed-unit release and construction effects still require integration and validation. Detailed traces and synthetic COB programs stay under ignored local/factory; the compact result is native-factory-validation.json.
 
 ## External references
 
