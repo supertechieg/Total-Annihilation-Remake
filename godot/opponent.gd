@@ -8,11 +8,15 @@ var queued := 0
 var attacks := 0
 var structures_started := 0
 var structures_resumed := 0
+var metal_sites: Array[Vector2] = []
 
 func _init(source: RefCounted, battle: RefCounted, owner: int) -> void:
 	world = source
 	combat = battle
 	team = owner
+	for index in range(world.terrain_metal.size()):
+		if world.terrain_metal[index] > 0:
+			metal_sites.append(Vector2((index % world.navigation.width) * 16, (index / world.navigation.width) * 16))
 
 func step() -> void:
 	if world.ticks < next_decision:
@@ -92,6 +96,7 @@ func build_base() -> void:
 			has_factory = has_factory or unit.type in ["armvp", "armlab"]
 	var type := "armsolar" if not has_solar else "armvp"
 	if has_solar and has_factory:
+		build_extractor()
 		return
 	for id: int in world.units.keys():
 		var unit: Dictionary = world.units[id]
@@ -107,3 +112,29 @@ func build_base() -> void:
 				if world.placement_error(type, point, id).is_empty() and world.begin_build(type, point, id) != 0:
 					structures_started += 1
 					return
+
+func build_extractor() -> void:
+	# First expansion: use normal movement, placement, construction and upkeep.
+	for unit: Dictionary in world.units.values():
+		if int(unit.get("team", 0)) == team and unit.type == "armmex":
+			return
+	for id: int in world.units.keys():
+		var unit: Dictionary = world.units[id]
+		if int(unit.get("team", 0)) != team or not world.can_build(id) or world.builder_jobs.has(id):
+			continue
+		if "armmex" not in world.catalog.build_options(unit.type) or not world.mobile_units.has(id):
+			continue
+		if not world.mobile_units[id].route.is_empty():
+			continue
+		var sites := metal_sites.duplicate()
+		sites.sort_custom(func(a: Vector2, b: Vector2) -> bool: return unit.position.distance_squared_to(a) < unit.position.distance_squared_to(b))
+		for point: Vector2 in sites:
+			var error: String = world.placement_error("armmex", point, id)
+			if error.is_empty():
+				if world.begin_build("armmex", point, id) != 0:
+					structures_started += 1
+					return
+			elif error == "Move builder closer to build site":
+				for offset: Vector2 in [Vector2(64, 0), Vector2(-64, 0), Vector2(0, 64), Vector2(0, -64)]:
+					if world.move_unit(id, point + offset):
+						return

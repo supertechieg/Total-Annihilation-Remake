@@ -8,6 +8,8 @@ $godotPath = if ($godotCommand) { $godotCommand.Source } else {
 if (-not $godotPath) { throw 'Godot 4 is required. Add godot to PATH.' }
 Push-Location $workspacePath
 try {
+    & $godotPath --headless --path godot --script res://test_opponent_extractor.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Opponent extractor expansion failed' }
     & $godotPath --headless --path godot --script res://test_live_extractor.gd
     if ($LASTEXITCODE -ne 0) { throw 'Live extractor checks failed' }
     & $godotPath --headless --path godot --script res://test_weapon_effects.gd
