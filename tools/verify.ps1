@@ -58,6 +58,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Projectile collision checks failed' }
     & $godotPath --headless --path godot --script res://test_collision_grid.gd
     if ($LASTEXITCODE -ne 0) { throw 'Collision grid checks failed' }
+    & $godotPath --headless --path godot --script res://test_world_collision.gd
+    if ($LASTEXITCODE -ne 0) { throw 'World collision lifecycle checks failed' }
     & $godotPath --headless --path godot --script res://test_combat_world.gd
     if ($LASTEXITCODE -ne 0) { throw 'Combat host checks failed' }
     & $godotPath --headless --path godot --script res://test_weapon_damage.gd

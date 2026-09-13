@@ -5,6 +5,8 @@ const VM = preload("res://cob_vm.gd")
 const Navigation = preload("res://terrain_navigation.gd")
 const BuildingNavigation = preload("res://building_navigation.gd")
 const Mobile = preload("res://mobile_unit.gd")
+const WorldCollision = preload("res://world_collision.gd")
+var collision: RefCounted
 const SCRIPTED_UNITS = ["armsolar", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv", "corraid"]
 var mobile_units: Dictionary = {}
 var navigation_cache: Dictionary = {}
@@ -38,6 +40,7 @@ func can_build(source_id: int) -> bool:
 func _init(source: RefCounted, terrain: RefCounted, commander_position: Vector2, commander := "armcom") -> void:
 	catalog = source
 	navigation = terrain
+	collision = WorldCollision.new(terrain.width, terrain.height)
 	navigation_cache[commander] = {"nav": terrain, "terrain": terrain.blocked.duplicate(), "footprint": Vector2i(2, 2)}
 	builder_id = add_unit(commander, commander_position, 0.0)
 
@@ -61,6 +64,7 @@ func add_unit(type: String, position: Vector2, remaining: float) -> int:
 		if remaining == 0 and type == "armsolar":
 			vm.invoke("Activate")
 		scripts[id] = vm
+	collision.sync_unit(self, id)
 	return id
 
 func set_active(id: int, active: bool) -> bool:
@@ -74,6 +78,7 @@ func set_active(id: int, active: bool) -> bool:
 func remove_unit(id: int) -> void:
 	if not units.has(id):
 		return
+	collision.remove_unit(id)
 	stop_build(id)
 	if task_id == id or builder_id == id:
 		task_id = 0
@@ -344,6 +349,7 @@ func step() -> void:
 	for id: int in mobile_units:
 		mobile_units[id].step()
 		units[id].position = mobile_units[id].point()
+	collision.sync(self)
 	var energy_income := 0.0
 	var metal_income := 0.0
 	energy_storage = base_energy_storage
