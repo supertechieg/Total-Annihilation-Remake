@@ -1,0 +1,7 @@
+{
+  "captured_frames": 16384,
+  "checks": 5,
+  "failures": 0,
+  "peak": 0.163621038198471,
+  "scope": "Original cannon WAV mixed to AudioEffectCapture, idle voice reuse, 32-voice cap and disabled playback; excludes physical speaker output and native audio fidelity"
+}

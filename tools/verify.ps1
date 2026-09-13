@@ -8,6 +8,8 @@ $godotPath = if ($godotCommand) { $godotCommand.Source } else {
 if (-not $godotPath) { throw 'Godot 4 is required. Add godot to PATH.' }
 Push-Location $workspacePath
 try {
+    & $godotPath --headless --path godot --script res://test_weapon_audio.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Weapon audio playback checks failed; prepare sounds with tools/prepare_weapon_sounds.py' }
     python tools\test_assets.py
     if ($LASTEXITCODE -ne 0) { throw 'Asset parser tests failed' }
     python tools\test_cob.py

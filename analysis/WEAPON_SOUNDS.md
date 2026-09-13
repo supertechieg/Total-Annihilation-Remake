@@ -32,3 +32,16 @@ at -12 dB, no original distance attenuation/priority, no water-sound selection,
 and firing events follow script cycles rather than a native-verified audio
 scheduler. EMG terrain-only impacts still lack an event. These are outstanding
 fidelity tasks, not claims of original audio behavior.
+
+
+## Mixer capture verification
+
+The normal verification suite now runs test_weapon_audio.gd. It explicitly
+enables playback under the headless driver, captures the mixed original
+canlite3 WAV through AudioEffectCapture and requires nonzero samples. It also
+checks idle-player reuse, the 32-voice limit under overlapping requests and
+that disabling playback prevents new requests. All five checks pass. Normal
+headless viewer runs remain silent by default. The captured-buffer check
+verifies software mixer output, not physical speakers, subjective balance or
+native audio timing. Preparation of local weapon sounds is now required for
+this verification suite.

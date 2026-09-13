@@ -4,10 +4,11 @@ var sounds := Sounds.new(ProjectSettings.globalize_path("res://../local/weapon-s
 var players: Array[AudioStreamPlayer] = []
 var cursor := 0
 var played := 0
+var enabled := DisplayServer.get_name() != "headless"
 
 func play_sound(name: String, _position: Vector3) -> void:
 	# Verification runs simulate faster than wall time; do not play their audio.
-	if DisplayServer.get_name() == "headless":
+	if not enabled:
 		return
 	var stream := sounds.sound(name)
 	if stream == null:
