@@ -1,0 +1,6 @@
+{
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "cases": 240,
+  "mismatches": 0,
+  "scope": "Complete 0x49b720 with line-of-sight flag only; collision and pool consolidation stubbed; unsigned expiration precedes signed-wrapped movement"
+}

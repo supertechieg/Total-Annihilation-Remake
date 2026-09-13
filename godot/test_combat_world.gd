@@ -89,6 +89,14 @@ func _initialize() -> void:
 	for tick in range(20):
 		combat.step()
 	check(combat.projectiles.is_empty(), "Range-limited projectiles expire")
+	combat.bursts.clear()
+	combat.projectiles = [{"source": source, "owner": 0, "position": Vector3(100, 100, 700), "previous": Vector3(100, 100, 700),
+		"position_raw": Combat.raw_point(Vector3(100, 100, 700)), "velocity_raw": [655359, 0, 0], "distance": 0.0, "range": 1.0, "deadline": combat.tick + 3, "damage": {"default": "8"}}]
+	combat.step()
+	combat.step()
+	check(combat.projectiles.size() == 1 and int(combat.projectiles[0].position_raw[0]) == 100 * 65536 + 2 * 655359, "Timed rounds travel beyond nominal range before deadline")
+	combat.step()
+	check(combat.projectiles.is_empty(), "Timed round expires before movement on its deadline")
 	var unfinished: int = world.begin_build("armsolar", Vector2(192, 128))
 	world.remove_unit(unfinished)
 	check(unfinished > 0 and world.task_id == 0 and not world.units.has(unfinished), "Destroyed construction target clears builder reference")

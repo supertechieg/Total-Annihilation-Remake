@@ -26,9 +26,15 @@ post-Stop completion using a live Flash script. The normal suite and Flash,
 Stumpy and Hammer factory duels pass. The existing weapon-cycle tests now assert
 dispatch counts instead of the obsolete per-round script callback policy.
 
+Emitted rounds now consume their copied expiration deadline, continue beyond
+nominal weapon range if unobstructed, and expire before movement at that tick.
+`native_emg_lifetime.py` verifies 240 original `0x49b720` transitions for the
+line-of-sight flag, with collision and pool consolidation stubbed. Unsigned
+deadline comparison and signed-wrapped position updates match the tested rule.
+Live regression covers movement beyond range and expiration on the deadline.
+
 Remaining host limitations: the initial EMG direction still uses the existing
-normalized-vector approximation; emitted rounds retain the previous range-based
-expiration instead of consuming the verified copied deadline. RNG starts at a
+normalized-vector approximation. RNG starts at a
 fixed seed independent of other world random consumers. Source death currently
 cancels outstanding bursts as a provisional teardown rule. Original pool capacity,
 sounds, duration randomness and health/experience reload settlement remain pending.

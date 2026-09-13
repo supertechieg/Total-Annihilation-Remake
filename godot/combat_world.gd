@@ -13,6 +13,7 @@ const Queries = preload("res://weapon_queries.gd")
 const Burst = preload("res://burst_schedule.gd")
 const GameRandom = preload("res://wind_state.gd")
 const Reload = preload("res://weapon_reload.gd")
+const Ground = preload("res://ground_motion.gd")
 var burst_random := GameRandom.new()
 var bursts: Array = []
 const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham"]
@@ -228,14 +229,16 @@ func step() -> void:
 				survivors.append(projectile)
 			continue
 		var start: Vector3 = projectile.position
+		if projectile.has("deadline") and (tick & 0xffffffff) >= (int(projectile.deadline) & 0xffffffff):
+			continue
 		var velocity := render_point(projectile.velocity_raw)
-		var travel := minf(velocity.length(), maxf(0, float(projectile.range) - float(projectile.distance)))
+		var travel := velocity.length() if projectile.has("deadline") else minf(velocity.length(), maxf(0, float(projectile.range) - float(projectile.distance)))
 		if travel <= 0:
 			continue
 		var fraction := travel / velocity.length()
 		var next_raw: Array = projectile.position_raw.duplicate()
 		for axis in range(3):
-			next_raw[axis] = int(next_raw[axis]) + int(int(projectile.velocity_raw[axis]) * fraction)
+			next_raw[axis] = Ground.signed32(int(next_raw[axis]) + int(int(projectile.velocity_raw[axis]) * fraction))
 		var end := render_point(next_raw)
 		if world.collision.projectile_cell(next_raw) < 0:
 			continue
@@ -256,7 +259,7 @@ func step() -> void:
 		projectile.position = end
 		projectile.position_raw = next_raw
 		projectile.distance += travel
-		if float(projectile.distance) < float(projectile.range) and end.y >= world.navigation.height_at(Vector2(end.x, end.z)):
+		if (projectile.has("deadline") or float(projectile.distance) < float(projectile.range)) and end.y >= world.navigation.height_at(Vector2(end.x, end.z)):
 			survivors.append(projectile)
 	projectiles = survivors
 	# Native updater snapshots its pool size: newly copied rounds move next tick.
@@ -279,6 +282,7 @@ func advance_bursts() -> Array:
 			projectile.position = render_point(result.copy.position)
 			projectile.previous = projectile.position
 			projectile.velocity_raw = result.copy.velocity
+			projectile.deadline = int(result.copy.deadline)
 			copies.append(projectile)
 			shots_fired += 1
 			if int(burst.spray) != 0:

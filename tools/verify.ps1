@@ -89,6 +89,8 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-hammer
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Hammer duel failed' }
     if ($Native) {
+        python tools\native_emg_lifetime.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original EMG lifetime checks failed' }
         python tools\native_burst_cleanup.py
         if ($LASTEXITCODE -ne 0) { throw 'Original burst cleanup checks failed' }
         python tools\native_burst_update.py
