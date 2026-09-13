@@ -171,3 +171,15 @@ odd/even footprints and signed32 boundaries; spatial callbacks are stubbed.
 The live extractor test now uses a half-cell position that distinguishes this
 rule from the previous conversion and still passes all 11 checks. This verifies
 the position-to-cell rule, not the complete building placement/snap policy.
+
+## Removed-unit accounting
+
+The maker oracle now optionally clears one maker's valid flag at period six.
+The live comparison removes that maker through World.remove_unit and compares
+balances and surviving-unit debt for all 80 snapshots. All match, including
+starting-stock cases with about 30 and 45 energy debt on the removed maker.
+The original leaves the invalid slot's ledger untouched and skips it during
+aggregation/settlement; those costs are not transferred by settlement itself.
+No live accounting change was needed. Static cleanup inspection also finds the
+valid flag cleared near 0x486d24, but this test does not execute full destruction
+callbacks and must not be treated as proof of every death/reclaim/cancel path.

@@ -4,7 +4,9 @@ const Navigation = preload("res://terrain_navigation.gd")
 const World = preload("res://construction_world.gd")
 const Float = preload("res://upkeep_gate.gd")
 func _initialize() -> void:
-	var trace: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://../local/metal-maker/economy.json"))
+	var removal := "--remove-maker" in OS.get_cmdline_user_args()
+	var filename := "economy-removal.json" if removal else "economy.json"
+	var trace: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://../local/metal-maker/" + filename))
 	var catalog := Catalog.new(ProjectSettings.globalize_path("res://../local/unit-assets/"))
 	# Match the supplied native fixture definitions, retaining real maker scripts.
 	for type: String in ["armcom", "armmakr"]:
@@ -28,19 +30,25 @@ func _initialize() -> void:
 		var other := world.add_unit("armmakr", Vector2(384, 384), 0)
 		for snapshot: Dictionary in item.snapshots:
 			catalog.definition("armcom").energymake = str(snapshot.income)
-			world.set_active(maker, snapshot.active)
+			if snapshot.get("removed", false) and world.units.has(maker):
+				world.remove_unit(maker)
+			if world.units.has(maker):
+				world.set_active(maker, snapshot.active)
 			world.step()
 			var mismatch := Float.float32(world.energy) != Float.float32(snapshot.energy) or Float.float32(world.metal) != Float.float32(snapshot.metal)
 			var ids := [world.builder_id, maker, other]
 			for i in range(3):
+				if not world.units.has(ids[i]):
+					continue
 				mismatch = mismatch or Float.float32(world.units[ids[i]].energy_ledger.debt) != Float.float32(snapshot.debts[i])
 			if mismatch:
 				failures.append({"stock": item.stock, "snapshot": count, "energy": world.energy, "metal": world.metal})
 			count += 1
 			for tick in range(29):
 				world.step()
-			if not world.scripts[maker].fault.is_empty() or not world.scripts[other].fault.is_empty():
+			if (world.scripts.has(maker) and not world.scripts[maker].fault.is_empty()) or not world.scripts[other].fault.is_empty():
 				failures.append({"script_fault": true})
-	FileAccess.open("res://../analysis/native-live-maker-validation.json", FileAccess.WRITE).store_string(JSON.stringify({"snapshots": count, "failures": failures, "scope": "Live World.step against native maker fixture: 30-tick cadence, balances, debt, activation and healthy scripts"}, "  ") + "\n")
+	var report := "native-live-maker-removal-validation.json" if removal else "native-live-maker-validation.json"
+	FileAccess.open("res://../analysis/" + report, FileAccess.WRITE).store_string(JSON.stringify({"snapshots": count, "failures": failures, "scope": "Live World.step against native settlement: balances and surviving-unit debt, optionally clearing one maker valid flag; excludes original destruction callbacks"}, "  ") + "\n")
 	print("LIVE_MAKERS %d snapshots, %d failures" % [count, failures.size()])
 	quit(0 if failures.is_empty() else 1)

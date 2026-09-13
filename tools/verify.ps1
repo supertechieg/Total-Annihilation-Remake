@@ -127,6 +127,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "$missileUnit factory duel failed" }
     }
     if ($Native) {
+        python tools\native_maker_economy.py --remove-maker
+        if ($LASTEXITCODE -ne 0) { throw 'Original removed-maker settlement failed' }
+        & $godotPath --headless --path godot --script res://compare_native_live_makers.gd -- --remove-maker
+        if ($LASTEXITCODE -ne 0) { throw 'Removed-maker settlement differs from original' }
         python tools\native_footprint_origin.py
         if ($LASTEXITCODE -ne 0) { throw 'Original footprint origin failed' }
         & $godotPath --headless --path godot --script res://compare_native_footprint_origin.gd
