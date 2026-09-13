@@ -15,6 +15,8 @@ func _initialize() -> void:
 	heights.resize(64 * 64)
 	heights.fill(0)
 	var nav = Navigation.new(64, 64, heights)
+	check(nav.terrain_clearance[8 * 64 + 8] == 3, "Open terrain retains full clearance")
+	check(nav.terrain_clearance[1 * 64 + 1] == 1, "Fitting footprint at boundary retains limited clearance")
 	var unit = Mobile.new(nav, {}, Vector2(128, 128))
 	check(unit.move_to(Vector2(512, 128)), "Accept reachable destination")
 	var started := false

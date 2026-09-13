@@ -16,6 +16,7 @@ def main():
     native.mu.mem_write(GAME + 0x1427f, b'\0')
     rng = random.Random(440500)
     differences = []
+    traces = []
     checked = 0
     for case in range(60):
         width, height = 24, 24
@@ -35,10 +36,12 @@ def main():
         native.write(movement + 24, output)
         native.mu.mem_write(output, bytes(width * ((height + 15) // 16) * 4))
         native.call(0x440500, [], this=movement)
+        values = []
         for y in range(height):
             for x in range(width):
                 word = native.read(output + ((y >> 4) * width + x) * 4)
                 actual = (word >> ((y & 15) * 2)) & 3
+                values.append(actual)
                 expected = int(x + fx <= width and y + fz <= height and all(
                     allowed[yy * width + xx] for yy in range(y, min(y + fz, height))
                     for xx in range(x, min(x + fx, width))))
@@ -49,6 +52,10 @@ def main():
                 checked += 1
                 if actual != expected:
                     differences.append(dict(case=case, x=x, y=y, actual=actual, expected=expected))
+        traces.append(dict(width=width, height=height, footprint=[fx, fz], allowed=list(map(int, allowed)), expected=values))
+    folder = Path('local/footprint-passability')
+    folder.mkdir(exist_ok=True)
+    (folder / 'native.json').write_text(json.dumps(dict(cases=traces, exe_sha256=EXE_HASH)), encoding='utf-8')
     Path('analysis/native-footprint-passability-validation.json').write_text(json.dumps(dict(
         maps=60, cells=checked, differences=differences, exe_sha256=EXE_HASH,
         scope='Original 0x440500 plus original cell predicate on unoccupied feature-free Boolean terrain; allocator/free stubbed; footprints 1 to 6; excludes query-to-unit coordinate mapping and dynamic updates'

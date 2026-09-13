@@ -3,12 +3,14 @@ extends RefCounted
 const CELL := 16
 const Limits = preload("res://terrain_limits.gd")
 const Heights = preload("res://terrain_heights.gd")
+const Footprint = preload("res://footprint_passability.gd")
 const DIRECTIONS := [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1),
 	Vector2i(1, 1), Vector2i(-1, 1), Vector2i(-1, -1), Vector2i(1, -1)]
 var width: int
 var height: int
 var heights: PackedByteArray
 var blocked := PackedByteArray()
+var terrain_clearance := PackedByteArray()
 var sea_level := 0
 var last_expanded := 0
 var failure := ""
@@ -28,17 +30,16 @@ func _init(w: int, h: int, data: PackedByteArray, sea := 0, slope := 20, depth :
 			var index := y * width + x
 			# Last row/column have no complete terrain quad.
 			cell_blocked[index] = int(x == width - 1 or y == height - 1 or not Limits.passable(extrema.low[index], extrema.high[index], sea_level, depth, minimum_depth, slope, slope if water_slope < 0 else water_slope))
+	for index in range(cell_blocked.size()):
+		cell_blocked[index] = 1 - cell_blocked[index]
+	var map_values := Footprint.prepare(cell_blocked, width, height, footprint)
+	terrain_clearance.resize(width * height)
 	for y in range(height):
 		for x in range(width):
-			var solid := false
-			for dz in range(footprint.y):
-				for dx in range(footprint.x):
-					var sample := Vector2i(x + dx - (footprint.x >> 1), y + dz - (footprint.y >> 1))
-					if not inside(sample):
-						solid = true
-						continue
-					solid = solid or cell_blocked[sample.y * width + sample.x] != 0
-			blocked[y * width + x] = int(solid)
+			var origin := Vector2i(x - (footprint.x >> 1), y - (footprint.y >> 1))
+			var value := int(map_values[origin.y * width + origin.x]) if inside(origin) else 0
+			terrain_clearance[y * width + x] = value
+			blocked[y * width + x] = int(value == 0)
 
 func inside(cell: Vector2i) -> bool:
 	return cell.x >= 0 and cell.y >= 0 and cell.x < width and cell.y < height

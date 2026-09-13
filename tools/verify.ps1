@@ -145,6 +145,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original terrain height preparation differs' }
         python tools\native_footprint_passability.py
         if ($LASTEXITCODE -ne 0) { throw 'Original footprint passability differs' }
+        & $godotPath --headless --path godot --script res://compare_native_footprint_passability.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Live footprint passability differs' }
         & $godotPath --headless --path godot --script res://compare_native_terrain_heights.gd
         if ($LASTEXITCODE -ne 0) { throw 'Live terrain height preparation differs' }
         & $godotPath --headless --path godot --script res://compare_native_terrain_limits.gd
