@@ -21,9 +21,9 @@ All 1,000 seeded cases match, including zero work, already-complete targets, par
 - Production/storage use the selected definitions. Negative EnergyUse produces energy while active; e.g. the Commander plus completed solar produce 45 energy/second, or 25 with solar disabled. Extractor terrain-metal sampling, wind, tide, metal conversion, other activation scripts and special-unit production remain unfinished.
 - Starting resources/storage are 1,000 each. They are prototype host defaults, not recovered game setup rules.
 - Build range measures to a footprint edge. Footprints, height-range slope checks, water checks, collision-grid reservations and arrival/placement semantics need original-engine comparison.
-- One Commander task runs at a time. New build orders leave prior unfinished structures paused. Factories and construction units do not yet build their own menu entries.
+- One Commander task runs at a time. New build orders leave prior unfinished structures paused. Arm Vehicle Plants and Kbot Labs now produce queued menu entries; see FACTORIES.md. Mobile construction units do not yet expose their own menus.
 - The host has a configurable `unit_limit` field, default 1,000 including the Commander. This is a capacity setting, not a demonstrated battle-performance limit.
-- Arm solar presentation uses an animated viewport per instance; other building types retain static viewports cached per type. Viewport-per-instance performance has not been benchmarked for large armies. Depth sorting, original construction effects and exact scale/projection remain unfinished.
+- Arm solar and enabled factories use animated viewports per instance. Produced mobile units also have separate views for heading changes; other building types retain static views cached per type. This has not been benchmarked for large armies. Depth sorting, original construction effects and exact scale/projection remain unfinished.
 
 ## Verification
 
@@ -33,4 +33,4 @@ All 1,000 seeded cases match, including zero work, already-complete targets, par
 
 Capture a completed example with Godot `--path godot -- --construction-demo --capture ABSOLUTE_PNG_PATH`. This demo fast-forwards 600 ticks before capture; ordinary play advances at 30 ticks per second.
 
-Next: remaining building COB callbacks, more faithful resource settlement/production, factory build orders, unit selection, weapons and actual combat. The full-game goal remains active; this is a playable construction checkpoint, not completion of Total Annihilation.
+Next: remaining building/unit COB callbacks, more faithful resource settlement/production, mobile builders, weapons and actual combat. Initial factory queues and product selection now work; see FACTORIES.md. The full-game goal remains active.

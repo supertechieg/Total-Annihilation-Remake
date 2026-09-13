@@ -2,7 +2,14 @@ extends RefCounted
 ## First construction/economy host. Accounting settlement and placement are provisional.
 const BuildMath = preload("res://construction_math.gd")
 const VM = preload("res://cob_vm.gd")
+const Navigation = preload("res://terrain_navigation.gd")
+const BuildingNavigation = preload("res://building_navigation.gd")
+const Mobile = preload("res://mobile_unit.gd")
+var mobile_units: Dictionary = {}
+var navigation_cache: Dictionary = {}
+var yard_signature := ""
 var scripts: Dictionary = {}
+var factories: Dictionary = {}
 var catalog: RefCounted
 var navigation: RefCounted
 var units: Dictionary = {}
@@ -24,6 +31,7 @@ var builder_ready := true
 func _init(source: RefCounted, terrain: RefCounted, commander_position: Vector2, commander := "armcom") -> void:
 	catalog = source
 	navigation = terrain
+	navigation_cache[commander] = {"nav": terrain, "terrain": terrain.blocked.duplicate(), "footprint": Vector2i(2, 2)}
 	builder_id = add_unit(commander, commander_position, 0.0)
 
 func add_unit(type: String, position: Vector2, remaining: float) -> int:
@@ -32,24 +40,147 @@ func add_unit(type: String, position: Vector2, remaining: float) -> int:
 	var definition: Dictionary = catalog.definition(type)
 	units[id] = {"id": id, "type": type, "position": position, "remaining": remaining,
 		"health": 1 if remaining > 0 else int(definition.get("maxdamage", "1")), "active": true}
-	# Enable only the building script whose healthy lifecycle has a native oracle.
-	if type == "armsolar":
+	# Only these healthy scripts currently have native lifecycle comparisons.
+	if type in ["armsolar", "armvp", "armlab", "armflash"]:
 		var vm = VM.new(catalog.load_script(type))
 		vm.read_values = {4: 100, 17: ceili(remaining * 100)}
-		vm.writable_values.assign([1, 5, 20])
+		if type == "armsolar":
+			vm.writable_values.assign([1, 5, 20])
+		elif type in ["armvp", "armlab"]:
+			vm.writable_values.assign([5, 18, 19])
+			vm.readback_values.assign([18])
+			factories[id] = {"queue": [], "product": 0, "opening": false, "status": "Idle"}
 		vm.invoke("Create")
-		if remaining == 0:
+		if remaining == 0 and type == "armsolar":
 			vm.invoke("Activate")
 		scripts[id] = vm
 	return id
 
 func set_active(id: int, active: bool) -> bool:
-	if not scripts.has(id) or float(units[id].remaining) > 0:
+	if not scripts.has(id) or units[id].type != "armsolar" or float(units[id].remaining) > 0:
 		return false
 	if bool(units[id].active) != active:
 		units[id].active = active
 		scripts[id].invoke("Activate" if active else "Deactivate")
 	return true
+
+func queue_unit(factory_id: int, type: String) -> bool:
+	if not factories.has(factory_id) or float(units[factory_id].remaining) > 0:
+		status = "Finish the factory first"
+		return false
+	if type not in catalog.build_options(units[factory_id].type) or int(catalog.definition(type).get("buildtime", "0")) <= 0:
+		status = "Factory cannot build that unit"
+		return false
+	factories[factory_id].queue.append(type)
+	factories[factory_id].status = "Queued " + catalog.definition(type).get("name", type)
+	return true
+
+func refresh_navigation(force := false) -> void:
+	var signature := ""
+	for unit: Dictionary in units.values():
+		if int(catalog.definition(unit.type).get("bmcode", "1")) == 0:
+			signature += "%d:%d:%d;" % [unit.id, int(float(unit.remaining) == 0), int(scripts[unit.id].values.get(18, 0)) if scripts.has(unit.id) else 0]
+	if signature == yard_signature and not force:
+		return
+	yard_signature = signature
+	for entry: Dictionary in navigation_cache.values():
+		BuildingNavigation.overlay(entry.nav, entry.terrain, units, catalog, scripts, entry.footprint)
+
+func unit_navigation(type: String) -> RefCounted:
+	if not navigation_cache.has(type):
+		var fields: Dictionary = catalog.definition(type)
+		var size := Vector2i(int(fields.get("footprintx", "2")), int(fields.get("footprintz", "2")))
+		var nav = Navigation.new(navigation.width, navigation.height, navigation.heights, navigation.sea_level,
+			int(fields.get("maxslope", "10")), int(fields.get("maxwaterdepth", "0")), size)
+		navigation_cache[type] = {"nav": nav, "terrain": nav.blocked.duplicate(), "footprint": size}
+		refresh_navigation(true)
+	return navigation_cache[type].nav
+
+func move_unit(id: int, point: Vector2) -> bool:
+	return mobile_units.has(id) and mobile_units[id].move_to(point)
+
+func clear_factory_queue(factory_id: int) -> void:
+	if factories.has(factory_id):
+		# Keep the current paid-for unit; clear only orders that have not started.
+		factories[factory_id].queue.clear()
+
+func factory_build_position(id: int) -> Vector2:
+	var vm = scripts[id]
+	var query: int = vm.invoke("QueryBuildInfo", [0])
+	if not vm.completions.has(query):
+		return Vector2(INF, INF)
+	var index := int(vm.completions[query].locals[0])
+	if index < 0 or index >= vm.pieces.size():
+		return Vector2(INF, INF)
+	var name: String = vm.pieces[index].name
+	var model: Dictionary = catalog.load_unit(units[id].type).model
+	for piece: Dictionary in model.pieces:
+		if piece.name == name:
+			# Both enabled factories have the queried pad directly under an unrotated base.
+			var offset: Array = piece.offset
+			var motion: Array = vm.pieces[index].position
+			return units[id].position + Vector2(float(offset[0]) + float(motion[0]), -float(offset[2]) - float(motion[2])) / 65536.0
+	return Vector2(INF, INF)
+
+func release_product(factory_id: int, product: int) -> void:
+	if mobile_units.has(product):
+		return
+	var type: String = units[product].type
+	if int(catalog.definition(type).get("bmcode", "0")) != 1:
+		return
+	scripts[factory_id].invoke("StopBuilding")
+	mobile_units[product] = Mobile.new(unit_navigation(type), catalog.definition(type), units[product].position, scripts.get(product))
+	# Provisional orientation/rally policy for the two unrotated ground factories.
+	mobile_units[product].heading = 32768
+	var bounds := footprint(units[factory_id].type, units[factory_id].position)
+	mobile_units[product].move_to(Vector2(units[factory_id].position.x, bounds.end.y + 64))
+
+func step_factories() -> void:
+	for id: int in factories:
+		var factory: Dictionary = factories[id]
+		if float(units[id].remaining) > 0:
+			continue
+		var vm = scripts[id]
+		if not vm.fault.is_empty():
+			factory.status = "Script fault: " + vm.fault
+			continue
+		var product := int(factory.product)
+		if product != 0 and float(units[product].remaining) == 0:
+			release_product(id, product)
+			if footprint(units[id].type, units[id].position).intersects(footprint(units[product].type, units[product].position)):
+				factory.status = "Waiting for completed unit to leave"
+				continue
+			factory.product = 0
+			product = 0
+		if product == 0 and factory.queue.is_empty():
+			if factory.opening:
+				vm.invoke("Deactivate")
+				factory.opening = false
+			factory.status = "Idle"
+			continue
+		if not factory.opening:
+			vm.invoke("Activate")
+			factory.opening = true
+		if int(vm.values.get(5, 0)) != 1:
+			factory.status = "Opening factory"
+			continue
+		if product == 0:
+			if units.size() >= unit_limit:
+				factory.status = "Unit limit reached"
+				continue
+			var point := factory_build_position(id)
+			if not point.is_finite():
+				factory.status = "Factory build-piece query failed"
+				continue
+			product = add_unit(str(factory.queue.pop_front()), point, 1.0)
+			units[product]["produced_by"] = id
+			factory.product = product
+			vm.invoke("StartBuilding")
+		if advance_construction(product, id):
+			release_product(id, product)
+			factory.status = "Waiting for completed unit to leave"
+		else:
+			factory.status = status
 
 func footprint(type: String, position: Vector2) -> Rect2:
 	var definition: Dictionary = catalog.definition(type)
@@ -124,6 +255,10 @@ func step() -> void:
 		# Construction health is not combat damage. Damaged smoke awaits its opcodes.
 		scripts[id].read_values[17] = ceili(float(units[id].remaining) * 100)
 		scripts[id].step()
+	refresh_navigation()
+	for id: int in mobile_units:
+		mobile_units[id].step()
+		units[id].position = mobile_units[id].point()
 	var energy_income := 0.0
 	var metal_income := 0.0
 	energy_storage = base_energy_storage
@@ -140,14 +275,19 @@ func step() -> void:
 			energy_income -= float(fields.get("energyuse", "0"))
 	energy = clampf(energy + energy_income / 30.0, 0.0, energy_storage)
 	metal = clampf(metal + metal_income / 30.0, 0.0, metal_storage)
+	step_factories()
 	if task_id == 0 or not builder_ready:
 		return
 	var unit: Dictionary = units[task_id]
-	var builder: Dictionary = units[builder_id]
-	var builder_fields: Dictionary = catalog.definition(builder.type)
 	if not in_build_range(unit.type, unit.position):
 		status = "Build paused: out of range"
 		return
+	if advance_construction(task_id, builder_id):
+		task_id = 0
+
+func advance_construction(target_id: int, source_id: int) -> bool:
+	var unit: Dictionary = units[target_id]
+	var builder_fields: Dictionary = catalog.definition(units[source_id].type)
 	var fields: Dictionary = catalog.definition(unit.type)
 	var input := {"remaining": unit.remaining, "health": unit.health,
 		"energy_cost": float(fields.get("buildcostenergy", "0")), "metal_cost": float(fields.get("buildcostmetal", "0")),
@@ -157,7 +297,7 @@ func step() -> void:
 	# Temporary immediate-payment host, distinct from TA's deferred debt settlement.
 	if result.energy_requested > energy or result.metal_requested > metal:
 		status = "Build paused: insufficient resources"
-		return
+		return false
 	if result.accepted:
 		energy -= result.energy_accepted
 		metal -= result.metal_accepted
@@ -165,9 +305,11 @@ func step() -> void:
 		unit.health = result.health
 		status = "Building %s · %d%%" % [catalog.definition(unit.type).get("name", unit.type), roundi((1.0 - float(unit.remaining)) * 100)]
 		if float(unit.remaining) == 0:
-			if scripts.has(task_id):
-				scripts[task_id].read_values[17] = 0
-				scripts[task_id].invoke("Activate")
-			completed.append(task_id)
-			task_id = 0
+			if scripts.has(target_id):
+				scripts[target_id].read_values[17] = 0
+				if unit.type == "armsolar":
+					scripts[target_id].invoke("Activate")
+			completed.append(target_id)
 			status = "Construction complete"
+			return true
+	return false

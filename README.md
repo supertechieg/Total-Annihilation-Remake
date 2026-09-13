@@ -1,6 +1,6 @@
 # Total Annihilation reconstruction
 
-Goal: a faithful recreation using the installed game's data, followed by optional graphical improvements. The original executable is the behavioral reference. This repository currently contains analysis tooling and a Godot viewer with original Commander script playback, not a playable replacement engine.
+Goal: a faithful recreation using the installed game's data, followed by optional graphical improvements. The original executable is the behavioral reference. This repository contains analysis tooling and a playable development build with Commander movement, construction, solar production, and initial Arm factory queues. The complete replacement game remains under construction.
 
 ## Run the viewer
 
@@ -15,7 +15,10 @@ The viewer displays Comet Catcher's original terrain and a controllable Arm Comm
 | Control | Action |
 | --- | --- |
 | Drag / scroll | Pan / zoom |
-| Click terrain | Move commander to destination |
+| Click terrain | Move the selected mobile unit |
+| Click completed factory | Select its production menu |
+| Click produced unit | Select it for movement |
+| Select Commander button | Return control to the Commander |
 | Right-click / S | Stop and brake |
 | Space | Start/stop original walk cycle, in place |
 | 1 / 2 | Aim and show primary / D-gun flash |
@@ -26,7 +29,7 @@ The viewer displays Comet Catcher's original terrain and a controllable Arm Comm
 
 Original renderer fidelity and world simulation are still under reconstruction. Terrain routing and arrival handling are provisional. A first construction/resource loop is available; projectile and damage simulation are not yet implemented.
 
-Choose a structure in the dropdown, press **Place selected structure**, and click nearby terrain. Right-click/S pauses construction; click an unfinished structure to resume. Completed solar collectors generate energy. Building scripts, factory production and several resource sources remain unfinished; see [construction scope and native validation](analysis/CONSTRUCTION.md).
+Choose a structure in the dropdown, press **Place selected structure**, and click nearby terrain. Right-click/S pauses Commander construction; click an unfinished structure to resume. Completed solar collectors generate energy and toggle on/off when clicked. Build an Arm Vehicle Plant or Kbot Lab, click it, choose a unit and press **Queue unit**. Completed units leave the pad and can be selected and moved. **Clear pending orders** retains the current unit. Combat and several resource sources remain unfinished; see [construction scope](analysis/CONSTRUCTION.md) and [factory scope and verification](analysis/FACTORIES.md).
 
 Original speed caps, heading-to-velocity rounding, supplied-waypoint steering and movement-animation transitions match 6,837 native comparison checks. See [ground movement evidence and remaining work](analysis/GROUND_MOVEMENT.md) and [playable movement scope](analysis/PLAYABLE_MOVEMENT.md).
 

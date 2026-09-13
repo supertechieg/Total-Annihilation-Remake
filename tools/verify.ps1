@@ -26,6 +26,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Terrain navigation checks failed' }
     & $godotPath --headless --path godot --script res://test_construction_world.gd
     if ($LASTEXITCODE -ne 0) { throw 'Construction checks failed' }
+    & $godotPath --headless --path godot --script res://test_factory_world.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Factory production checks failed' }
     & $godotPath --headless --path godot -- --verify
     if ($LASTEXITCODE -ne 0) { throw 'Viewer checks failed' }
     if ($Native) {

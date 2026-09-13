@@ -17,6 +17,10 @@ var placement_type := ""
 var structure_sprites: Dictionary = {}
 var structure_views: Dictionary = {}
 var structure_models: Dictionary = {}
+var selected_unit := 0
+var factory_picker: OptionButton
+var factory_controls: VBoxContainer
+var factory_label: Label
 var navigation: RefCounted
 var mobile: RefCounted
 var route_line: Line2D
@@ -109,8 +113,53 @@ func start_world_movement() -> void:
 		place_structure("armsolar", unit_position + Vector2(80, 0))
 		for tick in range(600):
 			step_script()
+	if "--factory-demo" in OS.get_cmdline_user_args():
+		assert(run_factory_demo(), "Factory demo failed")
+
+func run_factory_demo() -> bool:
+	select_unit(0)
+	var point := unit_position + Vector2(-112, 0)
+	if not place_structure("armvp", point):
+		return false
+	var id: int = economy.task_id
+	for tick in range(1200):
+		step_script()
+	if float(economy.units[id].remaining) != 0:
+		return false
+	select_unit(id)
+	for index in range(factory_picker.item_count):
+		if factory_picker.get_item_metadata(index) == "armflash":
+			factory_picker.select(index)
+	queue_factory_unit()
+	queue_factory_unit()
+	for tick in range(1600):
+		step_script()
+	var produced: Array = []
+	for unit: Dictionary in economy.units.values():
+		if int(unit.get("produced_by", 0)) == id:
+			produced.append(unit.id)
+	if produced.size() != 2 or int(economy.factories[id].product) != 0:
+		return false
+	for product: int in produced:
+		if float(economy.units[product].remaining) != 0 or not economy.scripts[product].fault.is_empty():
+			return false
+	select_unit(int(produced[0]))
+	var target: Vector2 = economy.units[produced[0]].position + Vector2(-96, 96)
+	if not issue_move(target):
+		return false
+	for tick in range(500):
+		step_script()
+	if economy.units[produced[0]].position.distance_to(target) > 5:
+		return false
+	select_unit(id)
+	print("FACTORY_VERIFY_OK built=armvp produced=2 armflash; exit and selected movement passed")
+	return true
 
 func issue_move(target: Vector2) -> bool:
+	if selected_unit != 0:
+		var accepted: bool = economy.move_unit(selected_unit, target)
+		status_label.text = "  Move order accepted" if accepted else "  Select a completed mobile unit to move"
+		return accepted
 	if mobile == null:
 		return false
 	if economy != null:
@@ -130,6 +179,9 @@ func issue_move(target: Vector2) -> bool:
 
 func stop_order() -> void:
 	placement_type = ""
+	if selected_unit != 0 and economy.mobile_units.has(selected_unit):
+		economy.mobile_units[selected_unit].stop()
+		return
 	if economy != null:
 		economy.stop_build()
 	if building:
@@ -144,6 +196,7 @@ func stop_order() -> void:
 		status_label.text = "  Stop order — braking"
 
 func choose_build() -> void:
+	select_unit(0)
 	stop_order()
 	placement_type = str(build_picker.get_item_metadata(build_picker.selected))
 	var fields: Dictionary = unit_catalog.definition(placement_type)
@@ -158,7 +211,15 @@ func place_structure(type: String, point: Vector2) -> bool:
 		status_label.text = "  " + economy.status
 		return false
 	placement_type = ""
+	add_structure_sprite(id)
+	economy.refresh_navigation(true)
+	if not building:
+		toggle_build()
+	return true
+
+func add_structure_sprite(id: int) -> void:
 	var unit: Dictionary = economy.units[id]
+	var type: String = unit.type
 	var sprite := Sprite2D.new()
 	sprite.texture = structure_texture(type, id)
 	sprite.position = unit.position
@@ -166,17 +227,10 @@ func place_structure(type: String, point: Vector2) -> bool:
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	world.add_child(sprite)
 	structure_sprites[id] = sprite
-	var footprint: Rect2 = economy.footprint(type, unit.position)
-	for y in range(maxi(0, int(footprint.position.y / 16) - 1), mini(navigation.height, int(ceil(footprint.end.y / 16)) + 2)):
-		for x in range(maxi(0, int(footprint.position.x / 16) - 1), mini(navigation.width, int(ceil(footprint.end.x / 16)) + 2)):
-			if footprint.intersects(Rect2(Vector2(x * 16 - 16, y * 16 - 16), Vector2(32, 32))):
-				navigation.blocked[y * navigation.width + x] = 1
-	if not building:
-		toggle_build()
-	return true
 
 func structure_texture(type: String, id: int) -> Texture2D:
-	var key := str(id) if economy.scripts.has(id) else type
+	var individual: bool = economy.scripts.has(id) or economy.units[id].has("produced_by")
+	var key := str(id) if individual else type
 	if structure_views.has(key):
 		return structure_views[key].get_texture()
 	var view := SubViewport.new()
@@ -187,7 +241,7 @@ func structure_texture(type: String, id: int) -> Texture2D:
 	add_child(view)
 	var model: Node3D = unit_visuals.instantiate(type)
 	view.add_child(model)
-	if economy.scripts.has(id):
+	if individual:
 		structure_models[id] = model
 		view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	var camera := Camera3D.new()
@@ -199,6 +253,21 @@ func structure_texture(type: String, id: int) -> Texture2D:
 	camera.current = true
 	structure_views[key] = view
 	return view.get_texture()
+
+func select_unit(id: int) -> void:
+	selected_unit = id
+	factory_controls.visible = economy != null and economy.factories.has(id)
+	if factory_controls.visible:
+		factory_picker.clear()
+		for type: String in unit_catalog.build_options(economy.units[id].type):
+			factory_picker.add_item(unit_catalog.definition(type).get("name", type))
+			factory_picker.set_item_metadata(factory_picker.item_count - 1, type)
+	update_world()
+
+func queue_factory_unit() -> void:
+	if economy.factories.has(selected_unit) and factory_picker.selected >= 0:
+		economy.queue_unit(selected_unit, str(factory_picker.get_item_metadata(factory_picker.selected)))
+		status_label.text = "  " + economy.factories[selected_unit].status
 
 func build_model() -> void:
 	model_view = SubViewport.new()
@@ -332,15 +401,25 @@ func step_script() -> void:
 		economy.builder_ready = mobile.speed == 0 and script_vm.values.get(5, 0) == 1
 		var was_building: bool = economy.task_id != 0
 		economy.step()
+		for id: int in economy.units:
+			if id != economy.builder_id and not structure_sprites.has(id):
+				add_structure_sprite(id)
 		resource_label.text = "Metal %.0f / %.0f\nEnergy %.0f / %.0f" % [economy.metal, economy.metal_storage, economy.energy, economy.energy_storage]
 		for id: int in structure_sprites:
+			structure_sprites[id].position = economy.units[id].position
 			var remaining := float(economy.units[id].remaining)
 			structure_sprites[id].modulate = Color(1, 1, 1, 0.25 + 0.75 * (1.0 - remaining))
-			if structure_models.has(id):
+			if structure_models.has(id) and economy.scripts.has(id):
 				UnitVisuals.apply_pose(structure_models[id], economy.scripts[id].pieces)
+			if economy.mobile_units.has(id):
+				structure_models[id].rotation.y = -float(economy.mobile_units[id].heading) * TAU / 65536.0
+		if economy.factories.has(selected_unit):
+			var factory: Dictionary = economy.factories[selected_unit]
+			factory_label.text = "%s · %d queued\n%s" % [unit_catalog.definition(economy.units[selected_unit].type).name, factory.queue.size(), factory.status]
+		update_world()
 		if was_building:
 			status_label.text = "  " + economy.status
-		if not economy.completed.is_empty() and building:
+		if was_building and economy.task_id == 0 and building:
 			toggle_build()
 			status_label.text = "  Construction complete"
 	var restore_id := int(get_meta("pending_build", -1))
@@ -452,6 +531,16 @@ func build_interface() -> void:
 		build_picker.set_item_metadata(build_picker.item_count - 1, type)
 	column.add_child(build_picker)
 	column.add_child(button("Place selected structure", choose_build))
+	factory_controls = VBoxContainer.new()
+	factory_controls.visible = false
+	column.add_child(factory_controls)
+	factory_label = label("Factory", 12)
+	factory_controls.add_child(factory_label)
+	factory_picker = OptionButton.new()
+	factory_controls.add_child(factory_picker)
+	factory_controls.add_child(button("Queue unit", queue_factory_unit))
+	factory_controls.add_child(button("Clear pending orders", func() -> void: economy.clear_factory_queue(selected_unit)))
+	column.add_child(button("Select Commander", func() -> void: select_unit(0)))
 	column.add_child(label("Click terrain to move · Right-click / S to stop", 11))
 	column.add_child(button("Stop movement  [S]", stop_order))
 	walk_button = button("Play walk cycle  [Space]", toggle_walk)
@@ -502,7 +591,7 @@ func update_world() -> void:
 		return
 	world.scale = Vector2(map_zoom, map_zoom)
 	world.position = map_panel.size * 0.5 - map_center * map_zoom
-	selection.position = unit_position + Vector2(0, 15)
+	selection.position = (economy.units[selected_unit].position if selected_unit != 0 and economy != null else unit_position) + Vector2(0, 15)
 	unit_sprite.position = unit_position
 	if zoom_label != null:
 		zoom_label.text = "Zoom  %d%%" % roundi(map_zoom * 100)
@@ -538,8 +627,14 @@ func map_input(event: InputEvent) -> void:
 					place_structure(placement_type, pos)
 				else:
 					var resumed := false
-					for id: int in structure_sprites:
+					var ids: Array = structure_sprites.keys()
+					ids.reverse()
+					for id: int in ids:
 						var unit: Dictionary = economy.units[id]
+						if economy.footprint(unit.type, unit.position).has_point(pos) and (economy.factories.has(id) or economy.mobile_units.has(id)) and float(unit.remaining) == 0:
+							select_unit(id)
+							resumed = true
+							break
 						if economy.footprint(unit.type, unit.position).has_point(pos) and economy.set_active(id, not bool(unit.active)):
 							status_label.text = "  Solar collector " + ("on" if unit.active else "off")
 							resumed = true
@@ -666,6 +761,7 @@ func _process(delta: float) -> void:
 			step_script()
 		assert(economy.scripts[built_id].values.get(20) == 0)
 		print("CONSTRUCTION_VERIFY_OK structure=armsolar id=%d" % built_id)
+		assert(run_factory_demo(), "Factory build, queue, exit or movement failed")
 		print("VIEWER_VERIFY_OK")
 		get_tree().quit()
 	if frames == 20 and "--capture" in args:
