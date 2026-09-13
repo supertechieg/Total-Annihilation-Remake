@@ -85,6 +85,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-hammer
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Hammer duel failed' }
     if ($Native) {
+        python tools\native_weapon_reload.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original weapon reload reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_weapon_reload.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Weapon reload differs from original executable' }
         python tools\native_firing_reference.py --unit armham
         if ($LASTEXITCODE -ne 0) { throw 'Original Hammer firing reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --armham
