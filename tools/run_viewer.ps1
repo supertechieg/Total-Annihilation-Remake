@@ -16,7 +16,7 @@ if ($Prepare -or -not $viewerBundleCurrent -or -not (Test-Path -LiteralPath (Joi
 $unitIndexPath = Join-Path $workspacePath 'local\unit-assets\index.json'
 $unitBundleCurrent = $false
 if (Test-Path -LiteralPath $unitIndexPath) {
-    $unitBundleCurrent = (Get-Content -LiteralPath $unitIndexPath -Raw | ConvertFrom-Json).weapon_runtime_version -eq 1
+    $unitBundleCurrent = (Get-Content -LiteralPath $unitIndexPath -Raw | ConvertFrom-Json).weapon_runtime_version -eq 2
 }
 if ($Prepare -or -not $unitBundleCurrent) {
     Push-Location $workspacePath

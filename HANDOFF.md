@@ -6,6 +6,8 @@ Use Light/low by default, including reverse engineering when it can be done reli
 
 ## Completed
 
+Weapon minimum barrel angle prepared: runtime.minimum_barrel_angle, default-11.25deg ->float32 -0.19634954631328583rad. Nativeweapon suite now821/821 (618earlier+203anglecases);6normal scalar tests. Unit runtime schema2, launcher auto-upgrades, catalog rejects stale data. Bundle regenerated272units193weapons. Next: native muzzle/AimFrom world transforms and cannon lifetime/collision/splash, then integrate Raider firing. See WEAPON_SCALARS.md.
+
 Cannon controller offset source recovered: initialization0x49e070 queries muzzle and AimFrom world coordinates; stored controller+0x10 is trunc(signed32(muzzleZ-aimZ)*1.25), NOT merely elapsed time. ballistic_launch.initial_offset matches300 native block cases; total launch comparison1300, normal launch checks14. Native piece-world transform still unverified. Aim minimum is weapon minbarrelangle default-11.25 degrees, scaled by0.017453292519943278 into float32 atweapon+c8; loader conversion inspection only. See updated BALLISTICS.md. Next connect query origins with verified transforms, prepare minimum angle, resolve lifetime/collision/splash for Raider.
 
 Map gravity: native_map_gravity.py matches96 loader cases; map_environment.py recovers default/override and x87 scale. Comet Catcher is gravity60 ->raw4369, winds10..15 (not default8155 used by isolated fixtures). prepare_viewer now reads OTA and writes scene.environment +environment_version1; launcher upgrades older bundles. Six normal tests. See analysis/BALLISTICS.md and native-map-gravity-validation.json. Remaining integration: controller accumulator/min-angle evolution, wind initialization/scheduling, lifetime/collision/splash before armed Raider.

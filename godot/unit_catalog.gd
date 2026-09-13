@@ -25,7 +25,7 @@ func weapon(name: String) -> Dictionary:
 	var item: Dictionary = index.get("weapons", {}).get(name.to_lower(), {})
 	if item.is_empty():
 		fault = "Unknown weapon: " + name
-	elif not item.has("runtime"):
+	elif not item.has("runtime") or not item.runtime.has("minimum_barrel_angle"):
 		fault = "Prepare current weapon values with python tools/prepare_units.py"
 		return {}
 	return item

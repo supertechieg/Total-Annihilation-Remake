@@ -38,7 +38,7 @@ func _initialize() -> void:
 			errors.append("Commander has no build menu")
 	checks += 1
 	var emg: Dictionary = catalog.weapon("EMG")
-	if emg.is_empty() or int(emg.runtime.velocity_raw_per_tick) != 655359 or int(emg.runtime.reload_ticks) != 12 or int(emg.runtime.burst_interval_ticks) != 3:
+	if emg.is_empty() or int(emg.runtime.velocity_raw_per_tick) != 655359 or int(emg.runtime.reload_ticks) != 12 or int(emg.runtime.burst_interval_ticks) != 3 or float(emg.runtime.minimum_barrel_angle) != -0.19634954631328583:
 		errors.append("EMG runtime conversion missing or incorrect")
 	var report := {"checks": checks, "units": catalog.index.units.size(), "errors": errors,
 		"scope": "Bundle references and model/script piece names; does not execute all unit scripts or validate simulation"}

@@ -1,6 +1,14 @@
 """Weapon scalar conversion using the loader's binary64 input and x87 precision."""
 from fractions import Fraction
 import math
+import struct
+
+
+def minimum_barrel_angle(text='-11.25'):
+    value = float(text)
+    if not math.isfinite(value):
+        raise ValueError('Non-finite weapon angle')
+    return struct.unpack('<f', struct.pack('<f', value * 0.017453292519943278))[0]
 
 
 def extended_product_integer(value, multiplier):
@@ -39,4 +47,5 @@ def weapon_runtime(definition):
         'velocity_raw_per_tick': scaled_weapon_value(definition.get('weaponvelocity', '0'), 'velocity'),
         'reload_ticks': scaled_weapon_value(definition.get('reloadtime', '0'), 'reload'),
         'burst_interval_ticks': scaled_weapon_value(definition.get('burstrate', '0'), 'burst_rate'),
+        'minimum_barrel_angle': minimum_barrel_angle(definition.get('minbarrelangle', '-11.25')),
     }
