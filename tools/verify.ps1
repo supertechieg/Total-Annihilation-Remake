@@ -89,6 +89,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original Flash firing reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_firing.gd
         if ($LASTEXITCODE -ne 0) { throw 'Flash firing script differs from original interpreter' }
+        python tools\native_tank_origins.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original tank origin reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_tank_origins.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Tank origins differ from original setters and transforms' }
         python tools\native_weapon_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original weapon scalar reference failed' }
         python tools\compare_native_weapons.py

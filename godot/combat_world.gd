@@ -1,7 +1,7 @@
 extends RefCounted
 ## Initial EMG combat host. See analysis/COMBAT.md for provisional simulation rules.
 const Cycle = preload("res://weapon_cycle.gd")
-const Pose = preload("res://unit_pose.gd")
+const Origin = preload("res://piece_origin.gd")
 var world: RefCounted
 var orders: Dictionary = {}
 var cycles: Dictionary = {}
@@ -43,9 +43,8 @@ func center(id: int) -> Vector3:
 func muzzle(source: int, piece: String) -> Vector3:
 	var unit: Dictionary = world.units[source]
 	var model: Dictionary = world.catalog.load_unit(unit.type).model
-	var transform := Pose.piece_transform(model, world.scripts[source].pieces, piece)
-	var rotation := Basis(Vector3.UP, -float(world.mobile_units[source].heading) * TAU / 65536.0)
-	return Vector3(unit.position.x, world.navigation.height_at(unit.position), unit.position.y) + rotation * transform.origin
+	var raw := Origin.model_origin(model, world.scripts[source].pieces, piece, [0, int(world.mobile_units[source].heading), 0])
+	return Vector3(unit.position.x, world.navigation.height_at(unit.position), unit.position.y) + render_point(raw)
 
 static func raw_point(point: Vector3) -> Array:
 	return [roundi(point.x * 65536.0), roundi(point.y * 65536.0), roundi(point.z * 65536.0)]

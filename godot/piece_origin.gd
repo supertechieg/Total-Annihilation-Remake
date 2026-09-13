@@ -2,6 +2,20 @@ extends RefCounted
 ## Original origin traversal, distinct from the presentation renderer's matrices.
 const Ground = preload("res://ground_motion.gd")
 
+static func model_origin(model: Dictionary, poses: Array, name: String, angles: Array) -> Array:
+	var by_name := {}
+	for pose: Dictionary in poses:
+		by_name[str(pose.name).to_lower()] = pose
+	var pieces: Array = []
+	var target := -1
+	for item: Dictionary in model.pieces:
+		var pose: Dictionary = by_name.get(str(item.name).to_lower(), {})
+		if str(item.name).to_lower() == name.to_lower():
+			target = pieces.size()
+		pieces.append({"parent": item.parent, "offset": item.offset,
+			"move": pose.get("position", [0, 0, 0]), "rotation": pose.get("rotation", [0, 0, 0])})
+	return origin(pieces, target, angles)
+
 static func nearest_even(value: float) -> int:
 	var lower := floori(value)
 	var fraction := value - float(lower)
