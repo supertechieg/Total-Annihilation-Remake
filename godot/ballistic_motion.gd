@@ -5,6 +5,11 @@ extends RefCounted
 static func signed32(value: int) -> int:
 	return (value & 0xffffffff) - 0x100000000 if (value & 0x80000000) != 0 else value & 0xffffffff
 
+static func expiration(tick: int, deadline: int, weapon_timer: int, burnblow: bool) -> int:
+	if (weapon_timer & 65535) == 0 or (deadline & 0xffffffff) > (tick & 0xffffffff):
+		return 0
+	return 2 if burnblow else 1
+
 static func integrate(position: Array, velocity: Array, gravity: int, drift: Array) -> Dictionary:
 	var next_position: Array = []
 	var next_velocity: Array = velocity.duplicate()
