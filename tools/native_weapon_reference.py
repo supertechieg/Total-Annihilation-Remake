@@ -29,7 +29,7 @@ class WeaponReference(MovementReference):
     def convert(self, value, kind):
         entry, end = {'velocity': (0x42e4c6, 0x42e4d1), 'reload': (0x42e54b, 0x42e556),
                       'burst_rate': (0x42e645, 0x42e650),
-                      'start_velocity': (0x42e4e4, 0x42e4ef), 'acceleration': (0x42e502, 0x42e50d)}[kind]
+                      'start_velocity': (0x42e4e4, 0x42e4ef), 'acceleration': (0x42e502, 0x42e50d), 'turn_rate': (0x42e60e, 0x42e619)}[kind]
         stub, string = 0x1008000, 0x1009000
         self.mu.mem_write(string, str(value).encode('ascii') + b'\0')
         code = b'\x68' + struct.pack('<I', string)
@@ -41,7 +41,7 @@ class WeaponReference(MovementReference):
         self.mu.ctl_remove_cache(stub, stub + len(code))
         self.mu.ctl_remove_cache(entry, end + 1)
         result = self.call(stub, [])
-        if kind in ('reload', 'burst_rate'):
+        if kind in ('reload', 'burst_rate', 'turn_rate'):
             result &= 0xffff  # Original loader stores AX into the weapon record.
         elif result >= 0x80000000:
             result -= 0x100000000
@@ -53,11 +53,11 @@ def main():
     index = json.loads(Path('local/unit-assets/index.json').read_text())
     cases = []
     for weapon, item in index['weapons'].items():
-        for kind, field in [('velocity', 'weaponvelocity'), ('start_velocity', 'startvelocity'), ('acceleration', 'weaponacceleration'), ('reload', 'reloadtime'), ('burst_rate', 'burstrate')]:
+        for kind, field in [('velocity', 'weaponvelocity'), ('start_velocity', 'startvelocity'), ('acceleration', 'weaponacceleration'), ('reload', 'reloadtime'), ('burst_rate', 'burstrate'), ('turn_rate', 'turnrate')]:
             value = item['definition'].get(field, '0')
             cases.append(dict(weapon=weapon, kind=kind, value=value, result=native.convert(value, kind)))
     for value in ['0', '.1', '.2', '.3', '.4', '1.1', '1.2', '29.999', '30', '300', '-.1', '-.3', '.03333333333333333']:
-        for kind in ['velocity', 'start_velocity', 'acceleration', 'reload', 'burst_rate']:
+        for kind in ['velocity', 'start_velocity', 'acceleration', 'reload', 'burst_rate', 'turn_rate']:
             cases.append(dict(weapon='synthetic', kind=kind, value=value, result=native.convert(value, kind)))
     for weapon, item in index['weapons'].items():
         value = item['definition'].get('minbarrelangle', '-11.25')

@@ -26,3 +26,14 @@ remain unavailable for combat until those pieces are connected and tested.
 Reproduce with `python tools/native_missile_steering.py` then Godot headless
 `--path godot --script res://compare_native_missile_steering.gd`. The native
 verification suite includes this comparison. Native input traces stay local.
+
+
+## Prepared turn allowance
+
+Weapon runtime schema 4 adds turn_raw_per_tick. Original loader instructions
+0x42e60e through 0x42e619 multiply parsed turnrate by the binary64 constant
+1/30, truncate the x87 product and store its low 16 bits at weapon +0xe8.
+Samson's 30000 becomes 999; Jethro's 33000 becomes 1099. Boundary value 30
+becomes zero, demonstrating why ordinary rounding or integer division changes
+behavior. The scalar oracle now covers turnrate in every bundled definition
+and supplied fractional boundaries. Steering remains separate from live combat.
