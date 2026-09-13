@@ -1,0 +1,35 @@
+{
+  "copies": [
+    {
+      "archive": "btdata.ccx",
+      "bytes": 7890,
+      "sha256": "2514431df99863d0c1f4f95effbda442938c4b8e9c5aca7ac3cb5a65846bea32",
+      "functions": 20,
+      "pieces": 14
+    },
+    {
+      "archive": "ccdata.ccx",
+      "bytes": 7890,
+      "sha256": "2514431df99863d0c1f4f95effbda442938c4b8e9c5aca7ac3cb5a65846bea32",
+      "functions": 20,
+      "pieces": 14
+    },
+    {
+      "archive": "rev31.gp3",
+      "bytes": 7890,
+      "sha256": "2514431df99863d0c1f4f95effbda442938c4b8e9c5aca7ac3cb5a65846bea32",
+      "functions": 20,
+      "pieces": 14
+    },
+    {
+      "archive": "totala1.hpi",
+      "bytes": 7890,
+      "sha256": "2514431df99863d0c1f4f95effbda442938c4b8e9c5aca7ac3cb5a65846bea32",
+      "functions": 20,
+      "pieces": 14
+    }
+  ],
+  "identical": true,
+  "loose_override": false,
+  "archive_precedence": "Not required to distinguish these copies when identical; general precedence remains separate work."
+}

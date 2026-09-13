@@ -1,0 +1,1118 @@
+[
+  {
+    "path": "Abe's Atoll.ufo",
+    "size": 1451621,
+    "sha256": "c841f4651c856de43425dd7152ccf7c01661334e146a4f09f0a970d4f2036d0f",
+    "header_hex": "4841504900000100980000000000000014000000"
+  },
+  {
+    "path": "Adamantine Mountain.ufo",
+    "size": 2967929,
+    "sha256": "dea5b75103b5c9d7ea8eef5941dab633dc9f6d394c894d18bdef41b2a1e3e544",
+    "header_hex": "4841504900000100350100000000000014000000"
+  },
+  {
+    "path": "AFark.ufo",
+    "size": 29354,
+    "sha256": "8a713a677e02ec2850507e91d556b69d0159732281ba4afa381362e20845c3ee",
+    "header_hex": "484150490000010024020000a600000014000000"
+  },
+  {
+    "path": "AFlea.ufo",
+    "size": 27388,
+    "sha256": "3504018b73524c381b00fc46f0e3162130597f3baf07b2e7d584534f08021fec",
+    "header_hex": "484150490000010024020000a600000014000000"
+  },
+  {
+    "path": "Alien Desert II_cbl.ufo",
+    "size": 1100363,
+    "sha256": "f390c7ea0106507560ca42e7d2ac43f69d593626c3ea2e5104a061a93e3418f3",
+    "header_hex": "4841504900000100a00000000000000014000000"
+  },
+  {
+    "path": "AScarab.ufo",
+    "size": 33520,
+    "sha256": "cd7a362f1a8705fbebb6ae609c377b1768b6fb09a22192f453348515c8931068",
+    "header_hex": "4841504900000100780200007d00000014000000"
+  },
+  {
+    "path": "audiere.dll",
+    "size": 512000,
+    "sha256": "90e59c4f60941a2838d46e20fb78ba0cf71e9cfd0782e291ca876645e3794a66",
+    "header_hex": "4d5a90000300000004000000ffff0000b8000000"
+  },
+  {
+    "path": "Beta Tropics (Coasts).ufo",
+    "size": 802549,
+    "sha256": "e0b9e47cef3bb20151c47aec0d1723ccf66e9906dd748639af8715b9566177ef",
+    "header_hex": "4841504900000100cc0000000000000014000000"
+  },
+  {
+    "path": "Beta Tropics.ufo",
+    "size": 4190043,
+    "sha256": "e8dbdc479a0761c1f509546d80f7e875ca5b6950de1a7d88d2adcff12e5e6063",
+    "header_hex": "4841504900000100ab0000000000000014000000"
+  },
+  {
+    "path": "Birtish Empire.ufo",
+    "size": 2008361,
+    "sha256": "9457cf19c778f14c9e8221431cbf387f8f5d15826494ea1f4ee86ddb5685179b",
+    "header_hex": "48415049000001009e0000000000000014000000"
+  },
+  {
+    "path": "Bitmaps/Glamour/example.pcx",
+    "size": 125481,
+    "sha256": "0bbb4d06e298c00ab6d0e30402892dc972e51c978018caa2fd589bbe8fde8dc0",
+    "header_hex": "0a050108000000007f02df014800480000ff0000"
+  },
+  {
+    "path": "blaztersbeach.ufo",
+    "size": 2647413,
+    "sha256": "8c89adc76f06024d5fb1dd57eb414ca65700b15a5a91e74383ee86efb62081ab",
+    "header_hex": "4841504900000100ce0000000000000014000000"
+  },
+  {
+    "path": "Bogs of War.ufo",
+    "size": 9867091,
+    "sha256": "1de646a91dcc715b504558175db8f2384787afd0cd1b25aeab4e275bcf52f456",
+    "header_hex": "4841504900000100980000000000000014000000"
+  },
+  {
+    "path": "btdata.ccx",
+    "size": 23248392,
+    "sha256": "bc72cf10922f78965e9d95a01acbe4393ab3c7f22ebdbf119f356225ee05ef59",
+    "header_hex": "48415049000001003e8a00000000000014000000"
+  },
+  {
+    "path": "btmaps.ccx",
+    "size": 9334537,
+    "sha256": "896b2db7be849a9fdab9f87aac6bd89f67adce6083c0a13c8e0233a92faaecc9",
+    "header_hex": "4841504900000100f40100000000000014000000"
+  },
+  {
+    "path": "BTREADME.DOC",
+    "size": 44544,
+    "sha256": "09fd3b6fc2d06fe2794ceb05a5e0f46c4c135ec0591641a85805d93c5289a7c9",
+    "header_hex": "d0cf11e0a1b11ae1000000000000000000000000"
+  },
+  {
+    "path": "BTREADME.TXT",
+    "size": 12591,
+    "sha256": "a4143a637837c1da3d84a03c8b2de78b95bf1c5c0bda22a8dab88921dc311de7",
+    "header_hex": "544f54414c20414e4e4948494c4154494f4e3a20"
+  },
+  {
+    "path": "camps/briefs/example.txt",
+    "size": 34,
+    "sha256": "280ebe4920c50f5e13433b191477856c8f54d9039b2171625d1f2ad4c9ec34ae",
+    "header_hex": "596f75206e65656420746f206275696c64206120"
+  },
+  {
+    "path": "camps/briefs/example.wav",
+    "size": 5352,
+    "sha256": "367fbdd34f5cd764bb6dd4b9ebddd77b377d5c1107169cd1c8256410e03bf2c9",
+    "header_hex": "52494646e014000057415645666d742010000000"
+  },
+  {
+    "path": "camps/EXAMPLE.TDF",
+    "size": 216,
+    "sha256": "3cfac7de119f907522d154f56520e6f9139161af09bb7b8830188c3c7dd7e70a",
+    "header_hex": "5b4845414445525d0d0a097b0d0a0963616d7061"
+  },
+  {
+    "path": "CAT Training Grounds.ufo",
+    "size": 629339,
+    "sha256": "6901ebe30d262e1f5a6357b331cb7c4f8f38da0fab4b4af9360777cab6db52a5",
+    "header_hex": "4841504900000100c70000000000000014000000"
+  },
+  {
+    "path": "ccdata.ccx",
+    "size": 25871597,
+    "sha256": "981cf35f05979e800468e9e7b480e474ee626e7b5d1c721103bc69a66ee0aed8",
+    "header_hex": "4841504900000100bde900000000000014000000"
+  },
+  {
+    "path": "ccmaps.ccx",
+    "size": 153714300,
+    "sha256": "43b0029b3943edb290487d055e2b3c6df12f7d02ebf33ab5f2dda6fb33ccc70e",
+    "header_hex": "4841504900000100020f00000000000014000000"
+  },
+  {
+    "path": "ccmiss.ccx",
+    "size": 117424509,
+    "sha256": "b51a881f9e333ea1a65a091d8a55eca7711755929e040e26a1c70a567c5407ec",
+    "header_hex": "48415049000001008b1100000000000014000000"
+  },
+  {
+    "path": "Center Command.ufo",
+    "size": 1209476,
+    "sha256": "8834f9a17f2c0813aa3bd75d7db8aafa82f25f7efe7396c9ad928bdbe8eb9ef6",
+    "header_hex": "48415049000001009e0000000000000014000000"
+  },
+  {
+    "path": "Central Park.ufo",
+    "size": 744498,
+    "sha256": "5ad4af84a06784e3d0793e2e9bfdbb6e61207f7abbedda69cd903f337f806ff2",
+    "header_hex": "48415049000001009a0000000000000014000000"
+  },
+  {
+    "path": "Coast to Coast 2 R.ufo",
+    "size": 1266251,
+    "sha256": "0e644e91963b84445b457b98db3f53f56ba65e9db99a0b20e7ccea9328a7571f",
+    "header_hex": "4841504900000100a60000000000000014000000"
+  },
+  {
+    "path": "Cometctr.ufo",
+    "size": 2538559,
+    "sha256": "b7055488519dc028acafa09d71cdf767c0bc1ba8faf21e0aa637408403619123",
+    "header_hex": "48415049000001007a000000a600000014000000"
+  },
+  {
+    "path": "Controlled Burn.ufo",
+    "size": 1271960,
+    "sha256": "9cfc22a8a25f68dd7a65eb2ad3122547538ee309744dde32a16ed1ed62384932",
+    "header_hex": "4841504900000100a00000000000000014000000"
+  },
+  {
+    "path": "Cormabm.ufo",
+    "size": 28271,
+    "sha256": "44dd8d03089fccbf1b5ca4004e3d4160e1f10c2dadc247ed01aeef1d2909b61a",
+    "header_hex": "4841504900000100780200007d00000014000000"
+  },
+  {
+    "path": "CorNecro.ufo",
+    "size": 89368,
+    "sha256": "8492c9372f89243b48956bde26b69018edb47d00923bbf74f2c0c33d430229ed",
+    "header_hex": "4841504900000100be0200000000000014000000"
+  },
+  {
+    "path": "corplas.ufo",
+    "size": 33758,
+    "sha256": "fd470a472796c0f8f807d0bc5fb1b312c94751337f0af02d6880a0a1bffe7ba8",
+    "header_hex": "4841504900000100240200000000000014000000"
+  },
+  {
+    "path": "Crater Pond.ufo",
+    "size": 4780157,
+    "sha256": "0a7229b93a533d4edc01e098e58c4fc18937c6f941999c40c42abb3e03136625",
+    "header_hex": "4841504900000100980000000000000014000000"
+  },
+  {
+    "path": "Data/1.ZRB",
+    "size": 6919100,
+    "sha256": "a4231eda0e5d65848264fe6c24904f9f3b3e1ca2017287e84b6a11c2d861669f",
+    "header_hex": "534d4b3280020000f000000057020000fbf2ffff"
+  },
+  {
+    "path": "Data/2.zrb",
+    "size": 41229000,
+    "sha256": "523a5dbfeb9f775881ff12bd7f0fe240d0ace1f69dfe3c17d1c7a7d2c3f2d14f",
+    "header_hex": "534d4b3280020000f0000000da0f0000fbf2ffff"
+  },
+  {
+    "path": "Data/3.ZRB",
+    "size": 9596608,
+    "sha256": "2f641407c59b566d21d57922f368b012807ad4e4c6718843409ef7a2c41cdcb1",
+    "header_hex": "534d4b3280020000f000000079030000fbf2ffff"
+  },
+  {
+    "path": "Data/4.ZRB",
+    "size": 17387220,
+    "sha256": "4fa980819dc933ab9635256a8ba627625dbef91df75d2486aa130f7ede37ceab",
+    "header_hex": "534d4b3280020000f000000031070000fbf2ffff"
+  },
+  {
+    "path": "Data/5.zrb",
+    "size": 34875360,
+    "sha256": "d1363691fe62e85f5f2b7047392a37dbd9b20b673fd52cd5834bcc730ad99458",
+    "header_hex": "534d4b328002000030010000b40f0000fbf2ffff"
+  },
+  {
+    "path": "Desert 4-some.ufo",
+    "size": 2329697,
+    "sha256": "d690331ef4ac1995cffdb52a46ff3d233a7e83ccd2b98f2e137b377ca7838f59",
+    "header_hex": "4841504900000100ee000000de00000014000000"
+  },
+  {
+    "path": "Docs/AFark.txt",
+    "size": 1967,
+    "sha256": "012894ffba93d232fb581e0a04d00944594653da7815b9563f8fe9fd79372358",
+    "header_hex": "544f54414c20414e4e4948494c4154494f4e2052"
+  },
+  {
+    "path": "Docs/AFlea.txt",
+    "size": 1892,
+    "sha256": "caf26387c464fe6394acbc8c61d90a32c6350b78d8b117c184e05455c7df128a",
+    "header_hex": "544f54414c20414e4e4948494c4154494f4e2052"
+  },
+  {
+    "path": "Docs/AScarab.txt",
+    "size": 1889,
+    "sha256": "b69382779672d61bd63dd2680965370b4a0ff3e42c000832bd70183582691414",
+    "header_hex": "544f54414c20414e4e4948494c4154494f4e2052"
+  },
+  {
+    "path": "Docs/CNecro.txt",
+    "size": 2077,
+    "sha256": "8b581ac0dfd742ed5897bee4ab41a0786a68c4cfd84f3b753f24590b2108138d",
+    "header_hex": "544f54414c20414e4e4948494c4154494f4e2052"
+  },
+  {
+    "path": "Docs/CorMABM.txt",
+    "size": 1900,
+    "sha256": "8e379ee5d9855eb117830ab2eaf60b5a9fe9238066ef5303b01e4c9b20496253",
+    "header_hex": "544f54414c20414e4e4948494c4154494f4e2052"
+  },
+  {
+    "path": "Docs/Corplas.txt",
+    "size": 1979,
+    "sha256": "6b63dfb8d7178d4d1b1f8b01746f75198fd83f0960c687a431e9196ebecec52b",
+    "header_hex": "544f54414c20414e4e4948494c4154494f4e2052"
+  },
+  {
+    "path": "Evadrivd.ufo",
+    "size": 1550766,
+    "sha256": "4c825aff22668f7f7e55438be27b8fdff1d09ab6f53619974d82493bda5a274a",
+    "header_hex": "484150490000010094000000a600000014000000"
+  },
+  {
+    "path": "Example.tdf",
+    "size": 124,
+    "sha256": "0476f0fd2bf2ed1b925f6742094e25d133b04aa782a9ae3bb526baa406350e8d",
+    "header_hex": "5b4845414445525d0d0a097b0d0a0963616d7061"
+  },
+  {
+    "path": "Example.ufo",
+    "size": 126032,
+    "sha256": "013d1309d9983da40480baccaa76574e423a9fa3d1b3c609dcf7369b9f71e0f3",
+    "header_hex": "4841504900000100dc000000af00000014000000"
+  },
+  {
+    "path": "FeatureLibrary.ufo",
+    "size": 28468,
+    "sha256": "09ca001e66364db034affb761804377ebd16c0ed3055a06561f65d24b4265328",
+    "header_hex": "48415049000001009e0000000000000014000000"
+  },
+  {
+    "path": "Flasheller.ufo",
+    "size": 2551777,
+    "sha256": "5276bc9a0394ba5c87fd51f5d8c62e14ece74c1638991a5a1c5bf2415aa58aa1",
+    "header_hex": "4841504900000100e5000000de00000014000000"
+  },
+  {
+    "path": "floggen.ufo",
+    "size": 1312760,
+    "sha256": "0e88714622e3bd45f1d1747c81f84ba72f7e3a0c5d476a150f15535f9a3bc978",
+    "header_hex": "48415049000001007c000000a600000014000000"
+  },
+  {
+    "path": "Freds of War.ufo",
+    "size": 7147076,
+    "sha256": "48093dc2bce94a593a687dde2d697d7df01fcb3b332bb02566fd3670b96f591f",
+    "header_hex": "48415049000001009a0000000000000014000000"
+  },
+  {
+    "path": "Friction.ufo",
+    "size": 2049850,
+    "sha256": "0239cb3ea098cc5c5dcfe92c69371fc47788951e2ac9f2d8da5b423405a6b02b",
+    "header_hex": "4841504900000100920000000000000014000000"
+  },
+  {
+    "path": "Gnugs of War.ufo",
+    "size": 4274174,
+    "sha256": "111c40a5799719dd436127022111cfde99b4dc6740de6fddc5225aa89494c063",
+    "header_hex": "4841504900000100eb000000de00000014000000"
+  },
+  {
+    "path": "God Has No Opposite.ufo",
+    "size": 9667137,
+    "sha256": "0dac4cf99e78c0be78a3173fc2d589d8efeada65e55c07f125903fcb10a16e4c",
+    "header_hex": "4841504900000100a80000000000000014000000"
+  },
+  {
+    "path": "godsofwar2.ufo",
+    "size": 3655060,
+    "sha256": "6d77dc080f05a28ac0789274b69d1eff0e75d6deaf42652dcc0855b9405a50a6",
+    "header_hex": "48415049000001009c0000000000000014000000"
+  },
+  {
+    "path": "gog.ico",
+    "size": 69248,
+    "sha256": "f6a71321521ba89713f0bd38b21f809e87e8a789cb172e8e4693f9479e30b1e4",
+    "header_hex": "0000010007003030000001000800a80e00007600"
+  },
+  {
+    "path": "goggame-1207658880.hashdb",
+    "size": 2767,
+    "sha256": "2963150d03c219839ad756c5f93bbb218ec90af16f8bc2ffc0638b1640042690",
+    "header_hex": "504b030414000000080000008144db0a934c3b0a"
+  },
+  {
+    "path": "goggame-1207658880.ico",
+    "size": 115090,
+    "sha256": "720920569d2c582bf86520b15b8ddf37eaf69141fc1ff2a74e45844f9615d4bb",
+    "header_hex": "0000010009002020100001000400e80200009600"
+  },
+  {
+    "path": "goggame-1207658880.info",
+    "size": 1806,
+    "sha256": "fa8b7ff26d562227540f85f7ef9bbc39e595b5d2808ef2aa745196a984743acf",
+    "header_hex": "7b0d0a20202020226275696c644964223a202235"
+  },
+  {
+    "path": "goggame-1207658880.script",
+    "size": 3974,
+    "sha256": "fdc68e464f978bed4ae2d5472246d998fe04b07c1882cff2e5ea731e360f43ef",
+    "header_hex": "7b0d0a2020202022616374696f6e73223a205b0d"
+  },
+  {
+    "path": "goggame-galaxyFileList.ini",
+    "size": 1857,
+    "sha256": "f48ce046db8fb690a36c4addcb83497d37a862b4fc4e43f2175887197f841a5e",
+    "header_hex": "5b313230373635383838305d0d0a66696c65735f"
+  },
+  {
+    "path": "goggame.sdb",
+    "size": 602,
+    "sha256": "7667aa638cedca41b7c2ebe66b00ad8da2efefea72df69c87bdaaaa59c301856",
+    "header_hex": "0200000001000000736462660278de0000000378"
+  },
+  {
+    "path": "goglog.ini",
+    "size": 1002,
+    "sha256": "57b16df1881184d190c048184ee095af503cfaa6ea89699ff6e2d8d675c65a37",
+    "header_hex": "efbbbf5b313230373635383838305d0d0a526567"
+  },
+  {
+    "path": "GoneCoastal.ufo",
+    "size": 7644084,
+    "sha256": "6dd6fad0d54bf7d85f914bdd1d7f32fc67327c4f7d8b861117a40a2d43fa14e9",
+    "header_hex": "4841504900000100980000000000000014000000"
+  },
+  {
+    "path": "Grasslands.ufo",
+    "size": 2158352,
+    "sha256": "5e1b111613af030315fe5a2aa10a4f859fa0326cb3b37cb4e264bfd87ae8091e",
+    "header_hex": "4841504900000100e5000000de00000014000000"
+  },
+  {
+    "path": "Great Divide 2.ufo",
+    "size": 867922,
+    "sha256": "4fd63c152fb14ff377162b480b7714702d0724474a416cbeb0b61d5fe6a2e5f3",
+    "header_hex": "4841504900000100d50000000000000014000000"
+  },
+  {
+    "path": "Green Excursion.ufo",
+    "size": 1290655,
+    "sha256": "5e2d1805d7af21a6845e444ed4ef9bca181945321432c43882ba283973373e55",
+    "header_hex": "48415049000001009b0000000000000014000000"
+  },
+  {
+    "path": "Green Lake (final).ufo",
+    "size": 2865313,
+    "sha256": "d6cb1ee311eb767095c390020c62484d7c2e244e6b6f98c310758b06ce3b4d3d",
+    "header_hex": "4841504900000100a60000000000000014000000"
+  },
+  {
+    "path": "Hillbilly.ufo",
+    "size": 4286268,
+    "sha256": "66250724c7f5a4d54fb54cca7ec2defc2f040b2c1d2ef0fbeac24c4408f94b7b",
+    "header_hex": "4841504900000100940000000000000014000000"
+  },
+  {
+    "path": "Hofmann's Islands.ufo",
+    "size": 4314651,
+    "sha256": "33ccfba8bef6ce8a9d2db521be1d19fba6ec8ac6c8719a335899714f0275729e",
+    "header_hex": "4841504900000100a40000000000000014000000"
+  },
+  {
+    "path": "Homo Hover.ufo",
+    "size": 17873897,
+    "sha256": "156297cbfbc597f9299f0d75b26b3ef1cc61d151f5608720ba42120b57072194",
+    "header_hex": "4841504900000100960000000000000014000000"
+  },
+  {
+    "path": "Incandescence.ufo",
+    "size": 2337466,
+    "sha256": "8f04323274357d9b71d7f504e906793db88e35270420cd4c93d2d788e4b90c90",
+    "header_hex": "48415049000001009c0000000000000014000000"
+  },
+  {
+    "path": "Irish Desert.ufo",
+    "size": 3690912,
+    "sha256": "7d49c2a499cb33b6594ec8a0208e312bd6b79985009909574f4185a2cb2d2d24",
+    "header_hex": "48415049000001009a0000000000000014000000"
+  },
+  {
+    "path": "John's Pass 2.ufo",
+    "size": 3746599,
+    "sha256": "33df65db23cd59116a4a8f9b9260529cf0fca00a893f3c3ae1e674ec19e22325",
+    "header_hex": "48415049000001009c0000000000000014000000"
+  },
+  {
+    "path": "John's Pass Redux.ufo",
+    "size": 4432750,
+    "sha256": "489104b4c86f1197b780520783ccfa070e5ebaaf90b86add0f454050280e2a14",
+    "header_hex": "4841504900000100a40000000000000014000000"
+  },
+  {
+    "path": "John's Pond 2.ufo",
+    "size": 3167027,
+    "sha256": "12869fdd66293016fed5c47c7795b4823a7e804f23e6da51749b4976412122d3",
+    "header_hex": "48415049000001009c0000000000000014000000"
+  },
+  {
+    "path": "John's Pond.ufo",
+    "size": 2540212,
+    "sha256": "d3abc1b59f7b834d4a97ce621d8915eafd47de65c0f8780195c2a6e852e230cc",
+    "header_hex": "4841504900000100980000000000000014000000"
+  },
+  {
+    "path": "Johns Island.ufo",
+    "size": 1570117,
+    "sha256": "651e3bb1cd7109d329fa6532f738287785174045030e778f882689048bb04175",
+    "header_hex": "4841504900000100eb000000de00000014000000"
+  },
+  {
+    "path": "Launch Total Annihilation Commander Pack.lnk",
+    "size": 1425,
+    "sha256": "d00cf35cfdede4996d066b2eefb33320680f0fa85179c3915dd22dc9d15f5ac3",
+    "header_hex": "4c0000000114020000000000c000000000000046"
+  },
+  {
+    "path": "Lusheller.ufo",
+    "size": 1692084,
+    "sha256": "159fb176e4a0d465a760d6f4c86a6d59ad7d4a3f19329ae3e5528721d250e355",
+    "header_hex": "4841504900000100e2000000de00000014000000"
+  },
+  {
+    "path": "manual.pdf",
+    "size": 1449180,
+    "sha256": "b0169168d298de122a92520f8b622dc90c43422e4b26ecfdf3ab1c7c770520d6",
+    "header_hex": "255044462d312e320d0a25a1b3c5d70d0a312030"
+  },
+  {
+    "path": "Megatjong.ufo",
+    "size": 1448164,
+    "sha256": "650d4c6b299f991e81a76645c7567425a3b66933acd2ec805ea98362d936df18",
+    "header_hex": "4841504900000100e2000000de00000014000000"
+  },
+  {
+    "path": "Mndsmars.ufo",
+    "size": 2016484,
+    "sha256": "69be3671a251f0b2c9940e502226c220c389cf49f7ae8bef788f31eae9e10704",
+    "header_hex": "48415049000001007c000000a600000014000000"
+  },
+  {
+    "path": "Molten Floods.ufo",
+    "size": 1303157,
+    "sha256": "3043177960b5c1549a8351752507b778d7472df7a53c3fa251af17bb95e5fce4",
+    "header_hex": "48415049000001009c0000000000000014000000"
+  },
+  {
+    "path": "mptaext.dll",
+    "size": 138752,
+    "sha256": "cce0b88d377dbef52b40c6f598012551b053c60064d1be9bcfb6108c2d3fb22d",
+    "header_hex": "4d5a90000300000004000000ffff0000b8000000"
+  },
+  {
+    "path": "music/0.mp3",
+    "size": 2576323,
+    "sha256": "e313414cdae891f864f023b4a2d7c789c1cdefb0f5ca18a62db529401745b4f8",
+    "header_hex": "fffbe0600000000000690500000800000d20a000"
+  },
+  {
+    "path": "music/1.mp3",
+    "size": 2849041,
+    "sha256": "0aefb081d84d0ccca58a976ce3b255cf5db6118d5d49e4a0c06f7cd9e127b0c4",
+    "header_hex": "fffbe040000dd00000690000000800000d200000"
+  },
+  {
+    "path": "music/10.mp3",
+    "size": 2849041,
+    "sha256": "0aefb081d84d0ccca58a976ce3b255cf5db6118d5d49e4a0c06f7cd9e127b0c4",
+    "header_hex": "fffbe040000dd00000690000000800000d200000"
+  },
+  {
+    "path": "music/11.mp3",
+    "size": 6262723,
+    "sha256": "2e6bf195f83c3e09db8e87c9d623133011b5c9d614220a69a52cc36241ac93a8",
+    "header_hex": "fffbe0600000000000690500000800000d20a000"
+  },
+  {
+    "path": "music/12.mp3",
+    "size": 5436209,
+    "sha256": "d2363cc835b0dbd982651190344daa19befd7b475a7c9e32b3904ba2be028cb1",
+    "header_hex": "fffbe0600000000000690500000800000d20a000"
+  },
+  {
+    "path": "music/13.mp3",
+    "size": 6062103,
+    "sha256": "11da74d739bc7b6506f0c5a650cbfcf5380de74effb1ef670c3621225d839845",
+    "header_hex": "fffbe060000ff00000690000000800000d200000"
+  },
+  {
+    "path": "music/14.mp3",
+    "size": 3785270,
+    "sha256": "c95b925960f72648132e71aecbaf4dc12f4b1ff959ad917bdae655adea06b7ee",
+    "header_hex": "fffbe040000f800000690000000800000d200000"
+  },
+  {
+    "path": "music/15.mp3",
+    "size": 3633760,
+    "sha256": "4efe024187019a78eaa47185ceb520ee88841c89f5146dcc2211a5fc569a1007",
+    "header_hex": "fffbe040000df00000690000000800000d200000"
+  },
+  {
+    "path": "music/16.mp3",
+    "size": 4387131,
+    "sha256": "58576aefb1ce4ed5cfa62ea152e6a6ba54fddcb3f39b67b44fb4e9462b6bc2d5",
+    "header_hex": "fffbe060000ff00000690000000800000d200000"
+  },
+  {
+    "path": "music/17.mp3",
+    "size": 3112356,
+    "sha256": "f16bb2801f58678a598bc178ad678aa942697548e86f8af07f8769acb6b051c6",
+    "header_hex": "fffbe060000df00000690000000800000d200000"
+  },
+  {
+    "path": "music/2.mp3",
+    "size": 8196829,
+    "sha256": "743e6e05d605c38799f850726c62bdb309dd7a8b863f104c6c33951f7d62f114",
+    "header_hex": "fffbe0600000000000690500000800000d20a000"
+  },
+  {
+    "path": "music/3.mp3",
+    "size": 3027719,
+    "sha256": "e9105c719821be1d3241ba7ac2d021d75b8600278138dc46a66e7f88728dd8e1",
+    "header_hex": "fffbe0600000000000690500000800000d20a000"
+  },
+  {
+    "path": "music/4.mp3",
+    "size": 6279441,
+    "sha256": "2624942ca6b3ce59b3a33542b7aa63859169fefb4cc8c07140bc1bae02315f9f",
+    "header_hex": "fffbe0600000000000690500000800000d20a000"
+  },
+  {
+    "path": "music/5.mp3",
+    "size": 4867784,
+    "sha256": "49b176cfde28150783ead3967b2c03c05064918db018d469a8988e5d843c5e1d",
+    "header_hex": "fffbe0600000000000690500000800000d20a000"
+  },
+  {
+    "path": "music/6.mp3",
+    "size": 6466478,
+    "sha256": "b9206d06c005f6ff2f4165998e0e9be6c48f9ebc52fa4da0a92d548979530266",
+    "header_hex": "fffbe040000df00000690000000800000d200000"
+  },
+  {
+    "path": "music/7.mp3",
+    "size": 5895964,
+    "sha256": "30c677d4e291c39da39a7956fdbe67d7459d4b0d49fe10f0fd98bcf80f43e9b5",
+    "header_hex": "fffbe040000dd00000690000000800000d200000"
+  },
+  {
+    "path": "music/8.mp3",
+    "size": 5601303,
+    "sha256": "29d5c3c20eb9e830c2e4cba5becc8403ef4b146a6fdf95f197e91c4537e89c9c",
+    "header_hex": "fffbe0600000000000690500000800000d20a000"
+  },
+  {
+    "path": "music/9.mp3",
+    "size": 2576323,
+    "sha256": "e313414cdae891f864f023b4a2d7c789c1cdefb0f5ca18a62db529401745b4f8",
+    "header_hex": "fffbe0600000000000690500000800000d20a000"
+  },
+  {
+    "path": "Onions Have Layer.ufo",
+    "size": 7224235,
+    "sha256": "ba38678b2c6fbf5000dee2b572ef931d6fd94a8f35013610bc3252432cb211c1",
+    "header_hex": "4841504900000100a40000000000000014000000"
+  },
+  {
+    "path": "online.dll",
+    "size": 59904,
+    "sha256": "d58964ec21207c5b3e677b46e8f8f19bfca9910428595f8d09a173974ef9eb99",
+    "header_hex": "4d5a90000300000004000000ffff0000b8000000"
+  },
+  {
+    "path": "Pacers Pond.ufo",
+    "size": 8627119,
+    "sha256": "2adb26e152e531e390c0b0a180d010cecddbd37c620e3a03759bb85654aa0b26",
+    "header_hex": "4841504900000100980000000000000014000000"
+  },
+  {
+    "path": "Painted Desert 2k3.ufo",
+    "size": 4055316,
+    "sha256": "4251bc14ad6cf7185ce6dee37e9a21fefb989bb022e6d4fcaf7b9370bdb61792",
+    "header_hex": "4841504900000100a60000000000000014000000"
+  },
+  {
+    "path": "PD_Marathon.ufo",
+    "size": 3897686,
+    "sha256": "aecab8e70b370decf2e488a04bab15128714ed23755bb9667c19e90ef33e1a1f",
+    "header_hex": "4841504900000100760000000000000014000000"
+  },
+  {
+    "path": "Pearl Harbor.ufo",
+    "size": 1284160,
+    "sha256": "b8d8fc6775f0869d87c95b6e2f5dab2590770fb36a0e554887619e7b1d0dbfbb",
+    "header_hex": "48415049000001009a0000000000000014000000"
+  },
+  {
+    "path": "PRO desert.ufo",
+    "size": 2828372,
+    "sha256": "6e15ddee316236b6e618405fec97e79466e6751729f067498f171bd0ff668a3d",
+    "header_hex": "4841504900000100960000000000000014000000"
+  },
+  {
+    "path": "PRO19-Monolith-.ufo",
+    "size": 3743817,
+    "sha256": "a646a709b2d4063347c90a72268bf84d3886267d4af439e5fc6cdacf008e08ef",
+    "header_hex": "4841504900000100920000000000000014000000"
+  },
+  {
+    "path": "PRO23-Chasm-.ufo",
+    "size": 686304,
+    "sha256": "4886247b6710e736d256d574054f112054662f6a8ee2d836b1b5c73c97afa6bc",
+    "header_hex": "48415049000001008c0000000000000014000000"
+  },
+  {
+    "path": "PRO36-CBB Tourney-Inside, Outside-.ufo",
+    "size": 2761568,
+    "sha256": "0487be8b1a9d07859c6259e186335978756e2ca88c38e11564d65620d15e8577",
+    "header_hex": "4841504900000100c60000000000000014000000"
+  },
+  {
+    "path": "PRO44-Landcancer-.ufo",
+    "size": 1892588,
+    "sha256": "5b292ea2d253fb0eeed21fdd410344658573f3844c30d64b39ccdfd5ff095bf0",
+    "header_hex": "4841504900000100960000000000000014000000"
+  },
+  {
+    "path": "PRO52 - Water Spout.ufo",
+    "size": 4131032,
+    "sha256": "fc161717475be1556ca36d1155cf54f9bbc5540fbfa4edee0f5a4ba6583d24e1",
+    "header_hex": "4841504900000100980000000000000014000000"
+  },
+  {
+    "path": "PRO54-Tempest-.ufo",
+    "size": 2663270,
+    "sha256": "85a3d79807ecfadd3e8557c691fde7413ed63d347099bfef66cccc32b33f77b1",
+    "header_hex": "4841504900000100900000000000000014000000"
+  },
+  {
+    "path": "PRO55-Valley Deep-.ufo",
+    "size": 6212405,
+    "sha256": "4fc9cfb5fabdf1f856fe8aa8ed7734247252adcc9920cf1f560d57c088a947d1",
+    "header_hex": "4841504900000100980000000000000014000000"
+  },
+  {
+    "path": "PRO60-Quanta-.ufo",
+    "size": 5440412,
+    "sha256": "2b6498a8f6175a3d9b68367ed678c4a34a2825c9f3cc443419e929a2e9bdfae8",
+    "header_hex": "48415049000001008e0000000000000014000000"
+  },
+  {
+    "path": "Raster's Pond 2.ufo",
+    "size": 1281623,
+    "sha256": "814e57edba1d550926fe53034862da07fca7f13742ae50fdc8d4d0acf047ac40",
+    "header_hex": "4841504900000100a00000000000000014000000"
+  },
+  {
+    "path": "readme.doc",
+    "size": 29696,
+    "sha256": "95278bf198e6d42e6f81fab42c5a6d2cea68fee93d818301b147eb37689c167b",
+    "header_hex": "d0cf11e0a1b11ae1000000000000000000000000"
+  },
+  {
+    "path": "readme.txt",
+    "size": 10711,
+    "sha256": "17b7bd7cd6af8df77778837dc1b43343bb2b9a69d847b945eb8f9a6ff337f2e2",
+    "header_hex": "544f54414c20414e4e4948494c4154494f4e2076"
+  },
+  {
+    "path": "rev31.gp3",
+    "size": 5481280,
+    "sha256": "fa0da77b8fb4400ce606995703dec42eeab5b05d04ca8c0e43be324f04ce0441",
+    "header_hex": "48415049000001009f6d00000000000014000000"
+  },
+  {
+    "path": "Riverside.ufo",
+    "size": 2990620,
+    "sha256": "f050491bdf18d3a7d98b2324ac6bdb514889e7e490cde83c7b2d5e11c7bec4f2",
+    "header_hex": "4841504900000100b20000000000000014000000"
+  },
+  {
+    "path": "Sail Here.ufo",
+    "size": 1312793,
+    "sha256": "ea1e7a1c218c3d3ab427be3e8c0bf863f34defd2032c57048a90ac04f82fa823",
+    "header_hex": "4841504900000100940000000000000014000000"
+  },
+  {
+    "path": "Screw U guys.ufo",
+    "size": 3177382,
+    "sha256": "d0cd7108c9003f8bcf8f1d9db3f0a8fae3efa88dc3645e3e7466679883cec53c",
+    "header_hex": "4841504900000100eb000000de00000014000000"
+  },
+  {
+    "path": "Slovenowank.ufo",
+    "size": 1585797,
+    "sha256": "09244b9d4b2fe6009418174ab13d51f5262e187c07cd69cb836386ce335a8e44",
+    "header_hex": "4841504900000100980000000000000014000000"
+  },
+  {
+    "path": "smackw32.dll",
+    "size": 83456,
+    "sha256": "3b81204b15e3084b48b23dbb88ab263b31e7d0caad4ff5881ddea8e3351bf533",
+    "header_hex": "4d5a80000100000004000000ffff0000b8000000"
+  },
+  {
+    "path": "Snewp.ufo",
+    "size": 943027,
+    "sha256": "a041ccefa9f94db0652de4f81677c6cba29713ccf34bd82a268d2752217a0261",
+    "header_hex": "48415049000001008c0000000000000014000000"
+  },
+  {
+    "path": "Spankside Wankside.ufo",
+    "size": 4044086,
+    "sha256": "37e330e1ffe1939b4dba9485867557d86260d5db5fa0169c6d61b6df60b99a28",
+    "header_hex": "4841504900000100fd000000cf00000014000000"
+  },
+  {
+    "path": "Spiral Tab.ufo",
+    "size": 3033333,
+    "sha256": "09934d6b0393d142f44ecc88ef0cde3870f416a09050b8a74298d06d644e5e83",
+    "header_hex": "4841504900000100c30000000000000014000000"
+  },
+  {
+    "path": "support.ico",
+    "size": 62895,
+    "sha256": "05fe749ef47d1ec862d6c55be78e66d1011226bf1f78409acf57cb79cec5eb20",
+    "header_hex": "0000010009002020100001000400e80200009600"
+  },
+  {
+    "path": "Sure to Sure.ufo",
+    "size": 2617824,
+    "sha256": "b87a061e2218ec5ac44e6c76d70ecb99179133e03ef3cf3d22e0ee353cb30ff6",
+    "header_hex": "48415049000001009a0000000000000014000000"
+  },
+  {
+    "path": "Taccread.doc",
+    "size": 59904,
+    "sha256": "325de7a2b88d164017ddacc72f0973a7be06d9c774e9b60a958da753007e5e48",
+    "header_hex": "d0cf11e0a1b11ae1000000000000000000000000"
+  },
+  {
+    "path": "Taccread.txt",
+    "size": 36295,
+    "sha256": "e2f94a8ad80d168955558e3091af57c4eaf13ad1158c25ee62c61739849de258",
+    "header_hex": "544f54414c20414e4e4948494c4154494f4e3a20"
+  },
+  {
+    "path": "tactics1.hpi",
+    "size": 21030743,
+    "sha256": "89db2522cfc50c34e1ceecd61e44dfd4e29655d38daca5c59f71168893427229",
+    "header_hex": "48415049000001003c0900000000000014000000"
+  },
+  {
+    "path": "tactics2.hpi",
+    "size": 28276703,
+    "sha256": "9559aa40ee823b927fa8cba217426e10159d2f200e39558aa1a69824f5eb80dd",
+    "header_hex": "4841504900000100cc0a00000000000014000000"
+  },
+  {
+    "path": "tactics3.hpi",
+    "size": 19785419,
+    "sha256": "076fa8de92e5cabe4cb5905ed736591a703d2f2cda157c44abdbfcb6eec120b5",
+    "header_hex": "4841504900000100a30600000000000014000000"
+  },
+  {
+    "path": "tactics4.hpi",
+    "size": 7178040,
+    "sha256": "d850baeb2eb29dc2a3f736c780fe8726bf93fc1dd901c654dd769940199708f9",
+    "header_hex": "4841504900000100140400000000000014000000"
+  },
+  {
+    "path": "tactics5.hpi",
+    "size": 19206504,
+    "sha256": "0ca2653775308bc23058f09b7dccd6f057b630b1398c6f3ad6f96a78173c2bd0",
+    "header_hex": "4841504900000100d70900000000000014000000"
+  },
+  {
+    "path": "tactics6.hpi",
+    "size": 33925061,
+    "sha256": "3328e6c13bd5e45005db7f418c9efa42fb95d566935f1ed72152f017a41b91a2",
+    "header_hex": "4841504900000100c00c00000000000014000000"
+  },
+  {
+    "path": "tactics7.hpi",
+    "size": 20009286,
+    "sha256": "ed343078a7a294710f9dc4ccb6914c48ae40d430c48201270e809fe14e04287e",
+    "header_hex": "48415049000001008e0800000000000014000000"
+  },
+  {
+    "path": "tactics8.hpi",
+    "size": 12998499,
+    "sha256": "7420f0adf9a0f67c3851e0ba4a35a3334b313048f063ec67a2832779af75a35e",
+    "header_hex": "4841504900000100890400000000000014000000"
+  },
+  {
+    "path": "tadwngox.dll",
+    "size": 22016,
+    "sha256": "fd0070e65c1c3f980d8128afc7427d95aef2ef01c28008b145f39c17451f4468",
+    "header_hex": "4d5a90000300000004000000ffff0000b8000000"
+  },
+  {
+    "path": "TAE.EXE",
+    "size": 1041920,
+    "sha256": "76c68c363c6ba9e27690367f9632def2d9c94ea4d24e630c29822766417958db",
+    "header_hex": "4d5a90000300000004000000ffff0000b8000000"
+  },
+  {
+    "path": "TAE.hlp",
+    "size": 952007,
+    "sha256": "5dc2994a9d9737ba94b2d77ee818b05e2fcae088c2e967f3633d41b6a734850e",
+    "header_hex": "3f5f030090010000ffffffffc7860e0080010000"
+  },
+  {
+    "path": "TAEread.doc",
+    "size": 86528,
+    "sha256": "c8053427c39d9def0b3559f9a67d6a249b3df495766b725aad54d78e998e7565",
+    "header_hex": "d0cf11e0a1b11ae1000000000000000000000000"
+  },
+  {
+    "path": "TAEread.txt",
+    "size": 51245,
+    "sha256": "a66f2d022eb5c94dc2362aa0e18b5041718869cf0976070a486cd2a870a0b983",
+    "header_hex": "4e6f74653a2054686520546f74616c20416e6e69"
+  },
+  {
+    "path": "TAG 4Corners.ufo",
+    "size": 2506601,
+    "sha256": "7d46eaf7c12cf848c2df38f9dbba5467bbb34a064904330b7f64818a82d4e620",
+    "header_hex": "48415049000001009a0000000000000014000000"
+  },
+  {
+    "path": "TAG flights.ufo",
+    "size": 2758560,
+    "sha256": "d7533ffd2369e3208a705850633c74dc397f91880a5f18408f3d5444bd555037",
+    "header_hex": "4841504900000100980000000000000014000000"
+  },
+  {
+    "path": "TAG forts.ufo",
+    "size": 5463831,
+    "sha256": "77b4aff130ddbb6ba51beb394083aacb505b89328b60a711fac9e7eca678717e",
+    "header_hex": "4841504900000100940000000000000014000000"
+  },
+  {
+    "path": "TAG Highlands.ufo",
+    "size": 6811728,
+    "sha256": "ebff769ffd8775aee4b75d89307864850cc498af337f6c007ba453cb551065e9",
+    "header_hex": "48415049000001009c0000000000000014000000"
+  },
+  {
+    "path": "TAG Hurdles.ufo",
+    "size": 6827518,
+    "sha256": "8b9ae16c7a52178646a32cb1e5b70bf1296b4f9d1cb3281b8f92047f28bcaf24",
+    "header_hex": "4841504900000100980000000000000014000000"
+  },
+  {
+    "path": "TAG Wars.ufo",
+    "size": 7123336,
+    "sha256": "625cdd8e8dd83c81e2a4c4acc493ea22fa5790b0d66b4e58a70f6064b6473a62",
+    "header_hex": "4841504900000100920000000000000014000000"
+  },
+  {
+    "path": "TAG Waters.ufo",
+    "size": 817542,
+    "sha256": "dcdc0f38fb5c164047bc80e8da806f1807a0187d713ff67f15d45b76c9172697",
+    "header_hex": "4841504900000100960000000000000014000000"
+  },
+  {
+    "path": "taheatx.dll",
+    "size": 22528,
+    "sha256": "1ce93330ef0bea59010c6e9c1e10d9e3cfea1cd73cabeb1e380813af38966732",
+    "header_hex": "4d5a90000300000004000000ffff0000b8000000"
+  },
+  {
+    "path": "takalix.dll",
+    "size": 22528,
+    "sha256": "74c6ffe0a29851f95662199f11aed0e22fc5793af241b28eb2ee19e9759aae25",
+    "header_hex": "4d5a90000300000004000000ffff0000b8000000"
+  },
+  {
+    "path": "tamechpi2004.ccx",
+    "size": 25981906,
+    "sha256": "cfa0e51bff9f4c8c783990b1555f9620666c6ebbea3cd52df507ced915f45569",
+    "header_hex": "48415049000001001a4100000000000014000000"
+  },
+  {
+    "path": "tamecweapons2004.ccx",
+    "size": 2469,
+    "sha256": "1153ab4180b80ef72d6208979ae754c7a4227181709b7a4662c29faaafa33113",
+    "header_hex": "4841504900000100070100000000000014000000"
+  },
+  {
+    "path": "tamplayx.dll",
+    "size": 23040,
+    "sha256": "ffe0c15f230dcaf203a413e4e622c4164ec51d98f1bbeee8aac5c75a24f96450",
+    "header_hex": "4d5a90000300000004000000ffff0000b8000000"
+  },
+  {
+    "path": "tatenx.dll",
+    "size": 22016,
+    "sha256": "6af9b0045aaf6681fb723d96208b0357d29703e83d45e7fa058641d5afab71a3",
+    "header_hex": "4d5a90000300000004000000ffff0000b8000000"
+  },
+  {
+    "path": "tawirepx.dll",
+    "size": 23040,
+    "sha256": "e198858f7cc46d0d23c6e060fb8da683891c614a14b21c9285d368c7a18c12bc",
+    "header_hex": "4d5a90000300000004000000ffff0000b8000000"
+  },
+  {
+    "path": "TAzone Mappack readme.txt",
+    "size": 439,
+    "sha256": "6fa15f035a85d145fe373067f926cb37b4faaf142cb6586e51a436a034afd27c",
+    "header_hex": "54686973206d61707061636b20636f6e7461696e"
+  },
+  {
+    "path": "Terra Forte Beta 2.ufo",
+    "size": 942337,
+    "sha256": "1e9cb1a51188adea968c9f697ab0d23b7a08e1a722b6a1e771705b3f7ff10f63",
+    "header_hex": "4841504900000100a60000000000000014000000"
+  },
+  {
+    "path": "Tetra.ufo",
+    "size": 3353388,
+    "sha256": "b5a93730b74a8128c600da50a7e7dc5d06d3cfe2133a0e964361e3ef21c355c0",
+    "header_hex": "4841504900000100d6000000de00000014000000"
+  },
+  {
+    "path": "The Desert Triad Expanded Ver.ufo",
+    "size": 1645333,
+    "sha256": "d49f5897f0ac841f4e031d93564e910684bb0375a4a0fcd66703f22137e57875",
+    "header_hex": "48415049000001009a0000000000000014000000"
+  },
+  {
+    "path": "The Divide.ufo",
+    "size": 2784546,
+    "sha256": "52587ff7180d2a79bace8a5ed1b001366be4e5d5789caad37cabfe5bd0e881b5",
+    "header_hex": "4841504900000100960000000000000014000000"
+  },
+  {
+    "path": "The Green Place.ufo",
+    "size": 3914419,
+    "sha256": "74020b940bd63cf356b2a61588fb9e26ed5871ff44816d7a5c4d606a4803905a",
+    "header_hex": "4841504900000100a00000000000000014000000"
+  },
+  {
+    "path": "The Level 2.ufo",
+    "size": 1174322,
+    "sha256": "1b9118b9234abec09237444bc5b6d10afd87f9d8e3759f5b4073be18c68d320b",
+    "header_hex": "4841504900000100980000000000000014000000"
+  },
+  {
+    "path": "The Pass II.ufo",
+    "size": 1229666,
+    "sha256": "1037c386f62cb9257dc547b133d2f014b916b84f700761723f106162e3df5d96",
+    "header_hex": "4841504900000100980000000000000014000000"
+  },
+  {
+    "path": "The Warm Place.ufo",
+    "size": 5098760,
+    "sha256": "aaeddac7ea2387d608c85cb4ca92b1f3576bd5b0f7f5ec5df051665843b84f0e",
+    "header_hex": "48415049000001007c0000000000000014000000"
+  },
+  {
+    "path": "theamazon.ufo",
+    "size": 2818047,
+    "sha256": "f09fac1a07c8ffa1146e055dbd81b09de43b7ae30431a6f2793f744f33a854c8",
+    "header_hex": "4841504900000100960000000000000014000000"
+  },
+  {
+    "path": "TotalA.exe",
+    "size": 1178624,
+    "sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+    "header_hex": "4d5a90000300000004000000ffff0000b8000000"
+  },
+  {
+    "path": "totala1.hpi",
+    "size": 32311035,
+    "sha256": "c3890a78e627e6e334f671f65ec418cd40d15ad2ad4110e931bb3dfced0814c3",
+    "header_hex": "484150490000010095e70000bf00000014000000"
+  },
+  {
+    "path": "totala2.hpi",
+    "size": 98009698,
+    "sha256": "043e321169f73157812ec8e65b5fae29898ae3f41e527bc419801d18cf0cbe63",
+    "header_hex": "48415049000001008e150000bf00000014000000"
+  },
+  {
+    "path": "totala3.hpi",
+    "size": 33419332,
+    "sha256": "98de3dd9307c9324b9afdcbadc90ed3247f31a1bf9e0e63a0366f1f2b2e31128",
+    "header_hex": "48415049000001004d0300000000000014000000"
+  },
+  {
+    "path": "totala4.hpi",
+    "size": 147577290,
+    "sha256": "8c0ffa68ca8a0ff0a6e0eda98d232a9876cb0551f151a7c43415df0153e27810",
+    "header_hex": "4841504900000100d7230000bf00000014000000"
+  },
+  {
+    "path": "Tropical Paradise.ufo",
+    "size": 6197016,
+    "sha256": "733a0cd7b1d65c852c77538e57e7836eca46ac7c5b74c3ca2fa9d50e48a41d24",
+    "header_hex": "484150490000010082000000a600000014000000"
+  },
+  {
+    "path": "unins000.dat",
+    "size": 1328269,
+    "sha256": "c8f69f205cb2305bcf02ef9ee2ccfc30006c86fd41a42f9429b9703bb57e8edf",
+    "header_hex": "496e6e6f20536574757020556e696e7374616c6c"
+  },
+  {
+    "path": "unins000.exe",
+    "size": 1343048,
+    "sha256": "5761e7789d813626cd68ee1e62429cfeb92bdd814cd29ef12fc4ae9ec1dbaff3",
+    "header_hex": "4d5a50000200000004000f00ffff0000b8000000"
+  },
+  {
+    "path": "unins000.ini",
+    "size": 41,
+    "sha256": "47c3459a8b3d14717a0c7665b26ecd401409b47ce24ce665354e53f9b519f603",
+    "header_hex": "5b496e7374616c6c53657474696e67735d0d0a70"
+  },
+  {
+    "path": "unins000.msg",
+    "size": 23147,
+    "sha256": "e43d06ec2b3dbe3d81bcd6b7880d28d074dac54b38646a605cfc5c809939da16",
+    "header_hex": "496e6e6f205365747570204d6573736167657320"
+  },
+  {
+    "path": "Voi Vittu.ufo",
+    "size": 3442992,
+    "sha256": "17ca03af9fbcfb1cf1d31f607130913305d854814a9d2a6d56406bb1f68feab0",
+    "header_hex": "4841504900000100940000000000000014000000"
+  },
+  {
+    "path": "Water Divide.ufo",
+    "size": 683882,
+    "sha256": "d119cce279e17e624ae2aaf285c0b824b34663c41ed3e120c2fbf1fe56fe2d51",
+    "header_hex": "4841504900000100eb000000de00000014000000"
+  },
+  {
+    "path": "win32.dll",
+    "size": 31744,
+    "sha256": "8a0daa007049814e1098778590e56b2dd90dc694d5109be82711f983f5d4400f",
+    "header_hex": "4d5a90000300000004000000ffff0000b8000000"
+  },
+  {
+    "path": "worlds.hpi",
+    "size": 79967143,
+    "sha256": "71e7afc84239fb6753e02d3c79c6e9a8d4ad0071ae995756e84870934026962e",
+    "header_hex": "48415049000001003e6800000000000014000000"
+  }
+]

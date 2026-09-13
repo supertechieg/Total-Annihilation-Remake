@@ -1,0 +1,497 @@
+extends Control
+## Original asset and COB playback viewer. No world movement or combat simulation.
+
+const ASSET_RELATIVE = "../local/viewer-assets/"
+const CobVM = preload("res://cob_vm.gd")
+var assets: String
+var scene_data: Dictionary
+var unit_data: Dictionary
+var terrain: Texture2D
+var map_panel: Control
+var world: Node2D
+var terrain_sprite: Sprite2D
+var unit_sprite: Sprite2D
+var selection: Line2D
+var model_view: SubViewport
+var model_root: Node3D
+var status_label: Label
+var zoom_label: Label
+var map_zoom := 1.4
+var map_center := Vector2(3072, 3840)
+var unit_position := Vector2(3072, 3840)
+var heading := 0.0
+var dragging := false
+var piece_nodes: Array[Node3D] = []
+var frames := 0
+var script_vm: RefCounted
+var rig_nodes: Dictionary = {}
+var rig_origins: Dictionary = {}
+var tick_accumulator := 0.0
+var walking := false
+var building := false
+var pending_shot: Dictionary = {}
+var walk_button: Button
+var build_button: Button
+var script_label: Label
+var playback_paused := false
+
+func image_texture(filename: String) -> ImageTexture:
+	var image := Image.load_from_file(assets.path_join(filename))
+	if image == null:
+		push_error("Cannot load " + filename)
+		return null
+	return ImageTexture.create_from_image(image)
+
+func label(text: String, font_size: int, color := Color("cad4d7")) -> Label:
+	var result := Label.new()
+	result.text = text
+	result.add_theme_font_size_override("font_size", font_size)
+	result.add_theme_color_override("font_color", color)
+	return result
+
+func button(text: String, action: Callable) -> Button:
+	var result := Button.new()
+	result.text = text
+	result.custom_minimum_size.y = 34
+	result.pressed.connect(action)
+	return result
+
+func _ready() -> void:
+	assets = ProjectSettings.globalize_path("res://").path_join(ASSET_RELATIVE).simplify_path()
+	if not FileAccess.file_exists(assets.path_join("scene.json")):
+		var message := label("Prepare original assets first: python tools/prepare_viewer.py", 22)
+		message.position = Vector2(40, 40)
+		add_child(message)
+		push_error(message.text)
+		if "--verify" in OS.get_cmdline_user_args():
+			get_tree().quit(1)
+		return
+	scene_data = JSON.parse_string(FileAccess.get_file_as_string(assets.path_join("scene.json")))
+	unit_data = JSON.parse_string(FileAccess.get_file_as_string(assets.path_join("unit.json")))
+	terrain = image_texture("terrain.png")
+	build_model()
+	build_interface()
+	start_script_runtime()
+	update_world()
+	print("VIEWER_READY map=%s pieces=%d textures=%d" % [scene_data.name, unit_data.pieces.size(), unit_data.textures.size()])
+
+func build_model() -> void:
+	model_view = SubViewport.new()
+	model_view.size = Vector2i(256, 256)
+	model_view.transparent_bg = true
+	model_view.own_world_3d = true
+	model_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(model_view)
+	model_root = Node3D.new()
+	model_view.add_child(model_root)
+	var textures: Dictionary = {}
+	for key: String in unit_data.textures:
+		textures[key] = image_texture(unit_data.textures[key])
+	var max_y := 0.0
+	var min_y := 0.0
+	for piece: Dictionary in unit_data.pieces:
+		var node := Node3D.new()
+		node.name = piece.name
+		var parent_index := int(piece.parent)
+		if parent_index < 0:
+			model_root.add_child(node)
+		else:
+			piece_nodes[parent_index].add_child(node)
+		piece_nodes.append(node)
+		node.position = ta_vector(piece.offset)
+		rig_nodes[String(piece.name).to_lower()] = node
+		rig_origins[String(piece.name).to_lower()] = node.position
+		for vertex: Array in piece.vertices:
+			var p := node.global_position + ta_vector(vertex)
+			max_y = maxf(max_y, p.y)
+			min_y = minf(min_y, p.y)
+		for face: Dictionary in piece.faces:
+			var surface := SurfaceTool.new()
+			surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+			var material := StandardMaterial3D.new()
+			material.cull_mode = BaseMaterial3D.CULL_DISABLED
+			material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+			if face.texture != null:
+				material.albedo_texture = textures[face.texture]
+			else:
+				var palette_index := int(face.color) if face.color != null else 128
+				var rgb: Array = unit_data.palette[clampi(palette_index, 0, 255)]
+				material.albedo_color = Color8(int(rgb[0]), int(rgb[1]), int(rgb[2]))
+			surface.set_material(material)
+			var indices: Array = face.indices
+			# Fan triangulation is sufficient for this commander's convex faces.
+			var uv := [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]
+			for triangle in range(1, indices.size() - 1):
+				for j: int in [0, triangle, triangle + 1]:
+					surface.set_uv(uv[j % 4])
+					surface.add_vertex(ta_vector(piece.vertices[int(indices[j])]))
+			surface.generate_normals()
+			var mesh := MeshInstance3D.new()
+			mesh.mesh = surface.commit()
+			node.add_child(mesh)
+	var camera := Camera3D.new()
+	model_view.add_child(camera)
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.size = maxf(55.0, (max_y - min_y) * 1.6)
+	camera.far = 1000
+	var target := Vector3(0, (min_y + max_y) * 0.5, 0)
+	camera.position = target + Vector3(0, 130, 180)
+	camera.look_at(target)
+	camera.current = true
+
+func start_script_runtime() -> void:
+	var path := assets.path_join("armcom.cob.json")
+	if not FileAccess.file_exists(path):
+		status_label.text = "  Missing COB data. Run python tools/prepare_viewer.py."
+		return
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
+	script_vm = CobVM.new(data)
+	script_vm.invoke("Create")
+	apply_script_pose()
+	if "--walk" in OS.get_cmdline_user_args() or "--record" in OS.get_cmdline_user_args():
+		toggle_walk()
+
+func apply_script_pose() -> void:
+	if script_vm == null:
+		return
+	for piece: Dictionary in script_vm.pieces:
+		var key := String(piece.name).to_lower()
+		if not rig_nodes.has(key):
+			push_error("COB model piece is missing: " + key)
+			continue
+		var node: Node3D = rig_nodes[key]
+		node.position = rig_origins[key] + ta_vector(piece.position)
+		var angle := Vector3(float(piece.rotation[0]), float(piece.rotation[1]), float(piece.rotation[2])) * TAU / 65536.0
+		# Reflect TA's model Z axis into Godot. Rotation-order fidelity remains under review.
+		node.rotation = Vector3(-angle.x, -angle.y, angle.z)
+		node.visible = bool(piece.visible)
+	if script_label != null:
+		script_label.text = "Script tick %d  ·  %d / 8 threads" % [script_vm.ticks, script_vm.active_threads()]
+	if not script_vm.fault.is_empty():
+		status_label.text = "  SCRIPT STOPPED: " + script_vm.fault
+		status_label.add_theme_color_override("font_color", Color("ff8888"))
+
+func toggle_walk() -> void:
+	if script_vm == null or not script_vm.fault.is_empty():
+		return
+	walking = not walking
+	script_vm.invoke("StartMoving" if walking else "StopMoving")
+	walk_button.text = "Stop walking  [Space]" if walking else "Play walk cycle  [Space]"
+	status_label.text = "  Original COB walk cycle — preview stays in place" if walking else "  Original StopMoving callback — settling pose"
+	apply_script_pose()
+
+func aim_and_fire(tertiary := false) -> void:
+	if script_vm == null or not script_vm.fault.is_empty():
+		return
+	if building:
+		toggle_build()
+	var callback := "AimTertiary" if tertiary else "AimPrimary"
+	var id: int = script_vm.invoke(callback, [-8192 if tertiary else 8192, 0])
+	pending_shot = {"id": id, "callback": "FireTertiary" if tertiary else "FirePrimary"}
+	status_label.text = "  %s — waiting for the script's aim-complete result" % callback
+	apply_script_pose()
+
+func clear_target() -> void:
+	if script_vm == null or not script_vm.fault.is_empty():
+		return
+	pending_shot.clear()
+	if building:
+		toggle_build()
+	else:
+		script_vm.invoke("TargetCleared", [0])
+	status_label.text = "  Original restore routine — returning from aim"
+
+func toggle_build() -> void:
+	if script_vm == null or not script_vm.fault.is_empty():
+		return
+	pending_shot.clear()
+	building = not building
+	if building:
+		var restore_id: int = script_vm.invoke("TargetCleared", [0])
+		# Complete the restore before launching construction; avoids overlapping routines.
+		set_meta("pending_build", restore_id)
+	else:
+		set_meta("pending_build", -1)
+		script_vm.invoke("StopBuilding")
+	build_button.text = "Leave build pose  [B]" if building else "Preview build pose  [B]"
+	status_label.text = "  Construction pose preview — no resource or build simulation"
+
+func step_script() -> void:
+	if script_vm == null or not script_vm.fault.is_empty():
+		return
+	script_vm.step()
+	var restore_id := int(get_meta("pending_build", -1))
+	if restore_id >= 0 and script_vm.completions.has(restore_id):
+		set_meta("pending_build", -1)
+		if script_vm.completions[restore_id].reason == "return":
+			script_vm.invoke("StartBuilding", [4096, 0])
+	if not pending_shot.is_empty() and script_vm.completions.has(int(pending_shot.id)):
+		var result: Dictionary = script_vm.completions[int(pending_shot.id)]
+		if result.reason == "return" and int(result.result) == 1:
+			script_vm.invoke(pending_shot.callback)
+			status_label.text = "  Aim completed → original muzzle flash (no projectile simulation)"
+		elif result.reason == "return":
+			status_label.text = "  Aim declined by the original script; clear target before changing weapons"
+		pending_shot.clear()
+	apply_script_pose()
+
+func ta_vector(value: Array) -> Vector3:
+	return Vector3(float(value[0]), float(value[1]), -float(value[2])) / 65536.0
+
+func build_interface() -> void:
+	var root := VBoxContainer.new()
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.add_theme_constant_override("separation", 0)
+	add_child(root)
+	var header := PanelContainer.new()
+	header.custom_minimum_size.y = 86
+	root.add_child(header)
+	var header_margin := MarginContainer.new()
+	header_margin.add_theme_constant_override("margin_left", 28)
+	header_margin.add_theme_constant_override("margin_right", 28)
+	header.add_child(header_margin)
+	var header_row := HBoxContainer.new()
+	header_margin.add_child(header_row)
+	var title_box := VBoxContainer.new()
+	title_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_row.add_child(title_box)
+	title_box.add_child(label("TOTAL ANNIHILATION", 27, Color("e9eee4")))
+	title_box.add_child(label("RECONSTRUCTION  /  ORIGINAL ASSET VIEWER", 12, Color("a6b98d")))
+	header_row.add_child(label("MILESTONE 03   •   ORIGINAL SCRIPT PLAYBACK", 12, Color("b7bdab")))
+	var middle := HBoxContainer.new()
+	middle.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	middle.add_theme_constant_override("separation", 0)
+	root.add_child(middle)
+	map_panel = Control.new()
+	map_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	map_panel.clip_contents = true
+	middle.add_child(map_panel)
+	map_panel.gui_input.connect(map_input)
+	map_panel.resized.connect(update_world)
+	world = Node2D.new()
+	map_panel.add_child(world)
+	terrain_sprite = Sprite2D.new()
+	terrain_sprite.texture = terrain
+	terrain_sprite.centered = false
+	terrain_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	world.add_child(terrain_sprite)
+	selection = Line2D.new()
+	selection.width = 1.2
+	selection.default_color = Color("d2ee8c")
+	for i in range(49):
+		var a := i * TAU / 48.0
+		selection.add_point(Vector2(cos(a) * 19, sin(a) * 9))
+	world.add_child(selection)
+	unit_sprite = Sprite2D.new()
+	unit_sprite.texture = model_view.get_texture()
+	unit_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	unit_sprite.scale = Vector2(0.28, 0.28)
+	world.add_child(unit_sprite)
+	var sidebar := PanelContainer.new()
+	sidebar.custom_minimum_size.x = 310
+	middle.add_child(sidebar)
+	var margin := MarginContainer.new()
+	for side: String in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 22)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sidebar.add_child(scroll)
+	scroll.add_child(margin)
+	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	margin.add_child(column)
+	column.add_child(label("COMET CATCHER", 21, Color("edf0e8")))
+	column.add_child(label("6,144 × 7,680  ·  Original terrain tiles", 12))
+	var preview := TextureRect.new()
+	preview.texture = model_view.get_texture()
+	preview.custom_minimum_size = Vector2(230, 150)
+	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	column.add_child(preview)
+	column.add_child(label("ARM COMMANDER", 20, Color("d5e4ac")))
+	column.add_child(label("Original geometry, textures & script", 13))
+	walk_button = button("Play walk cycle  [Space]", toggle_walk)
+	column.add_child(walk_button)
+	var weapons := HBoxContainer.new()
+	column.add_child(weapons)
+	for item: Array in [["Aim + flash  [1]", false], ["D-gun pose  [2]", true]]:
+		var tertiary: bool = item[1]
+		var control := button(item[0], func() -> void: aim_and_fire(tertiary))
+		control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		weapons.add_child(control)
+	column.add_child(button("Clear target  [C]", clear_target))
+	build_button = button("Preview build pose  [B]", toggle_build)
+	column.add_child(build_button)
+	var rotation_row := HBoxContainer.new()
+	column.add_child(rotation_row)
+	for direction in [-1, 1]:
+		var control := button("Turn left  [Q]" if direction < 0 else "Turn right  [E]", func() -> void: rotate_unit(direction * PI / 4))
+		control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		rotation_row.add_child(control)
+	column.add_child(button("Center on commander  [F]", center_unit))
+	var map_controls := HBoxContainer.new()
+	column.add_child(map_controls)
+	var full_map := button("Full map", fit_map)
+	full_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_controls.add_child(full_map)
+	var reset := button("Reset zoom  [R]", reset_view)
+	reset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_controls.add_child(reset)
+	zoom_label = label("", 13, Color("b3c18e"))
+	column.add_child(zoom_label)
+	script_label = label("", 12, Color("b3c18e"))
+	column.add_child(script_label)
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(spacer)
+	column.add_child(label("Drag to pan · Scroll to zoom\nClick terrain to place preview", 13))
+	var note := label("Script-driven pose; projection under review.\nWorld movement & combat are not built yet.", 12, Color("a1aba9"))
+	column.add_child(note)
+	var footer := PanelContainer.new()
+	footer.custom_minimum_size.y = 34
+	root.add_child(footer)
+	status_label = label("  Loaded from your local game installation", 12)
+	footer.add_child(status_label)
+
+func update_world() -> void:
+	if world == null or map_panel == null:
+		return
+	world.scale = Vector2(map_zoom, map_zoom)
+	world.position = map_panel.size * 0.5 - map_center * map_zoom
+	selection.position = unit_position + Vector2(0, 15)
+	unit_sprite.position = unit_position
+	if zoom_label != null:
+		zoom_label.text = "Zoom  %d%%" % roundi(map_zoom * 100)
+
+func rotate_unit(amount: float) -> void:
+	heading += amount
+	model_root.rotation.y = heading
+
+func center_unit() -> void:
+	map_center = unit_position
+	update_world()
+
+func fit_map() -> void:
+	map_zoom = minf(map_panel.size.x / float(scene_data.width), map_panel.size.y / float(scene_data.height))
+	map_center = Vector2(float(scene_data.width), float(scene_data.height)) * 0.5
+	update_world()
+
+func reset_view() -> void:
+	map_zoom = 1.4
+	center_unit()
+
+func map_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			dragging = event.pressed
+			if event.pressed:
+				set_meta("press_position", event.position)
+			elif event.position.distance_to(get_meta("press_position", event.position)) < 5:
+				var pos: Vector2 = (event.position - world.position) / map_zoom
+				unit_position = pos.clamp(Vector2.ZERO, Vector2(float(scene_data.width), float(scene_data.height)))
+				status_label.text = "  Preview placed at (%d, %d) — no simulation running" % [unit_position.x, unit_position.y]
+		if event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+			var before: Vector2 = (event.position - world.position) / map_zoom
+			var factor := 1.2 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0 / 1.2
+			map_zoom = clampf(map_zoom * factor, 0.04, 8.0)
+			map_center = before - (event.position - map_panel.size * 0.5) / map_zoom
+	elif event is InputEventMouseMotion and dragging:
+		map_center -= event.relative / map_zoom
+	update_world()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not event.is_pressed() or event.is_echo() or world == null:
+		return
+	if event.keycode == KEY_Q:
+		rotate_unit(-PI / 4)
+	elif event.keycode == KEY_E:
+		rotate_unit(PI / 4)
+	elif event.keycode == KEY_F:
+		center_unit()
+	elif event.keycode == KEY_R:
+		reset_view()
+	elif event.keycode == KEY_SPACE:
+		toggle_walk()
+	elif event.keycode == KEY_1:
+		aim_and_fire()
+	elif event.keycode == KEY_2:
+		aim_and_fire(true)
+	elif event.keycode == KEY_C:
+		clear_target()
+	elif event.keycode == KEY_B:
+		toggle_build()
+
+func _process(delta: float) -> void:
+	frames += 1
+	var args := OS.get_cmdline_user_args()
+	if not playback_paused:
+		if "--record" in args or "--capture" in args:
+			step_script()
+		else:
+			tick_accumulator += minf(delta, 0.25)
+			while tick_accumulator >= 1.0 / 30.0:
+				tick_accumulator -= 1.0 / 30.0
+				step_script()
+	if frames == 8 and "--verify" in args:
+		if world == null or piece_nodes.size() != 15 or terrain.get_width() != 6144:
+			get_tree().quit(1)
+			return
+		rotate_unit(PI / 4)
+		assert(is_equal_approx(model_root.rotation.y, PI / 4))
+		rotate_unit(-PI / 4)
+		fit_map()
+		assert(map_zoom < 0.2)
+		reset_view()
+		assert(is_equal_approx(map_zoom, 1.4))
+		assert(script_vm != null and script_vm.fault.is_empty())
+		assert(not rig_nodes["lfirept"].visible)
+		toggle_walk()
+		for _tick in range(10):
+			step_script()
+		assert(not rig_nodes["lthigh"].rotation.is_zero_approx())
+		toggle_walk()
+		for _tick in range(100):
+			step_script()
+		assert(is_zero_approx(rig_nodes["lthigh"].rotation.x))
+		aim_and_fire()
+		for _tick in range(120):
+			step_script()
+			if pending_shot.is_empty():
+				break
+		assert(pending_shot.is_empty() and rig_nodes["lfirept"].visible)
+		for _tick in range(3):
+			step_script()
+		assert(not rig_nodes["lfirept"].visible)
+		toggle_build()
+		for _tick in range(120):
+			step_script()
+		assert(script_vm.values.get(5, 0) == 1)
+		toggle_build()
+		for _tick in range(120):
+			step_script()
+		assert(script_vm.values.get(5, -1) == 0 and script_vm.statics[1] == 0)
+		assert(script_vm.fault.is_empty())
+		print("VIEWER_VERIFY_OK")
+		get_tree().quit()
+	if frames == 20 and "--capture" in args:
+		var index := args.find("--capture")
+		await RenderingServer.frame_post_draw
+		var image := get_viewport().get_texture().get_image()
+		var result := image.save_png(args[index + 1])
+		print("VIEWER_CAPTURE ", result)
+		get_tree().quit(0 if result == OK else 1)
+	if "--record" in args and frames <= 60:
+		var index := args.find("--record")
+		var folder := args[index + 1]
+		DirAccess.make_dir_recursive_absolute(folder)
+		await RenderingServer.frame_post_draw
+		var result := get_viewport().get_texture().get_image().save_png(folder.path_join("frame_%03d.png" % frames))
+		if result != OK:
+			get_tree().quit(1)
+		if frames == 60:
+			print("VIEWER_RECORD_OK ticks=", script_vm.ticks)
+			get_tree().quit()
