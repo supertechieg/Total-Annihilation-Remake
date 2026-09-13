@@ -659,7 +659,7 @@ func step_script() -> void:
 		for id: int in economy.units:
 			if id != economy.builder_id and not structure_sprites.has(id):
 				add_structure_sprite(id)
-		resource_label.text = "Metal %.0f / %.0f\nEnergy %.0f / %.0f" % [economy.metal, economy.metal_storage, economy.energy, economy.energy_storage]
+		resource_label.text = preload("res://resource_display.gd").describe(economy.resources(0))
 		for id: int in structure_sprites:
 			structure_sprites[id].position = economy.units[id].position
 			var remaining := float(economy.units[id].remaining)
@@ -785,6 +785,7 @@ func build_interface() -> void:
 	column.add_child(label("ARM COMMANDER", 20, Color("d5e4ac")))
 	column.add_child(label("Original geometry, textures & script", 13))
 	resource_label = label("Metal 1000\nEnergy 1000", 14, Color("d5e4ac"))
+	resource_label.tooltip_text = "Income and demand show the last resource update. Unpaid costs can pause construction or metal production until repaid."
 	column.add_child(resource_label)
 	selection_label = label("Selected: Arm Commander", 13)
 	column.add_child(selection_label)

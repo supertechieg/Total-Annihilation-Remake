@@ -36,6 +36,9 @@ func _initialize() -> void:
 				world.set_active(maker, snapshot.active)
 			world.step()
 			var mismatch := Float.float32(world.energy) != Float.float32(snapshot.energy) or Float.float32(world.metal) != Float.float32(snapshot.metal)
+			var account := world.resources(0)
+			for key: String in ["energy_income", "energy_requested", "metal_income"]:
+				mismatch = mismatch or Float.float32(account[key]) != Float.float32(snapshot[key])
 			var ids := [world.builder_id, maker, other]
 			for i in range(3):
 				if not world.units.has(ids[i]):

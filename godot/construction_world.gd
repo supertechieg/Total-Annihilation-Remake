@@ -426,19 +426,20 @@ func advance_construction(target_id: int, source_id: int) -> bool:
 
 func resources(team: int) -> Dictionary:
 	if team == 0:
-		return {"energy": energy, "metal": metal, "energy_storage": energy_storage, "metal_storage": metal_storage}
+		var account: Dictionary = team_resources.get(0, {}).duplicate()
+		account.merge({"energy": energy, "metal": metal, "energy_storage": energy_storage, "metal_storage": metal_storage}, true)
+		return account
 	if not team_resources.has(team):
 		team_resources[team] = {"energy": 1000.0, "metal": 1000.0, "energy_storage": base_energy_storage, "metal_storage": base_metal_storage}
 	return team_resources[team].duplicate()
 
 func store_resources(team: int, account: Dictionary) -> void:
+	team_resources[team] = account.duplicate()
 	if team == 0:
 		energy = float(account.energy)
 		metal = float(account.metal)
 		energy_storage = float(account.energy_storage)
 		metal_storage = float(account.metal_storage)
-	else:
-		team_resources[team] = account.duplicate()
 
 func team_unit_count(team: int) -> int:
 	var count := 0
@@ -497,8 +498,11 @@ func settle_economy() -> void:
 			var result := Allocation.settle_account(account[resource], account[resource + "_storage"], ledgers)
 			account[resource] = result.stock
 			account[resource + "_income"] = result.income
+			account[resource + "_requested"] = result.requested
+			account[resource + "_debt"] = 0.0
 			for i in range(ids.size()):
 				units[ids[i]][resource + "_ledger"] = result.ledgers[i]
+				account[resource + "_debt"] = Upkeep.float32(account[resource + "_debt"] + result.ledgers[i].debt)
 		store_resources(team, account)
 
 func set_terrain_metal(data: PackedByteArray) -> bool:

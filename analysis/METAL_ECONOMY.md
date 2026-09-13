@@ -183,3 +183,16 @@ aggregation/settlement; those costs are not transferred by settlement itself.
 No live accounting change was needed. Static cleanup inspection also finds the
 valid flag cleared near 0x486d24, but this test does not execute full destruction
 callbacks and must not be treated as proof of every death/reclaim/cancel path.
+
+## Economy display
+
+The viewer now shows stock/capacity, last-period income and requested demand per
+second, plus unpaid debt for each resource. Team-zero account reads preserve
+these settlement statistics while still reflecting direct stock changes. The
+live native-maker comparisons now also check exposed income and requested
+energy for both ordinary and removed-maker traces (80 snapshots each); team
+isolation remains 10/10. Debt shown is summed from the settled live-unit ledgers.
+The display tooltip explains that unpaid costs can pause construction and metal
+production. render_resource_display.gd captures the actual viewer with supplied
+shortage values; the 1440x900 render was inspected and all six lines fit the
+sidebar. The screenshot stays under ignored local/.
