@@ -10,12 +10,13 @@ Double-click `Run Viewer.cmd`, or run:
 .\tools\run_viewer.ps1
 ```
 
-The viewer displays Comet Catcher's original terrain and the textured Arm Commander. Its original COB script drives walking, aiming, flashes, and construction poses. The runtime matches 464 recorded state snapshots from the original interpreter in an isolated x86 emulator; see [runtime evidence and limits](analysis/COB_VM.md).
+The viewer displays Comet Catcher's original terrain and a controllable Arm Commander. Click terrain to issue a move order; the Commander turns, accelerates, follows a terrain route and brakes on arrival. Its original COB script drives walking, aiming, flashes, and construction poses. The runtime matches 464 recorded state snapshots from the original interpreter in an isolated x86 emulator; see [runtime evidence and limits](analysis/COB_VM.md).
 
 | Control | Action |
 | --- | --- |
 | Drag / scroll | Pan / zoom |
-| Click terrain | Place the preview |
+| Click terrain | Move commander to destination |
+| Right-click / S | Stop and brake |
 | Space | Start/stop original walk cycle, in place |
 | 1 / 2 | Aim and show primary / D-gun flash |
 | C | Clear target and restore pose |
@@ -23,9 +24,9 @@ The viewer displays Comet Catcher's original terrain and the textured Arm Comman
 | Q / E | Rotate whole model |
 | F / R | Center commander / reset zoom |
 
-Original renderer fidelity and world simulation are still under reconstruction. There is no world movement, projectile, damage, or resource simulation yet.
+Original renderer fidelity and world simulation are still under reconstruction. Terrain routing and arrival handling are provisional; there is no projectile, damage, or resource simulation yet.
 
-The next simulation foundation is implemented separately: original speed caps, heading-to-velocity rounding and movement-animation transitions match 5,637 native comparison checks. See [ground movement evidence and remaining work](analysis/GROUND_MOVEMENT.md).
+Original speed caps, heading-to-velocity rounding, supplied-waypoint steering and movement-animation transitions match 6,837 native comparison checks. See [ground movement evidence and remaining work](analysis/GROUND_MOVEMENT.md) and [playable movement scope](analysis/PLAYABLE_MOVEMENT.md).
 
 Requires Godot 4 (tested on installed 4.6.2) and Python with Pillow for preparation. To recreate generated assets:
 

@@ -1,7 +1,7 @@
 {
-  "checks": 5637,
+  "checks": 6837,
   "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
   "first_differences": [],
   "mismatches": 0,
-  "scope": "Speed/vector primitive and animation callback transitions; excludes navigation, terrain sampling and collision"
+  "scope": "Speed/vector, supplied-waypoint ground steering and animation callback transitions; excludes pathfinding, terrain sampling and collision"
 }

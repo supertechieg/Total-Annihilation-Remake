@@ -1,8 +1,13 @@
 extends Control
-## Original asset and COB playback viewer. No world movement or combat simulation.
+## Original assets and COB, with a first controllable ground-movement slice.
 
 const ASSET_RELATIVE = "../local/viewer-assets/"
 const CobVM = preload("res://cob_vm.gd")
+const Navigation = preload("res://terrain_navigation.gd")
+const MobileUnit = preload("res://mobile_unit.gd")
+var navigation: RefCounted
+var mobile: RefCounted
+var route_line: Line2D
 var assets: String
 var scene_data: Dictionary
 var unit_data: Dictionary
@@ -72,8 +77,47 @@ func _ready() -> void:
 	build_model()
 	build_interface()
 	start_script_runtime()
+	start_world_movement()
 	update_world()
 	print("VIEWER_READY map=%s pieces=%d textures=%d" % [scene_data.name, unit_data.pieces.size(), unit_data.textures.size()])
+
+func start_world_movement() -> void:
+	var fields: Dictionary = unit_data.definition
+	navigation = Navigation.new(int(scene_data.height_grid_width), int(scene_data.height_grid_height),
+		FileAccess.get_file_as_bytes(assets.path_join("heights.bin")), int(scene_data.sea_level),
+		int(fields.get("maxslope", "20")), int(fields.get("maxwaterdepth", "35")))
+	unit_position = navigation.nearest_open(unit_position)
+	assert(unit_position.x >= 0, "Map has no passable starting point")
+	mobile = MobileUnit.new(navigation, fields, unit_position, script_vm)
+	map_center = unit_position
+	if "--move" in OS.get_cmdline_user_args():
+		issue_move(unit_position + Vector2(128, -96))
+
+func issue_move(target: Vector2) -> bool:
+	if mobile == null:
+		return false
+	if building:
+		toggle_build()
+	if not mobile.move_to(target):
+		status_label.text = "  " + mobile.status
+		return false
+	if walking:
+		walking = false
+		script_vm.invoke("StopMoving")
+		walk_button.text = "Play walk cycle  [Space]"
+	route_line.points = mobile.route
+	status_label.text = "  Move order accepted — %d route points" % mobile.route.size()
+	return true
+
+func stop_order() -> void:
+	if walking:
+		walking = false
+		script_vm.invoke("StopMoving")
+		walk_button.text = "Play walk cycle  [Space]"
+	if mobile != null:
+		mobile.stop()
+		route_line.clear_points()
+		status_label.text = "  Stop order — braking"
 
 func build_model() -> void:
 	model_view = SubViewport.new()
@@ -175,6 +219,9 @@ func apply_script_pose() -> void:
 func toggle_walk() -> void:
 	if script_vm == null or not script_vm.fault.is_empty():
 		return
+	if mobile != null and (not mobile.route.is_empty() or mobile.speed != 0):
+		stop_order()
+		return
 	walking = not walking
 	script_vm.invoke("StartMoving" if walking else "StopMoving")
 	walk_button.text = "Stop walking  [Space]" if walking else "Play walk cycle  [Space]"
@@ -221,6 +268,17 @@ func step_script() -> void:
 	if script_vm == null or not script_vm.fault.is_empty():
 		return
 	script_vm.step()
+	if mobile != null:
+		var was_active: bool = not mobile.route.is_empty() or mobile.speed != 0
+		mobile.step()
+		unit_position = mobile.point()
+		if was_active or not mobile.callbacks.is_empty():
+			heading = -float(mobile.heading) * TAU / 65536.0
+			model_root.rotation.y = heading
+			status_label.text = "  %s  ·  (%d, %d)  ·  speed %.2f" % [mobile.status, unit_position.x, unit_position.y, mobile.speed / 65536.0]
+		if mobile.route.is_empty():
+			route_line.clear_points()
+		update_world()
 	var restore_id := int(get_meta("pending_build", -1))
 	if restore_id >= 0 and script_vm.completions.has(restore_id):
 		set_meta("pending_build", -1)
@@ -257,8 +315,8 @@ func build_interface() -> void:
 	title_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header_row.add_child(title_box)
 	title_box.add_child(label("TOTAL ANNIHILATION", 27, Color("e9eee4")))
-	title_box.add_child(label("RECONSTRUCTION  /  ORIGINAL ASSET VIEWER", 12, Color("a6b98d")))
-	header_row.add_child(label("MILESTONE 03   •   ORIGINAL SCRIPT PLAYBACK", 12, Color("b7bdab")))
+	title_box.add_child(label("RECONSTRUCTION  /  COMMANDER MOVEMENT", 12, Color("a6b98d")))
+	header_row.add_child(label("MOVE ORDERS   •   TERRAIN ROUTING", 12, Color("b7bdab")))
 	var middle := HBoxContainer.new()
 	middle.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	middle.add_theme_constant_override("separation", 0)
@@ -277,6 +335,10 @@ func build_interface() -> void:
 	terrain_sprite.centered = false
 	terrain_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	world.add_child(terrain_sprite)
+	route_line = Line2D.new()
+	route_line.width = 1.4
+	route_line.default_color = Color("82d9c7")
+	world.add_child(route_line)
 	selection = Line2D.new()
 	selection.width = 1.2
 	selection.default_color = Color("d2ee8c")
@@ -314,6 +376,8 @@ func build_interface() -> void:
 	column.add_child(preview)
 	column.add_child(label("ARM COMMANDER", 20, Color("d5e4ac")))
 	column.add_child(label("Original geometry, textures & script", 13))
+	column.add_child(label("Click terrain to move · Right-click / S to stop", 11))
+	column.add_child(button("Stop movement  [S]", stop_order))
 	walk_button = button("Play walk cycle  [Space]", toggle_walk)
 	column.add_child(walk_button)
 	var weapons := HBoxContainer.new()
@@ -348,8 +412,8 @@ func build_interface() -> void:
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(spacer)
-	column.add_child(label("Drag to pan · Scroll to zoom\nClick terrain to place preview", 13))
-	var note := label("Script-driven pose; projection under review.\nWorld movement & combat are not built yet.", 12, Color("a1aba9"))
+	column.add_child(label("Drag to pan · Scroll to zoom\nClick terrain to move commander", 13))
+	var note := label("Development build · Movement available\nConstruction and combat are next.", 12, Color("a1aba9"))
 	column.add_child(note)
 	var footer := PanelContainer.new()
 	footer.custom_minimum_size.y = 34
@@ -370,6 +434,8 @@ func update_world() -> void:
 func rotate_unit(amount: float) -> void:
 	heading += amount
 	model_root.rotation.y = heading
+	if mobile != null:
+		mobile.heading = roundi(-heading * 65536.0 / TAU) & 65535
 
 func center_unit() -> void:
 	map_center = unit_position
@@ -392,8 +458,9 @@ func map_input(event: InputEvent) -> void:
 				set_meta("press_position", event.position)
 			elif event.position.distance_to(get_meta("press_position", event.position)) < 5:
 				var pos: Vector2 = (event.position - world.position) / map_zoom
-				unit_position = pos.clamp(Vector2.ZERO, Vector2(float(scene_data.width), float(scene_data.height)))
-				status_label.text = "  Preview placed at (%d, %d) — no simulation running" % [unit_position.x, unit_position.y]
+				issue_move(pos)
+		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			stop_order()
 		if event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
 			var before: Vector2 = (event.position - world.position) / map_zoom
 			var factor := 1.2 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0 / 1.2
@@ -416,6 +483,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		reset_view()
 	elif event.keycode == KEY_SPACE:
 		toggle_walk()
+	elif event.keycode == KEY_S:
+		stop_order()
 	elif event.keycode == KEY_1:
 		aim_and_fire()
 	elif event.keycode == KEY_2:
@@ -475,6 +544,16 @@ func _process(delta: float) -> void:
 			step_script()
 		assert(script_vm.values.get(5, -1) == 0 and script_vm.statics[1] == 0)
 		assert(script_vm.fault.is_empty())
+		var start_position := unit_position
+		var destination: Vector2 = navigation.nearest_open(start_position + Vector2(128, -96))
+		assert(issue_move(destination))
+		for _tick in range(1200):
+			step_script()
+		assert(unit_position.distance_to(destination) < 3.0, "Real-map move must arrive: " + str(unit_position))
+		assert(mobile.speed == 0 and mobile.route.is_empty())
+		assert(script_vm.fault.is_empty() and script_vm.statics[1] == 0)
+		assert(is_zero_approx(rig_nodes["lthigh"].rotation.x))
+		print("MOVEMENT_VERIFY_OK start=%s end=%s" % [start_position, unit_position])
 		print("VIEWER_VERIFY_OK")
 		get_tree().quit()
 	if frames == 20 and "--capture" in args:

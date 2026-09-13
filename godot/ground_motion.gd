@@ -21,6 +21,54 @@ func velocity_component(heading: int, speed: int, phase: int) -> int:
 	# The original adds 4096 before arithmetic right shift, including negatives.
 	return signed32((sine[offset >> 1] * speed + 4096) >> 13)
 
+static func distance_squared(a: Array, b: Array) -> int:
+	var dx := int(a[0]) - int(b[0])
+	var dz := int(a[1]) - int(b[1])
+	return ((dx * dx) >> 32) + ((dz * dz) >> 32)
+
+static func distance_raw(a: Array, b: Array) -> int:
+	var dx := int(a[0]) - int(b[0])
+	var dz := int(a[1]) - int(b[1])
+	return int(sqrt(float(dx * dx + dz * dz)))
+
+static func destination_heading(position: Array, target: Array) -> int:
+	# Original x87 conversion uses this stored double scale and nearest rounding.
+	return roundi(atan2(float(int(position[0]) - int(target[0])), float(int(position[1]) - int(target[1]))) * 10430.37835047) & 65535
+
+func steer(input: Dictionary) -> Dictionary:
+	var speed_input: Dictionary = input.duplicate()
+	var heading := int(input.heading)
+	var turn_step := 0
+	speed_input.acceleration = -int(input.brake)
+	if not input.waypoints.is_empty():
+		var position: Array = input.position
+		var previous: Array = input.waypoints[0]
+		var target: Array = input.waypoints[1].duplicate()
+		var distance := distance_raw(position, target)
+		if distance > 0x500000:
+			var segment := distance_raw(previous, target)
+			if segment >= 65536:
+				var pullback := mini(distance - 0x500000, segment)
+				for axis in range(2):
+					@warning_ignore("integer_division")
+					var direction: int = ((int(target[axis]) - int(previous[axis])) << 16) / segment
+					target[axis] = int(target[axis]) - ((direction * pullback) >> 16)
+		var error := signed16(destination_heading(position, target) - heading)
+		turn_step = clampi(error, -int(input.turn_rate), int(input.turn_rate))
+		heading = (heading + turn_step) & 65535
+		var speed := int(input.speed)
+		@warning_ignore("integer_division")
+		var turn_distance: int = absi(error) * speed / int(input.turn_rate)
+		@warning_ignore("integer_division")
+		var stop_distance: int = (((speed * speed) >> 16) << 16) / (int(input.brake) * 2)
+		if ((turn_distance * turn_distance) >> 32) * 4 < distance_squared(position, target) and ((stop_distance * stop_distance) >> 32) < distance_squared(position, input.waypoints[2]):
+			speed_input.acceleration = input.acceleration
+	speed_input.heading = heading
+	var result := advance_speed(speed_input)
+	result.heading = heading
+	result.turn_step = turn_step
+	return result
+
 func advance_speed(input: Dictionary) -> Dictionary:
 	var speed := maxi(0, signed32(int(input.speed) + int(input.acceleration)))
 	var slope := clampi(signed16(int(input.pitch)) >> 11, -5, 5)

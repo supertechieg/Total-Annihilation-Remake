@@ -16,6 +16,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'COB runtime checks failed' }
     & $godotPath --headless --path godot --script res://test_ground_motion.gd
     if ($LASTEXITCODE -ne 0) { throw 'Ground motion checks failed' }
+    & $godotPath --headless --path godot --script res://test_navigation.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Terrain navigation checks failed' }
     & $godotPath --headless --path godot -- --verify
     if ($LASTEXITCODE -ne 0) { throw 'Viewer checks failed' }
     if ($Native) {

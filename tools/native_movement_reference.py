@@ -13,7 +13,7 @@ import random
 import struct
 
 from native_cob_reference import NativeReference, EXE_HASH, UC_HOOK_CODE
-from unicorn.x86_const import UC_X86_REG_ESP
+from unicorn.x86_const import UC_X86_REG_ESP, UC_X86_REG_EAX, UC_X86_REG_FPCW, UC_X86_REG_FPSW, UC_X86_REG_FPTAG
 from cob import signed
 
 MOTION = 0x1004000
@@ -25,6 +25,11 @@ GAME = 0x1400000
 class MovementReference(NativeReference):
     def __init__(self, executable, cob):
         super().__init__(executable, cob)
+        # Unicorn defaults do not represent FINIT: initialize an empty x87 stack
+        # and masked exceptions before entering the original floating-point CRT.
+        self.mu.reg_write(UC_X86_REG_FPCW, 0x37f)
+        self.mu.reg_write(UC_X86_REG_FPSW, 0)
+        self.mu.reg_write(UC_X86_REG_FPTAG, 0xffff)
         self.mu.mem_map(GAME, 0x40000)
         self.write(0x511de8, GAME)
         self.write(UNIT + 0x92, DEFINITION)
@@ -37,6 +42,46 @@ class MovementReference(NativeReference):
         if actual != expected:
             raise AssertionError('Regenerated trigonometric table differs')
         self.sine = actual
+        self.waypoints = []
+        self.write(MOTION, 0x100c000)
+        self.write(0x100c000, 0x100d000)
+        self.write(0x100d014, 0x100e000)
+        self.write(0x100d00c, 0x100e020)
+        self.mu.mem_write(0x100e000, b'\xc3')
+        self.mu.mem_write(0x100e020, b'\xc2\x0c\x00')
+        self.mu.hook_add(UC_HOOK_CODE, self.record_waypoints, begin=0x100e020, end=0x100e020)
+        self.mu.hook_add(UC_HOOK_CODE, self.has_waypoints, begin=0x100e000, end=0x100e000)
+
+    def has_waypoints(self, mu, address, size, data):
+        mu.reg_write(UC_X86_REG_EAX, int(bool(self.waypoints)))
+
+    def record_waypoints(self, mu, address, size, data):
+        pointer = self.read(mu.reg_read(UC_X86_REG_ESP) + 4)
+        for i, (x, z) in enumerate(self.waypoints):
+            self.write(pointer + i * 12, x)
+            self.write(pointer + i * 12 + 4, 0)
+            self.write(pointer + i * 12 + 8, z)
+
+    def steer(self, data):
+        self.waypoints = data['waypoints']
+        self.write(MOTION + 0x20, data['speed'])
+        self.write(DEFINITION + 0x192, data['max_speed'])
+        self.write(DEFINITION + 0x19a, data['brake'])
+        self.write(DEFINITION + 0x19e, data['acceleration'])
+        self.short(DEFINITION + 0x1ba, data['turn_rate'])
+        self.write(DEFINITION + 0x241, data['unit_flags'])
+        self.short(UNIT + 0x66, data['heading'])
+        self.short(UNIT + 0x68, data['pitch'])
+        self.write(UNIT + 0x6a, data['position'][0])
+        self.write(UNIT + 0x6e, data['height_integer'] << 16)
+        self.write(UNIT + 0x72, data['position'][1])
+        self.write(UNIT + 0x110, 0)
+        self.mu.mem_write(GAME + 0x1427f, bytes([data['sea_level']]))
+        self.call(0x43cd20, [UNIT], this=MOTION, timeout=0)
+        return dict(speed=signed(self.read(MOTION + 0x20)),
+                    heading=self.read(UNIT + 0x66) & 65535,
+                    turn_step=struct.unpack('<h', self.mu.mem_read(MOTION + 0x24, 2))[0],
+                    velocity=[signed(self.read(MOTION + offset)) for offset in (8, 12, 16)])
 
     def short(self, address, value):
         self.mu.mem_write(address, struct.pack('<H', value & 65535))
@@ -131,6 +176,16 @@ def main():
         data = dict(unit_flags=0xabcdef03 | previous << 2, speed=speed, turn_step=turn,
                     movement_flags=4 if blocked else 0, attached=attached, rate1=100, rate2=200)
         cases.append(dict(kind='animation', label='state-transition', input=data, expected=native.animation(data)))
+    rng = random.Random(430020)
+    for index in range(1200):
+        position = [200 * 65536, 300 * 65536]
+        waypoints = [[position[0] + rng.randrange(-100, 100) * 65536, position[1] + rng.randrange(-100, 100) * 65536] for _ in range(3)]
+        if index % 10 == 0:
+            waypoints = []
+        data = dict(position=position, waypoints=waypoints, speed=rng.randrange(78644),
+                    max_speed=78643, acceleration=9830, brake=19660, turn_rate=1044,
+                    heading=rng.randrange(65536), pitch=0, height_integer=0, sea_level=0, unit_flags=0)
+        cases.append(dict(kind='steering', label=f'waypoint-{index}', input=data, expected=native.steer(data)))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(dict(exe_sha256=EXE_HASH, fixed_values=fixed_values,
                                          sine=list(native.sine), cases=cases)), encoding='utf-8')

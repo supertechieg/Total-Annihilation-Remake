@@ -1,6 +1,6 @@
 # Ground movement reconstruction
 
-The speed/vector primitive and movement-to-COB transition logic have been reconstructed in `godot/ground_motion.gd`. They match 5,125 test cases executed by the installed game's x86 code, plus all 512 regenerated trigonometric table entries. This is a movement foundation, not a complete world simulation. The viewer still plays its walk cycle in place.
+The speed/vector primitive, supplied-waypoint steering and movement-to-COB transition logic have been reconstructed in `godot/ground_motion.gd`. They match 6,325 test cases executed by the installed game's x86 code, plus all 512 regenerated trigonometric table entries. This is a movement foundation, not a complete world simulation. The viewer now supports map movement using these primitives and a provisional pathfinder; see [playable movement scope](PLAYABLE_MOVEMENT.md).
 
 ## Executable evidence
 
@@ -13,7 +13,7 @@ Version fingerprint: `3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a
 | `0x0043cc20` | Updates speed, applies caps, generates velocity | Implemented and compared |
 | `0x004b70ef`, `0x004b7123` | Heading-to-velocity components | Implemented and compared |
 | `0x0043da70` | Movement-rate changes and script callbacks | Implemented and compared |
-| `0x0043cd20` | Ground steering and acceleration/braking selection | Decompiled, not yet independently validated |
+| `0x0043cd20` | Ground steering and acceleration/braking selection | Implemented; 1,200 native waypoint cases match |
 | `0x0043d6d0` | Position integration, attachment and cell-crossing handling | Decompiled, not yet reconstructed |
 | `0x0043dd20` | Orders the movement update stages | Identified |
 | `0x00440340` | Reads movement-class constraints | Identified; class/instance constraint interaction unresolved |
@@ -47,13 +47,13 @@ python -m pip install --target local/python-deps -r requirements-analysis.txt
 
 The movement oracle reads only the local executable copy and prepared COB file. It maps the PE sections in Unicorn, supplies synthetic unit/movement/global-memory records, and executes original functions. The speed routine and its helper calls are unmodified. No Windows startup, game startup, networking or installation writes occur. Calls have a two-million-instruction ceiling; the small movement cases omit Unicorn's wall-clock timer to avoid per-call timer overhead.
 
-The 5,125 cases cover slope boundaries, water equality and exemption flags, all heading table steps around quantization boundaries, seeded combinations of normal movement values, continuous accelerate/cruise/brake sequences, and movement-rate transitions. The 512 table comparisons bring the GDScript comparison to 5,637 checks. Five original-parser assertions run separately. This is broad evidence within the tested domain, not exhaustive proof for corrupt values or every unit type.
+The initial 5,125 cases cover slope boundaries, water equality and exemption flags, all heading table steps around quantization boundaries, seeded combinations of normal movement values, continuous accelerate/cruise/brake sequences, and movement-rate transitions. Another 1,200 cases exercise supplied-waypoint steering. The 512 table comparisons bring the GDScript comparison to 6,837 checks. Five original-parser assertions run separately. This is broad evidence within the tested domain, not exhaustive proof for corrupt values or every unit type.
 
 Normal verification also runs 21 regression checks that require no original assets. Full input/output traces remain in ignored `local/movement/`; the compact result is committed as `analysis/native-movement-validation.json`.
 
 ## Remaining work
 
-Recover and test waypoint selection, destination heading, turn clamping, stopping-distance decisions, terrain-height sampling, collision/passability and movement-class precedence before calling map navigation faithful. The decompiled ground-steering routine appears to clamp signed heading error by TurnRate and choose acceleration versus braking using distance tests; those observations have not yet been validated by an oracle.
+Recover and test the route-provider/waypoint selection, terrain-height sampling, collision/passability and movement-class precedence before calling map navigation faithful. Destination heading, turn clamping, route look-ahead and stopping-distance decisions in the ground-steering routine now match the oracle when given the same three route points.
 
 One relevant discrepancy to resolve: the Commander FBI fields say MaxWaterDepth=35 and MaxSlope=20, while the selected TANKDS2 class says 100 and 32. Do not blindly choose either set. The class source is `rev31.gp3/gamedata/MOVEINFO.TDF`, SHA-256 `5ee79676e0acd12f26b2f78dd6675ac1b536a3bd063a22b34e0473d581fc2cf8`. General archive lookup precedence remains unresolved too.
 
