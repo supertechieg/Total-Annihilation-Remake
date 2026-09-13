@@ -5,6 +5,23 @@ const Cycle = preload("res://weapon_cycle.gd")
 var checks := 0
 var failures := 0
 
+class ImmediateRecoil extends RefCounted:
+	var functions := {"AimPrimary": 0, "QueryPrimary": 1, "FirePrimary": 2}
+	var fault := ""
+	var completions := {}
+	var pieces := [{"name": "barrel"}]
+	var position := Vector3(10, 20, 30)
+	var invocation := 0
+	func invoke(callback: String, _args: Array = []) -> int:
+		invocation += 1
+		if callback == "QueryPrimary":
+			completions[invocation] = {"locals": [0]}
+		elif callback == "FirePrimary":
+			position = Vector3(40, 50, 60)
+		elif callback == "AimPrimary":
+			completions[invocation] = {"reason": "return", "result": 1}
+		return invocation
+
 func check(value: bool, message: String) -> void:
 	checks += 1
 	if not value:
@@ -13,6 +30,19 @@ func check(value: bool, message: String) -> void:
 
 func _initialize() -> void:
 	var catalog = Catalog.new(ProjectSettings.globalize_path("res://../local/unit-assets/"))
+	var recoil := ImmediateRecoil.new()
+	var recoil_cycle := Cycle.new(recoil, catalog.weapon("EMG"))
+	var resolutions := [0]
+	var resolver := func(_piece: String) -> Vector3:
+		resolutions[0] += 1
+		return recoil.position
+	recoil_cycle.step(false, resolver)
+	check(resolutions[0] == 0, "Muzzle is not resolved when no shot is emitted")
+	recoil_cycle.aim(0, 0)
+	recoil_cycle.step(true, resolver)
+	check(recoil.position == Vector3(40, 50, 60), "Firing callback applies immediate recoil")
+	check(recoil_cycle.shots.size() == 1 and recoil_cycle.shots[0].position == Vector3(10, 20, 30), "Shot retains muzzle position from before firing callback")
+	check(resolutions[0] == 1, "Muzzle resolves once per emitted shot")
 	var vm = VM.new(catalog.load_script("armflash"))
 	vm.read_values = {4: 100, 17: 0}
 	vm.invoke("Create")

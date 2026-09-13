@@ -2,6 +2,17 @@
 
 ## Current result
 
+The weapon host now resolves each shot's muzzle before invoking FirePrimary or
+refreshing AimPrimary. Original cannon launcher `0x49cde0` receives the already
+queried launch position, initializes projectile position/velocity and only then
+invokes FirePrimary. The previous host stored a piece name, ran these callbacks,
+and resolved the position afterward. An optional resolver on WeaponCycle now
+captures the position at the correct boundary without copying the whole pose.
+A regression callback that immediately changes its muzzle confirms the emitted
+shot retains the earlier position; denied shots do not invoke the resolver.
+All normal checks and three real-map duels pass. This ordering correction does
+not yet prove that the remaining Hammer barrel miss is resolved.
+
 Hammer combat is now enabled. The normal suite includes an Arm Kbot Lab producing
 a Hammer, selected movement, and a real Comet Catcher duel with an armed Raider.
 Both units damage each other and one dies. Existing Flash and Stumpy duels pass.

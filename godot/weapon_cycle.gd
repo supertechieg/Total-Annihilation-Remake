@@ -50,7 +50,7 @@ func stop() -> void:
 	remaining = 0
 	shots.clear()
 
-func step(can_fire := true) -> void:
+func step(can_fire := true, resolve_muzzle := Callable()) -> void:
 	tick += 1
 	shots.clear()
 	if not vm.fault.is_empty():
@@ -83,12 +83,16 @@ func step(can_fire := true) -> void:
 	if piece < 0 or piece >= vm.pieces.size():
 		fault = "Primary muzzle query returned an invalid piece"
 		return
+	# Native launch consumes the queried position before FirePrimary can alter pose.
+	var shot := {"tick": tick, "piece": piece, "piece_name": vm.pieces[piece].name,
+		"velocity_raw_per_tick": int(runtime.velocity_raw_per_tick)}
+	if resolve_muzzle.is_valid():
+		shot.position = resolve_muzzle.call(str(shot.piece_name))
 	vm.invoke("FirePrimary")
 	if not vm.fault.is_empty():
 		fault = vm.fault
 		return
-	shots.append({"tick": tick, "piece": piece, "piece_name": vm.pieces[piece].name,
-		"velocity_raw_per_tick": int(runtime.velocity_raw_per_tick)})
+	shots.append(shot)
 	remaining -= 1
 	next_shot = tick + maxi(1, int(runtime.burst_interval_ticks))
 	if remaining == 0:

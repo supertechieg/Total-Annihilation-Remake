@@ -174,13 +174,13 @@ func step() -> void:
 			cycle.aim(heading, pitch)
 			order.heading = heading
 			order.pitch = pitch
-		cycle.step(within_range and world.mobile_units[source].speed == 0)
+		cycle.step(within_range and world.mobile_units[source].speed == 0, func(piece: String) -> Vector3: return muzzle(source, piece))
 		if not cycle.fault.is_empty():
 			status = cycle.fault
 			stop(source)
 			continue
 		for shot: Dictionary in cycle.shots:
-			var start := muzzle(source, shot.piece_name)
+			var start: Vector3 = shot.position
 			if ballistic:
 				var speed := int(shot.velocity_raw_per_tick)
 				var raw := raw_point(start)
