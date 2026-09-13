@@ -92,3 +92,20 @@ update ordering. The current scenario shares a deadline starting at tick zero
 and retains its configurable base storage. Construction math is native-tested,
 but its complete scheduling interleave with the original economy is not yet
 validated by a combined original construction trace.
+
+## Extractor yield
+
+extractor_yield.gd matches 160 cases from original setup 0x437840 and the original
+map-cell lookup 0x481550. Supplied maps use 13-byte cells with metal at offset 7;
+the lookup clips coordinates against game map dimensions. Each valid cell adds
+its byte plus one to a wrapping 16-bit sum. The sum occupies the upper half of
+a signed int32, is multiplied by float32 extractsmetal, then by exactly 1/65536,
+and stored as float32. Thus sums above 32767 become negative; overflow cases
+preserve this original behavior. Nonpositive extraction leaves prior yield
+untouched. Tests cover homogeneous and varied bytes, edges, out-of-map and
+empty footprints, positive/zero/negative scales and large-footprint overflow.
+
+The fixture disables the SetSpeed callback by leaving the script pointer null;
+otherwise the extractor and map-lookup routines execute unchanged. Original map
+loading into metal bytes and script SetSpeed behavior still need verification
+before this helper can provide live extractor income.

@@ -119,6 +119,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "$missileUnit factory duel failed" }
     }
     if ($Native) {
+        python tools\native_extractor_yield.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native extractor yield failed' }
+        & $godotPath --headless --path godot --script res://compare_native_extractor_yield.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Extractor yield differs from original' }
         python tools\native_maker_economy.py
         if ($LASTEXITCODE -ne 0) { throw 'Native maker economy failed' }
         & $godotPath --headless --path godot --script res://compare_native_maker_economy.gd
