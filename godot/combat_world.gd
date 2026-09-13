@@ -280,7 +280,11 @@ func step() -> void:
 		projectile.position = end
 		projectile.position_raw = next_raw
 		projectile.distance += travel
-		if (projectile.has("deadline") or float(projectile.distance) < float(projectile.range)) and end.y >= world.navigation.height_at(Vector2(end.x, end.z)):
+		if end.y < world.navigation.height_at(Vector2(end.x, end.z)):
+			add_effect(end, str(projectile.get("explosion", "")))
+			request_sound(str(projectile.get("soundhit", "")), end)
+			continue
+		if projectile.has("deadline") or float(projectile.distance) < float(projectile.range):
 			survivors.append(projectile)
 	projectiles = survivors
 	# Native updater snapshots its pool size: newly copied rounds move next tick.

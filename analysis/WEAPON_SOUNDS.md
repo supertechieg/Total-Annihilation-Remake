@@ -30,7 +30,7 @@ The WAV decode test previously verified all 60 streams. Audible device output
 has not been listened to or captured. Mixing is provisional: nonspatial playback
 at -12 dB, no original distance attenuation/priority, no water-sound selection,
 and firing events follow script cycles rather than a native-verified audio
-scheduler. EMG terrain-only impacts still lack an event. These are outstanding
+scheduler. EMG terrain-only impacts now request the stored impact sound. These are outstanding
 fidelity tasks, not claims of original audio behavior.
 
 
@@ -45,3 +45,11 @@ headless viewer runs remain silent by default. The captured-buffer check
 verifies software mixer output, not physical speakers, subjective balance or
 native audio timing. Preparation of local weapon sounds is now required for
 this verification suite.
+
+
+Ground-impact regression checks verify exactly one sound/explosion event when a
+direct round crosses below terrain, no unit-hit count increment, and silent
+removal when its deadline is reached before that movement. The full combat test
+passes 27 checks and burst scheduling still passes 12. This fills the feedback
+hole in the existing endpoint terrain test; native sound timing and terrain
+collision interpolation remain outside the check.

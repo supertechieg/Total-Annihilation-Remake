@@ -97,6 +97,25 @@ func _initialize() -> void:
 	check(combat.projectiles.size() == 1 and int(combat.projectiles[0].position_raw[0]) == 100 * 65536 + 2 * 655359, "Timed rounds travel beyond nominal range before deadline")
 	combat.step()
 	check(combat.projectiles.is_empty(), "Timed round expires before movement on its deadline")
+	combat.orders.clear()
+	combat.effects.clear()
+	var impact_sounds: Array = []
+	combat.sound_requested.connect(func(name: String, position: Vector3) -> void: impact_sounds.append({"name": name, "position": position}))
+	var ground_round := {"source": source, "owner": 0, "position": Vector3(100, 1, 700), "previous": Vector3(100, 1, 700),
+		"position_raw": Combat.raw_point(Vector3(100, 1, 700)), "velocity_raw": [0, -131072, 0], "distance": 0.0, "range": 100.0,
+		"deadline": combat.tick + 30, "damage": {"default": "8"}, "soundhit": "xplosml2", "explosion": "fx/explode3"}
+	combat.projectiles = [ground_round.duplicate(true)]
+	var previous_hits: int = combat.hits
+	combat.step()
+	check(combat.projectiles.is_empty() and combat.effects.size() == 1, "Ground impact removes round and creates explosion")
+	check(impact_sounds.size() == 1 and impact_sounds[0].name == "xplosml2", "Ground impact requests its original sound once")
+	check(combat.hits == previous_hits, "Ground-only feedback does not add unit damage")
+	combat.effects.clear()
+	impact_sounds.clear()
+	ground_round.deadline = combat.tick + 1
+	combat.projectiles = [ground_round]
+	combat.step()
+	check(combat.projectiles.is_empty() and combat.effects.is_empty() and impact_sounds.is_empty(), "Deadline expiration precedes ground impact and stays silent")
 	var unfinished: int = world.begin_build("armsolar", Vector2(192, 128))
 	world.remove_unit(unfinished)
 	check(unfinished > 0 and world.task_id == 0 and not world.units.has(unfinished), "Destroyed construction target clears builder reference")
