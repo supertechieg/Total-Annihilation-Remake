@@ -16,3 +16,21 @@ is not wired. Native timing, blending, elevation projection and rendered visual
 appearance have not yet been verified. Original explosion damage is unaffected.
 
 The Samson factory duel and 16 cannon combat checks pass after integration.
+
+
+## Rendered overlay inspection
+
+render_weapon_effects.gd renders the actual combat_overlay.gd with first, middle
+and last frames of fx/explode2 through fx/explode5, using preserved offsets.
+A compatibility-renderer capture was produced and visually inspected at
+local/weapon-effects/overlay-preview.png. The fixture explicitly sets content
+scale to its 720x480 capture size. Explosions show transparent backgrounds and
+distinct native frame sizes. Late frames contain small colored specks; native
+palette special-color/blending treatment is not established, so these are left
+unchanged pending comparison. This fixture is not a full battlefield or original
+renderer comparison and does not establish animation timing.
+
+Run Godot with `--path godot --rendering-method gl_compatibility --minimized
+--script res://render_weapon_effects.gd`. This requires a rendering display;
+ordinary headless dummy rendering cannot provide the captured image. Captures
+contain game artwork and remain under ignored local content.
