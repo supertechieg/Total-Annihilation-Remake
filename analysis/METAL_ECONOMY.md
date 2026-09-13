@@ -212,3 +212,12 @@ definition, fractional environment values and supplied debt.
 The helper is not live yet: original wind evolution, environment import and
 generator scripts still need connection. The native fixture uses player type 3
 to bypass the cloak callback and does not exercise AI handicap branches.
+
+Healthy Arm wind/tidal scripts now match 612/606 original VM snapshots using
+the shared resource-building oracle. Both receive Create and repeated
+Activate/Deactivate events across supplied build completion. Wind additionally
+receives direction 0/16384/49152 and speed 1600/32000/0. Poses, spin targets and
+acceleration, shading/caching, statics and thread state all match without VM
+changes. Both checks are in the native suite. These supplied callbacks do not
+yet prove wind evolution or world callback scheduling; neither generator is
+enabled live by this checkpoint.

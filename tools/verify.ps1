@@ -127,6 +127,12 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "$missileUnit factory duel failed" }
     }
     if ($Native) {
+        foreach ($generator in @('armwin', 'armtide')) {
+            python tools\native_solar_reference.py --unit $generator
+            if ($LASTEXITCODE -ne 0) { throw 'Original generator script failed' }
+            & $godotPath --headless --path godot --script res://compare_native_solar.gd -- "--$generator"
+            if ($LASTEXITCODE -ne 0) { throw 'Generator script differs from original' }
+        }
         python tools\native_renewable_energy.py
         if ($LASTEXITCODE -ne 0) { throw 'Original renewable energy failed' }
         & $godotPath --headless --path godot --script res://compare_native_renewable_energy.gd

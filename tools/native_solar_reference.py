@@ -26,7 +26,7 @@ class SolarReference(NativeReference):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--unit', choices=['armsolar', 'armmakr', 'armmex'], default='armsolar')
+    parser.add_argument('--unit', choices=['armsolar', 'armmakr', 'armmex', 'armwin', 'armtide'], default='armsolar')
     unit = parser.parse_args().unit
     from native_factory_reference import FactoryReference
     reference = FactoryReference if unit != 'armsolar' else SolarReference
@@ -46,7 +46,11 @@ def main():
             args = [{1: 4, 200: 896, 400: 452}[tick]]
             native.invoke('SetSpeed', args)
             snapshots.append(dict(tick=tick, action='SetSpeed', args=args, state=native.snapshot()))
-    folder = Path({'armsolar': 'local/solar', 'armmakr': 'local/metal-maker', 'armmex': 'local/extractor'}[unit])
+        if unit == 'armwin' and tick in [1, 200, 400]:
+            for name, value in [('SetDirection', {1: 0, 200: 16384, 400: 49152}[tick]), ('SetSpeed', {1: 1600, 200: 32000, 400: 0}[tick])]:
+                native.invoke(name, [value])
+                snapshots.append(dict(tick=tick, action=name, args=[value], state=native.snapshot()))
+    folder = Path({'armsolar': 'local/solar', 'armmakr': 'local/metal-maker', 'armmex': 'local/extractor', 'armwin': 'local/wind-generator', 'armtide': 'local/tidal-generator'}[unit])
     folder.mkdir(exist_ok=True)
     (folder / 'native-trace.json').write_text(json.dumps(dict(exe_sha256=EXE_HASH, snapshots=snapshots)), encoding='utf-8')
     print(f'NATIVE_SOLAR_REFERENCE {len(snapshots)} snapshots')
