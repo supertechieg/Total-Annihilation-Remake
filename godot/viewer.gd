@@ -139,6 +139,41 @@ func start_world_movement() -> void:
 		if not run_combat_demo("--verify-combat" in OS.get_cmdline_user_args()):
 			push_error("Combat demo failed")
 			get_tree().quit(1)
+	if "--duel-demo" in OS.get_cmdline_user_args() or "--verify-duel" in OS.get_cmdline_user_args():
+		if not run_duel_demo("--verify-duel" in OS.get_cmdline_user_args()):
+			push_error("Tank duel failed")
+			get_tree().quit(1)
+
+func run_duel_demo(verify: bool) -> bool:
+	if not run_factory_demo("armvp", "armflash", 1):
+		return false
+	var source := 0
+	for unit: Dictionary in economy.units.values():
+		if unit.type == "armflash":
+			source = unit.id
+			break
+	select_unit(source)
+	var target := add_practice_target()
+	if target == 0 or not combat.attack(source, target) or not combat.attack(target, source):
+		return false
+	var source_health: int = economy.units[source].health
+	var target_health: int = economy.units[target].health
+	for tick in range(1200 if verify else 100):
+		step_script()
+		if not economy.units.has(source) or not economy.units.has(target):
+			break
+	if verify:
+		if economy.units.has(source) and economy.units.has(target):
+			return false
+		if economy.units.has(source) and int(economy.units[source].health) >= source_health:
+			return false
+		if economy.units.has(target) and int(economy.units[target].health) >= target_health:
+			return false
+		for cycle in combat.cycles.values():
+			if not cycle.fault.is_empty():
+				return false
+		print("DUEL_VERIFY_OK factory-produced Flash and armed Raider exchanged damage; one tank destroyed")
+	return true
 
 func add_practice_target() -> int:
 	if selected_unit == 0 or not economy.units.has(selected_unit) or economy.units[selected_unit].type != "armflash":

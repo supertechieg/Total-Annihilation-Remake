@@ -74,6 +74,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Real-map mobile builder construction failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-duel
+    if ($LASTEXITCODE -ne 0) { throw 'Real-map armed tank duel failed' }
     if ($Native) {
         python tools\native_ballistic_deadline.py
         if ($LASTEXITCODE -ne 0) { throw 'Original ballistic deadline reference failed' }

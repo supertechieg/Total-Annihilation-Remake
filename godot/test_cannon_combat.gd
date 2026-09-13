@@ -47,6 +47,46 @@ func _initialize() -> void:
 	checks.append(not duel.units.has(a) or duel.units[a].health < a_health)
 	checks.append(not duel.units.has(b) or duel.units[b].health < b_health)
 	checks.append(not duel.units.has(a) or not duel.units.has(b))
+	for offset: Vector2 in [Vector2(128, 0), Vector2(-128, 0), Vector2(0, 128), Vector2(0, -128)]:
+		var arena = World.new(catalog, Navigation.new(64, 64, heights), Vector2(128, 128))
+		var shooter: int = arena.add_unit("corraid", Vector2(512, 512), 0)
+		var victim: int = arena.add_unit("armflash", Vector2(512, 512) + offset, 0)
+		arena.units[shooter].team = 1
+		var firing = Combat.new(arena)
+		firing.gravity = 4369
+		var health: int = arena.units[victim].health
+		firing.attack(shooter, victim)
+		for step in range(300):
+			arena.step()
+			firing.step()
+			if not arena.units.has(victim):
+				break
+		var damaged: bool = not arena.units.has(victim) or arena.units[victim].health < health
+		checks.append(damaged)
+		if not damaged:
+			printerr("Cannon direction missed: ", offset, " shots=", firing.shots_fired)
+	for elevation in [8, 24]:
+		var terrain_heights := heights.duplicate()
+		for z in range(28, 37):
+			for x in range(38, 46):
+				terrain_heights[z * 64 + x] = elevation
+		var arena = World.new(catalog, Navigation.new(64, 64, terrain_heights), Vector2(128, 128))
+		var shooter: int = arena.add_unit("corraid", Vector2(512, 512), 0)
+		var victim: int = arena.add_unit("armflash", Vector2(640, 512), 0)
+		arena.units[shooter].team = 1
+		var firing = Combat.new(arena)
+		firing.gravity = 4369
+		var health: int = arena.units[victim].health
+		firing.attack(shooter, victim)
+		for step in range(300):
+			arena.step()
+			firing.step()
+			if not arena.units.has(victim):
+				break
+		var damaged: bool = not arena.units.has(victim) or arena.units[victim].health < health
+		checks.append(damaged)
+		if not damaged:
+			printerr("Elevated cannon target missed: ", elevation, " shots=", firing.shots_fired)
 	var failures := checks.count(false)
 	print("CANNON_COMBAT %d / %d checks pass; shots=%d hits=%d" % [checks.size() - failures, checks.size(), combat.shots_fired, combat.hits])
 	quit(0 if failures == 0 else 1)
