@@ -40,6 +40,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Ballistic motion checks failed' }
     & $godotPath --headless --path godot --script res://test_ballistic_aim.gd
     if ($LASTEXITCODE -ne 0) { throw 'Ballistic aim checks failed' }
+    & $godotPath --headless --path godot --script res://test_ballistic_launch.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Ballistic launch checks failed' }
     & $godotPath --headless --path godot --script res://test_combat_world.gd
     if ($LASTEXITCODE -ne 0) { throw 'Combat host checks failed' }
     & $godotPath --headless --path godot -- --verify
@@ -51,6 +53,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     if ($Native) {
+        python tools\native_ballistic_launch.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original ballistic launch reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_ballistic_launch.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Ballistic launch differs from original executable' }
         python tools\native_ballistic_aim.py
         if ($LASTEXITCODE -ne 0) { throw 'Original ballistic aim reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_ballistic_aim.gd

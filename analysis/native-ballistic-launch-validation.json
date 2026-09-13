@@ -1,0 +1,6 @@
+{
+  "cases": 1000,
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "mismatches": 0,
+  "scope": "Launch velocity block 0x49ce4f..0x49cecc using original trig helpers, supplied heading/pitch, positive speed, gravity and unsigned travel accumulator; excludes accumulator evolution and lifetime"
+}
