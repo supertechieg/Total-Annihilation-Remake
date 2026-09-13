@@ -47,12 +47,13 @@ func sync_unit(world: RefCounted, id: int) -> void:
 		roundi(world.navigation.height_at(unit.position) * 65536.0), roundi(unit.position.y * 65536.0)]
 	var opened: bool = world.scripts.has(id) and int(world.scripts[id].values.get(18, 0)) != 0
 	if not records.has(id):
-		var size := Vector2i(int(fields.get("footprintx", "1")), int(fields.get("footprintz", "1")))
+		var movement: Dictionary = world.catalog.movement(unit.type)
+		var size := Vector2i(int(movement.get("footprintx", "1")), int(movement.get("footprintz", "1")))
 		var yard: Array = decode_yard(str(fields.get("yardmap", "")), size.x * size.y) if int(fields.get("bmcode", "1")) == 0 else []
 		var rect := Grid.unit_rect([position[0], position[2]], size)
 		records[id] = {"rect": rect, "slot": 0, "position_raw": position, "yard": yard, "yard_open": opened,
 			"replaceable": false, "flags": 1 | (0x20000000 if not yard.is_empty() else 0),
-			"bounds": Bounds.from_unit(world.catalog.load_unit(unit.type))}
+			"bounds": Bounds.from_unit(world.catalog.load_unit(unit.type), movement)}
 		records[id].inserted = grid.insert_unit(id, rect, 0, records, yard, opened)
 		return
 	var record: Dictionary = records[id]

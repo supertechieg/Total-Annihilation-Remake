@@ -300,7 +300,7 @@ func run_combat_demo(verify: bool) -> bool:
 
 func run_factory_demo(factory_type := "armvp", product_type := "armflash", product_count := 2) -> bool:
 	select_unit(0)
-	var offset := float(unit_catalog.definition(factory_type).get("footprintx", "8")) * 8 + 48
+	var offset := float(unit_catalog.movement(factory_type).get("footprintx", "8")) * 8 + 48
 	var point := unit_position + Vector2(-offset, 0)
 	if not place_structure(factory_type, point):
 		return false

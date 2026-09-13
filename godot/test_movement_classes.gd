@@ -16,5 +16,19 @@ func _initialize() -> void:
 	var dry := World.new(catalog, Navigation.new(64, 64, heights, 0), Vector2(128, 128))
 	checks.append(not dry.unit_navigation("armpt").passable(Vector2i(32, 32)))
 	checks.append(dry.unit_navigation("armflash").passable(Vector2i(32, 32)))
+	var differing := 0
+	for type: String in catalog.index.units:
+		var fields := catalog.definition(type)
+		var movement := catalog.movement(type)
+		if int(fields.get("footprintx", 0)) == int(movement.footprintx) and int(fields.get("footprintz", 0)) == int(movement.footprintz):
+			continue
+		differing += 1
+		var id := dry.add_unit(type, Vector2(512, 512), 0)
+		var size := Vector2i(int(movement.footprintx), int(movement.footprintz))
+		checks.append(dry.collision.records[id].rect.size == size)
+		checks.append(dry.collision.records[id].bounds.upper[0] == size.x * 524288)
+		checks.append(dry.footprint(type, Vector2(512, 512)).size == Vector2(size) * 16)
+		dry.remove_unit(id)
+	checks.append(differing == 13)
 	print("MOVEMENT_CLASSES %d / %d checks pass" % [checks.size() - checks.count(false), checks.size()])
 	quit(0 if checks.count(false) == 0 else 1)

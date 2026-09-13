@@ -7,8 +7,9 @@ static func overlay(nav: RefCounted, terrain: PackedByteArray, units: Dictionary
 		var fields: Dictionary = catalog.definition(unit.type)
 		if int(fields.get("bmcode", "1")) != 0:
 			continue
-		var width := int(fields.get("footprintx", "1"))
-		var height := int(fields.get("footprintz", "1"))
+		var movement: Dictionary = catalog.movement(unit.type)
+		var width := int(movement.get("footprintx", "1"))
+		var height := int(movement.get("footprintz", "1"))
 		var origin: Vector2 = unit.position - Vector2(width >> 1, height >> 1) * 16
 		var yard := str(fields.get("yardmap", "")).replace(" ", "").replace("\n", "").replace("\r", "")
 		var opened := scripts.has(unit.id) and int(scripts[unit.id].values.get(18, 0)) != 0

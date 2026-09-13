@@ -19,8 +19,9 @@ static func branch_height(pieces: Array, parent: int) -> int:
 			height = maxi(height, Ground.signed32(branch_height(pieces, index) + offset))
 	return height
 
-static func from_unit(unit: Dictionary) -> Dictionary:
-	var x := int(unit.definition.get("footprintx", "0"))
-	var z := int(unit.definition.get("footprintz", "0"))
+static func from_unit(unit: Dictionary, movement: Dictionary = {}) -> Dictionary:
+	var fields: Dictionary = unit.definition if movement.is_empty() else movement
+	var x := int(fields.get("footprintx", "0"))
+	var z := int(fields.get("footprintz", "0"))
 	return {"lower": [-x * 524288, 0, -z * 524288],
 		"upper": [x * 524288, branch_height(unit.model.pieces, -1), z * 524288]}
