@@ -56,3 +56,16 @@ func remove_unit(id: int, rect: Rect2i, slot: int, units: Dictionary, was_insert
 				if int(cells[z * width + x][slot]) == id:
 					cells[z * width + x][slot] = 0
 	units[id].flags &= ~0xc000000
+
+func move_unit(id: int, position_raw: Array, slot: int, units: Dictionary) -> void:
+	var unit: Dictionary = units[id]
+	var previous: Rect2i = unit.rect
+	var next := unit_rect([position_raw[0], position_raw[2]], previous.size)
+	if next.position != previous.position or slot != int(unit.slot):
+		remove_unit(id, previous, int(unit.slot), units, unit.inserted, unit.get("yard", []))
+		unit.rect = next
+		unit.slot = slot
+		unit.flags = (int(unit.flags) & ~3) | (slot + 1)
+		unit.inserted = insert_unit(id, next, slot, units, unit.get("yard", []), unit.get("yard_open", false))
+	unit.position_raw = position_raw.duplicate()
+	unit.flags |= 0x10000

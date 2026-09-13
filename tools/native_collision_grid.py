@@ -1,4 +1,4 @@
-"""Run original ordinary-unit and yard-map grid insertion and removal."""
+"""Run original ordinary-unit and yard-map grid insertion, movement and removal."""
 import json
 from pathlib import Path
 import random
@@ -15,6 +15,7 @@ def main():
     native.mu.mem_write(0x440a70, b'\xc2\x04\x00')
     native.mu.mem_write(0x483210, b'\xc2\x08\x00')
     native.mu.mem_write(0x440a40, b'\xc2\x08\x00')
+    native.mu.mem_write(0x4827b0, b'\xc2\x04\x00')
     for offset, value in [(0x14233, 8), (0x14237, 8), (0x14287, GRID),
                           (0x14357, UNITS), (0x1429f, COARSE), (0x142a3, 1), (0x142b7, COARSE + 32)]:
         native.write(GAME + offset, value)
@@ -66,15 +67,26 @@ def main():
         native.write(unit + 0x86, 1)  # Coarse-list linking deliberately suppressed.
         native.call(0x47cc30, [unit])
         inserted = full_snapshot()
+        # Exercise unchanged rectangles, cell crossings and slot transitions.
+        next_x, next_z = (x, z) if index % 3 == 0 else (rng.randrange(-1, 8), rng.randrange(-1, 8))
+        next_slot = slot if index % 3 != 2 else 1 - slot
+        position = [next_x * 1048576 + (width - 1) * 524288 + 1,
+                    rng.randrange(-5, 25) * 65536,
+                    next_z * 1048576 + (depth - 1) * 524288 + 1]
+        native.call(0x48a9f0, [unit, *position, next_slot + 1])
+        moved = full_snapshot()
+        moved['position'] = [native.read(unit + offset) for offset in (0x6a, 0x6e, 0x72)]
+        moved['origin'] = [native.read(unit + offset) & 65535 for offset in (0x76, 0x78)]
         native.call(0x47d0e0, [unit])
         cases.append(dict(x=x, z=z, width=width, depth=depth, slot=slot,
                           replacement=replacement, cells=cells, yard=yard, yard_open=yard_open,
                           terrain_flags=terrain_flags, initial_flags=initial_flags,
-                          inserted=inserted, removed=full_snapshot()))
+                          position=position, next_slot=next_slot,
+                          inserted=inserted, moved=moved, removed=full_snapshot()))
     folder = Path('local/collision')
     folder.mkdir(exist_ok=True)
     (folder / 'native-grid.json').write_text(json.dumps(dict(exe_sha256=EXE_HASH, cases=cases)))
-    print(f'NATIVE_COLLISION_GRID {len(cases)} insert/remove cases')
+    print(f'NATIVE_COLLISION_GRID {len(cases)} insert/move/remove cases')
 
 
 if __name__ == '__main__':

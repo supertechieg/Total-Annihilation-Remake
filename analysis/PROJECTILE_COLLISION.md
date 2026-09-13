@@ -31,3 +31,9 @@ Creation copies the definition's footprint dimensions into unit+0x7e. For each h
 `CollisionGrid.unit_rect` matches600 executions of original creation instructions `0x485ba0` through `0x485bd6`, including120 positions on or one raw unit either side of adjusted boundaries, varied footprints1..8, and signed32 position extremes. See `native-collision-rect-validation.json`. Four boundary checks increase the normal grid suite to20.
 
 Inspection of movement function `0x48a9f0` finds the same formula. It compares the new rectangle origin and requested low-two-bit slot with the existing values. If both match, it updates XYZ only; otherwise it removes the old occupancy, updates position/origin/slot, inserts the new occupancy and refreshes spatial state. It then sets unit flag0x10000. This movement lifecycle is inspected, not yet dynamically compared or connected to the world.
+
+## Verified movement lifecycle
+
+`CollisionGrid.move_unit` now implements that lifecycle. The native grid oracle executes full `0x48a9f0` between insertion and removal for all600 cases. It covers within-cell updates, rectangle crossings, slot changes, transitions outside and back into valid map bounds, and yard-map cases. Comparison checks all cells, terrain flags, all supplied unit flags, the stored position and rectangle origin at each stage. All600 scenarios match; normal grid checks now total24. The spatial refresh `0x4827b0` is stubbed in addition to the previously listed side effects. No collision-avoidance or displaced-unit recovery behavior is inferred from those stubs.
+
+The helper remains separate from the playable world's lifecycle. Its unit records explicitly carry the previous rectangle, slot, insertion state, optional yard bytes and yard state. Integration must preserve this state rather than reconstructing the entire occupancy grid each tick, since doing so would change overlap ordering and within-cell movement behavior.
