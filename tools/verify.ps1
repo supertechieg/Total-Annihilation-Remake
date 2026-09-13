@@ -46,6 +46,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Ballistic launch checks failed' }
     & $godotPath --headless --path godot --script res://test_wind_state.gd
     if ($LASTEXITCODE -ne 0) { throw 'Wind state checks failed' }
+    & $godotPath --headless --path godot --script res://test_piece_origin.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Piece origin checks failed' }
     & $godotPath --headless --path godot --script res://test_combat_world.gd
     if ($LASTEXITCODE -ne 0) { throw 'Combat host checks failed' }
     & $godotPath --headless --path godot -- --verify
@@ -57,6 +59,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     if ($Native) {
+        python tools\native_piece_origin.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original piece origin reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_piece_origin.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Piece origins differ from original executable' }
         python tools\native_map_gravity.py
         if ($LASTEXITCODE -ne 0) { throw 'Map gravity differs from original executable' }
         python tools\native_wind_reference.py

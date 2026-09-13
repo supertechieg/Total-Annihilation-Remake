@@ -6,6 +6,8 @@ Use Light/low by default, including reverse engineering when it can be done reli
 
 ## Completed
 
+Native piece origins: piece_origin.gd matches600 original0x43def0 hierarchy cases with original0x4b7173 rotations. Six normal checks. Parent order Z/XY thenX/YZ thenY/XZ with integer nearest/even rounding each; root parent adds unit angles; finalZ negated. Distinct from current renderer matrices. See PIECE_ORIGINS.md/native-piece-origin-validation.json. Next verify real model/COB pose binding, then use simulation origins in combat muzzle/AimFrom calculations. Still unconnected intentionally pending that binding check.
+
 Weapon minimum barrel angle prepared: runtime.minimum_barrel_angle, default-11.25deg ->float32 -0.19634954631328583rad. Nativeweapon suite now821/821 (618earlier+203anglecases);6normal scalar tests. Unit runtime schema2, launcher auto-upgrades, catalog rejects stale data. Bundle regenerated272units193weapons. Next: native muzzle/AimFrom world transforms and cannon lifetime/collision/splash, then integrate Raider firing. See WEAPON_SCALARS.md.
 
 Cannon controller offset source recovered: initialization0x49e070 queries muzzle and AimFrom world coordinates; stored controller+0x10 is trunc(signed32(muzzleZ-aimZ)*1.25), NOT merely elapsed time. ballistic_launch.initial_offset matches300 native block cases; total launch comparison1300, normal launch checks14. Native piece-world transform still unverified. Aim minimum is weapon minbarrelangle default-11.25 degrees, scaled by0.017453292519943278 into float32 atweapon+c8; loader conversion inspection only. See updated BALLISTICS.md. Next connect query origins with verified transforms, prepare minimum angle, resolve lifetime/collision/splash for Raider.
