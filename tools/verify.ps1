@@ -141,6 +141,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original movement definition differs' }
         python tools\native_terrain_limits.py
         if ($LASTEXITCODE -ne 0) { throw 'Original terrain limits trace failed' }
+        python tools\native_terrain_heights.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original terrain height preparation differs' }
         & $godotPath --headless --path godot --script res://compare_native_terrain_limits.gd
         if ($LASTEXITCODE -ne 0) { throw 'Original terrain limits differ' }
         foreach ($generator in @('armwin', 'armtide')) {
