@@ -6,6 +6,9 @@ const Navigation = preload("res://terrain_navigation.gd")
 const BuildingNavigation = preload("res://building_navigation.gd")
 const Mobile = preload("res://mobile_unit.gd")
 const WorldCollision = preload("res://world_collision.gd")
+const WeaponQueries = preload("res://weapon_queries.gd")
+const PieceOrigin = preload("res://piece_origin.gd")
+const BallisticLaunch = preload("res://ballistic_launch.gd")
 var collision: RefCounted
 const SCRIPTED_UNITS = ["armsolar", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv", "corraid"]
 var mobile_units: Dictionary = {}
@@ -64,6 +67,15 @@ func add_unit(type: String, position: Vector2, remaining: float) -> int:
 		if remaining == 0 and type == "armsolar":
 			vm.invoke("Activate")
 		scripts[id] = vm
+		if not str(definition.get("weapon1", "")).is_empty():
+			var queries := WeaponQueries.new(vm)
+			var muzzle_name := queries.piece_name(false)
+			var aim_name := queries.piece_name(true)
+			if queries.fault.is_empty():
+				var model: Dictionary = catalog.load_unit(type).model
+				var muzzle := PieceOrigin.model_origin(model, vm.pieces, muzzle_name, [0, 32768, 0])
+				var aim := PieceOrigin.model_origin(model, vm.pieces, aim_name, [0, 32768, 0])
+				units[id].weapon_launch_offset = BallisticLaunch.initial_offset(int(muzzle[2]), int(aim[2]))
 	collision.sync_unit(self, id)
 	return id
 

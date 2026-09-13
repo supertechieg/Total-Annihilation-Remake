@@ -81,7 +81,9 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-duel
     if ($LASTEXITCODE -ne 0) { throw 'Real-map armed tank duel failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-stumpy
-    if ($LASTEXITCODE -ne 0) { throw 'Real-map Stumpy duel failed' }
+    if ($LASTEXITCODE -ne 0) { throw 'Stumpy duel failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-hammer
+    if ($LASTEXITCODE -ne 0) { throw 'Real-map Hammer duel failed' }
     if ($Native) {
         python tools\native_firing_reference.py --unit armham
         if ($LASTEXITCODE -ne 0) { throw 'Original Hammer firing reference failed' }

@@ -10,7 +10,7 @@ const Splash = preload("res://splash_damage.gd")
 const Mobile = preload("res://mobile_unit.gd")
 const TargetPoint = preload("res://target_point.gd")
 const Queries = preload("res://weapon_queries.gd")
-const SUPPORTED_UNITS = ["armflash", "corraid", "armstump"]
+const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham"]
 var launch := Launch.new()
 var gravity := 8155
 var tick := 0
@@ -77,7 +77,7 @@ func attack(source: int, target: int, pursue := false) -> bool:
 	if not world.units.has(source) or not world.units.has(target) or source == target:
 		return false
 	if world.units[source].type not in SUPPORTED_UNITS or float(world.units[source].remaining) > 0:
-		status = "Combat currently supports completed Flash, Stumpy and Raider tanks"
+		status = "Combat currently supports completed Flash, Stumpy, Raider and Hammer units"
 		return false
 	if world.units[source].get("team", 0) == world.units[target].get("team", 0):
 		status = "Select an enemy target"
@@ -91,7 +91,7 @@ func attack(source: int, target: int, pursue := false) -> bool:
 		var query = cycles[source].queries
 		var muzzle_piece: String = query.piece_name(false)
 		var aim_piece: String = query.piece_name(true)
-		launch_offsets[source] = Launch.initial_offset(raw_point(muzzle(source, muzzle_piece))[2], raw_point(muzzle(source, aim_piece))[2])
+		launch_offsets[source] = int(world.units[source].get("weapon_launch_offset", Launch.initial_offset(raw_point(muzzle(source, muzzle_piece))[2], raw_point(muzzle(source, aim_piece))[2])))
 	world.mobile_units[source].stop()
 	orders[source] = {"target": target, "heading": -999999, "pitch": -999999,
 		"pursue": pursue, "chasing": false, "next_path": 0}
