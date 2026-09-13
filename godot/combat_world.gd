@@ -53,22 +53,6 @@ static func raw_point(point: Vector3) -> Array:
 static func render_point(raw: Array) -> Vector3:
 	return Vector3(float(raw[0]) / 65536.0, float(raw[1]) / 65536.0, float(raw[2]) / 65536.0)
 
-static func segment_sphere(from: Vector3, to: Vector3, point: Vector3, radius: float) -> float:
-	var delta := to - from
-	var offset := from - point
-	var c := offset.length_squared() - radius * radius
-	if c <= 0:
-		return 0.0
-	var a := delta.length_squared()
-	if a == 0:
-		return INF
-	var b := offset.dot(delta)
-	var discriminant := b * b - a * c
-	if discriminant < 0:
-		return INF
-	var hit := (-b - sqrt(discriminant)) / a
-	return hit if hit >= 0 and hit <= 1 else INF
-
 func step() -> void:
 	destroyed.clear()
 	for effect: Dictionary in effects:
@@ -103,7 +87,7 @@ func step() -> void:
 			var start := muzzle(source, shot.piece_name)
 			var direction := (center(target) - start).normalized()
 			var velocity_raw := [int(direction.x * int(shot.velocity_raw_per_tick)), int(direction.y * int(shot.velocity_raw_per_tick)), int(direction.z * int(shot.velocity_raw_per_tick))]
-			projectiles.append({"source": source, "position": start, "previous": start,
+			projectiles.append({"source": source, "owner": int(world.units[source].get("team", 0)), "position": start, "previous": start,
 				"position_raw": raw_point(start), "velocity_raw": velocity_raw,
 				"distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"})})
 			shots_fired += 1
@@ -119,22 +103,14 @@ func step() -> void:
 		for axis in range(3):
 			next_raw[axis] = int(next_raw[axis]) + int(int(projectile.velocity_raw[axis]) * fraction)
 		var end := render_point(next_raw)
-		var nearest := INF
-		var target := 0
-		for id: int in world.units:
-			if id == int(projectile.source):
-				continue
-			var fields: Dictionary = world.catalog.definition(world.units[id].type)
-			var radius := maxf(8.0, float(fields.get("footprintx", "2")) * 4.0)
-			var contact := segment_sphere(start, end, center(id), radius)
-			if contact < nearest:
-				nearest = contact
-				target = id
+		if world.collision.projectile_cell(next_raw) < 0:
+			continue
+		var target: int = world.collision.target_at(world, next_raw, int(projectile.owner))
 		if target != 0:
 			var damage := Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0)
 			world.units[target].health = maxi(0, int(world.units[target].health) - damage)
 			hits += 1
-			effects.append({"position": start.lerp(end, nearest), "life": 8})
+			effects.append({"position": end, "life": 8})
 			if int(world.units[target].health) == 0:
 				destroyed.append(target)
 				world.remove_unit(target)

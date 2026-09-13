@@ -59,16 +59,22 @@ func _initialize() -> void:
 	world.step()
 	combat.step()
 	check(not combat.orders.has(source), "Destroyed target clears its attack order")
-	check(is_equal_approx(Combat.segment_sphere(Vector3.ZERO, Vector3(100, 0, 0), Vector3(50, 0, 0), 1), 0.49), "Swept collision catches a target between endpoints")
-	check(is_inf(Combat.segment_sphere(Vector3.ZERO, Vector3(100, 0, 0), Vector3(50, 5, 0), 1)), "Near miss stays a miss")
-	check(Combat.segment_sphere(Vector3.ZERO, Vector3(10, 0, 0), Vector3.ZERO, 1) == 0, "Inside-volume shot contacts immediately")
 	var far: int = world.add_unit("corraid", Vector2(512, 256), 0.0)
 	var near: int = world.add_unit("corraid", Vector2(448, 256), 0.0)
-	combat.projectiles = [{"source": source, "position": Vector3(384, 12, 256), "previous": Vector3(384, 12, 256),
+	world.units[far].team = 1
+	world.units[near].team = 1
+	check(world.collision.target_at(world, Combat.raw_point(Vector3(448, 5, 256)), 0) == near, "Endpoint cell selects its enemy occupant")
+	check(world.collision.target_at(world, Combat.raw_point(Vector3(448, 5, 256)), 1) == 0, "Same-owner occupant is ignored")
+	check(world.collision.target_at(world, Combat.raw_point(Vector3(448, 12, 256)), 0) == 0, "Shot above native model height misses")
+	combat.projectiles = [{"source": source, "owner": 0, "position": Vector3(384, 12, 256), "previous": Vector3(384, 12, 256),
 		"position_raw": Combat.raw_point(Vector3(384, 12, 256)), "velocity_raw": [13107200, 0, 0], "distance": 0.0, "range": 250.0, "damage": {"default": "8"}}]
 	combat.step()
-	check(world.units[near].health == 1050 and world.units[far].health == 1058, "Nearest swept contact wins regardless of insertion order")
-	combat.projectiles = [{"source": source, "position": Vector3(100, 100, 700), "previous": Vector3(100, 100, 700),
+	check(world.units[near].health == 1058 and world.units[far].health == 1058, "Native endpoint rule does not sweep intervening units")
+	combat.projectiles = [{"source": source, "owner": 0, "position": Vector3(438, 5, 256), "previous": Vector3(438, 5, 256),
+		"position_raw": Combat.raw_point(Vector3(438, 5, 256)), "velocity_raw": [655360, 0, 0], "distance": 0.0, "range": 100.0, "damage": {"default": "8"}}]
+	combat.step()
+	check(world.units[near].health == 1050 and world.units[far].health == 1058, "Endpoint impact damages only the selected cell occupant")
+	combat.projectiles = [{"source": source, "owner": 0, "position": Vector3(100, 100, 700), "previous": Vector3(100, 100, 700),
 		"position_raw": Combat.raw_point(Vector3(100, 100, 700)), "velocity_raw": [655359, 0, 0], "distance": 0.0, "range": 100.0, "damage": {"default": "8"}}]
 	for tick in range(3):
 		combat.step()

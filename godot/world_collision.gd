@@ -1,8 +1,28 @@
 extends RefCounted
 const Grid = preload("res://collision_grid.gd")
 const Bounds = preload("res://unit_bounds.gd")
+const Projectile = preload("res://projectile_collision.gd")
 var grid: RefCounted
 var records: Dictionary = {}
+
+func projectile_cell(position_raw: Array) -> int:
+	return Projectile.cell_index(position_raw, grid.width, grid.depth)
+
+func target_at(world: RefCounted, position_raw: Array, owner: int) -> int:
+	var cell := projectile_cell(position_raw)
+	if cell < 0:
+		return 0
+	var occupants: Array = []
+	for id_value in grid.cells[cell]:
+		var id := int(id_value)
+		if id == 0 or not records.has(id) or not world.units.has(id):
+			occupants.append({"id": 0, "owner": 0, "bottom": 0, "top": 0})
+			continue
+		var record: Dictionary = records[id]
+		occupants.append({"id": id, "owner": int(world.units[id].get("team", 0)),
+			"bottom": int(record.position_raw[1]) + int(record.bounds.lower[1]),
+			"top": int(record.position_raw[1]) + int(record.bounds.upper[1])})
+	return Projectile.unit_target(int(position_raw[1]), owner, occupants)
 
 func _init(width: int, depth: int) -> void:
 	grid = Grid.new(width, depth)
