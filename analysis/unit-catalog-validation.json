@@ -1,0 +1,6 @@
+{
+  "checks": 8924,
+  "errors": [],
+  "scope": "Bundle references and model/script piece names; does not execute all unit scripts or validate simulation",
+  "units": 272
+}

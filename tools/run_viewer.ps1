@@ -8,6 +8,13 @@ if ($Prepare -or -not (Test-Path -LiteralPath (Join-Path $workspacePath 'local\v
         if ($LASTEXITCODE -ne 0) { throw 'Asset preparation failed' }
     } finally { Pop-Location }
 }
+if ($Prepare -or -not (Test-Path -LiteralPath (Join-Path $workspacePath 'local\unit-assets\index.json'))) {
+    Push-Location $workspacePath
+    try {
+        python (Join-Path $PSScriptRoot 'prepare_units.py')
+        if ($LASTEXITCODE -ne 0) { throw 'Unit bundle preparation failed' }
+    } finally { Pop-Location }
+}
 $godotCommand = Get-Command godot -ErrorAction SilentlyContinue
 $godotPath = if ($godotCommand) { $godotCommand.Source } else {
     (Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_*\Godot*_win64.exe" | Select-Object -First 1).FullName

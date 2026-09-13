@@ -3,6 +3,10 @@ extends Control
 
 const ASSET_RELATIVE = "../local/viewer-assets/"
 const CobVM = preload("res://cob_vm.gd")
+const UnitCatalog = preload("res://unit_catalog.gd")
+const UnitVisuals = preload("res://unit_visuals.gd")
+var unit_catalog: RefCounted
+var unit_visuals: RefCounted
 const Navigation = preload("res://terrain_navigation.gd")
 const MobileUnit = preload("res://mobile_unit.gd")
 var navigation: RefCounted
@@ -63,8 +67,8 @@ func button(text: String, action: Callable) -> Button:
 
 func _ready() -> void:
 	assets = ProjectSettings.globalize_path("res://").path_join(ASSET_RELATIVE).simplify_path()
-	if not FileAccess.file_exists(assets.path_join("scene.json")):
-		var message := label("Prepare original assets first: python tools/prepare_viewer.py", 22)
+	if not FileAccess.file_exists(assets.path_join("scene.json")) or not FileAccess.file_exists(ProjectSettings.globalize_path("res://../local/unit-assets/index.json")):
+		var message := label("Run 'Run Viewer.cmd' to prepare the original map and unit assets.", 22)
 		message.position = Vector2(40, 40)
 		add_child(message)
 		push_error(message.text)
@@ -126,54 +130,21 @@ func build_model() -> void:
 	model_view.own_world_3d = true
 	model_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(model_view)
-	model_root = Node3D.new()
+	unit_catalog = UnitCatalog.new(ProjectSettings.globalize_path("res://../local/unit-assets/"))
+	assert(unit_catalog.fault.is_empty(), unit_catalog.fault)
+	unit_visuals = UnitVisuals.new(unit_catalog)
+	model_root = unit_visuals.instantiate("armcom")
 	model_view.add_child(model_root)
-	var textures: Dictionary = {}
-	for key: String in unit_data.textures:
-		textures[key] = image_texture(unit_data.textures[key])
+	piece_nodes.assign(model_root.get_meta("pieces"))
+	rig_nodes = model_root.get_meta("rig")
+	rig_origins = model_root.get_meta("origins")
 	var max_y := 0.0
 	var min_y := 0.0
-	for piece: Dictionary in unit_data.pieces:
-		var node := Node3D.new()
-		node.name = piece.name
-		var parent_index := int(piece.parent)
-		if parent_index < 0:
-			model_root.add_child(node)
-		else:
-			piece_nodes[parent_index].add_child(node)
-		piece_nodes.append(node)
-		node.position = ta_vector(piece.offset)
-		rig_nodes[String(piece.name).to_lower()] = node
-		rig_origins[String(piece.name).to_lower()] = node.position
-		for vertex: Array in piece.vertices:
-			var p := node.global_position + ta_vector(vertex)
+	for index in range(unit_data.pieces.size()):
+		for vertex: Array in unit_data.pieces[index].vertices:
+			var p := piece_nodes[index].global_position + ta_vector(vertex)
 			max_y = maxf(max_y, p.y)
 			min_y = minf(min_y, p.y)
-		for face: Dictionary in piece.faces:
-			var surface := SurfaceTool.new()
-			surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-			var material := StandardMaterial3D.new()
-			material.cull_mode = BaseMaterial3D.CULL_DISABLED
-			material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-			material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-			if face.texture != null:
-				material.albedo_texture = textures[face.texture]
-			else:
-				var palette_index := int(face.color) if face.color != null else 128
-				var rgb: Array = unit_data.palette[clampi(palette_index, 0, 255)]
-				material.albedo_color = Color8(int(rgb[0]), int(rgb[1]), int(rgb[2]))
-			surface.set_material(material)
-			var indices: Array = face.indices
-			# Fan triangulation is sufficient for this commander's convex faces.
-			var uv := [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]
-			for triangle in range(1, indices.size() - 1):
-				for j: int in [0, triangle, triangle + 1]:
-					surface.set_uv(uv[j % 4])
-					surface.add_vertex(ta_vector(piece.vertices[int(indices[j])]))
-			surface.generate_normals()
-			var mesh := MeshInstance3D.new()
-			mesh.mesh = surface.commit()
-			node.add_child(mesh)
 	var camera := Camera3D.new()
 	model_view.add_child(camera)
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL

@@ -41,6 +41,8 @@ Run all normal checks with `.\tools\verify.ps1`. See [COB_VM.md](analysis/COB_VM
 
 Generated assets stay in Git-ignored `local/viewer-assets/` and are prepared from your installed game. Source selection, validation, and limitations are in [asset notes](analysis/ASSET_FORMATS.md); the next-work checkpoint is in [HANDOFF.md](HANDOFF.md).
 
+The shared unit bundle in `local/unit-assets/` now supplies 272 units from both factions, their models/scripts, weapon definitions and build relationships. The launcher prepares it automatically; see [unit bundle scope and validation](analysis/UNIT_BUNDLE.md). Construction and combat simulation are still being implemented.
+
 ## Installation under study
 
 `C:\Program Files (x86)\GOG Galaxy\Games\Total Annihilation`

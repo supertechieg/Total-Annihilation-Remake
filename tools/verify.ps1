@@ -12,6 +12,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Asset parser tests failed' }
     python tools\test_cob.py
     if ($LASTEXITCODE -ne 0) { throw 'COB parser tests failed' }
+    python tools\test_tdf.py
+    if ($LASTEXITCODE -ne 0) { throw 'TDF parser tests failed' }
+    & $godotPath --headless --path godot --script res://test_unit_catalog.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Unit catalog checks failed' }
+    & $godotPath --headless --path godot --script res://test_unit_visuals.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Unit visual checks failed' }
     & $godotPath --headless --path godot --script res://test_cob_vm.gd
     if ($LASTEXITCODE -ne 0) { throw 'COB runtime checks failed' }
     & $godotPath --headless --path godot --script res://test_ground_motion.gd
