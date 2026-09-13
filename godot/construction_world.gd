@@ -4,6 +4,7 @@ const Allocation = preload("res://resource_allocation.gd")
 const ResourceSchedule = preload("res://resource_schedule.gd")
 const Upkeep = preload("res://upkeep_gate.gd")
 const ExtractorYield = preload("res://extractor_yield.gd")
+const FootprintOrigin = preload("res://footprint_origin.gd")
 var terrain_metal := PackedByteArray()
 var resource_deadline := 0
 const BuildMath = preload("res://construction_math.gd")
@@ -514,7 +515,8 @@ func refresh_extractor(id: int) -> void:
 	if scale <= 0 or terrain_metal.is_empty():
 		return
 	var bounds := footprint(unit.type, unit.position)
-	var cells := Rect2i(Vector2i(bounds.position / 16.0), Vector2i(bounds.size / 16.0))
+	var size := Vector2i(bounds.size / 16.0)
+	var cells := Rect2i(Vector2i(FootprintOrigin.axis(roundi(unit.position.x * 65536.0), size.x), FootprintOrigin.axis(roundi(unit.position.y * 65536.0), size.y)), size)
 	unit.extractor_yield = ExtractorYield.calculate(terrain_metal, navigation.width, navigation.height, cells, scale)
 	if scripts.has(id):
 		var speed := int(ExtractorYield.calculate(terrain_metal, navigation.width, navigation.height, cells, 1.0))

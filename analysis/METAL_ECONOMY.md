@@ -162,3 +162,12 @@ unfinished structures, grid size and on/off commands without script faults.
 Placement uses the current world footprint-to-cell conversion, whose full native
 alignment behavior remains unverified. Damaged scripts, terrain-metal changes
 during play and the full original construction/callback ordering remain open.
+
+The extractor cell-origin conversion now uses the original position-update rule
+from 0x48a9f0: wrap signed32(position_raw - footprint_size * 0x80000 + 0x80000),
+then arithmetic shift by 20. This corrects truncation at half-cell positions.
+The helper matches 50 native position/size cases, including negative positions,
+odd/even footprints and signed32 boundaries; spatial callbacks are stubbed.
+The live extractor test now uses a half-cell position that distinguishes this
+rule from the previous conversion and still passes all 11 checks. This verifies
+the position-to-cell rule, not the complete building placement/snap policy.

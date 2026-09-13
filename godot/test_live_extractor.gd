@@ -16,7 +16,8 @@ func _initialize() -> void:
 		for x in [7, 8, 9]:
 			metal[z * 64 + x] = 223
 	var checks: Array = [not world.set_terrain_metal(PackedByteArray([1])), world.set_terrain_metal(metal)]
-	var extractor := world.add_unit("armmex", Vector2(136, 136), 0)
+	# Half-cell position distinguishes original +8 rounding from truncation.
+	var extractor := world.add_unit("armmex", Vector2(128, 128), 0)
 	var unfinished := world.add_unit("armmex", Vector2(320, 320), 1)
 	var yield_value := Float.float32(2016.0 * Float.float32(0.001))
 	checks.append(world.units[extractor].extractor_yield == yield_value)
