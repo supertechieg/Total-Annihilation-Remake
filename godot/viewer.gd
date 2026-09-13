@@ -201,9 +201,9 @@ func add_practice_target() -> int:
 func add_armed_raider() -> void:
 	var raider := add_practice_target()
 	if raider != 0:
-		combat.attack(raider, selected_unit)
+		combat.enable_guard(raider)
 		combat.attack(selected_unit, raider)
-		status_label.text = "  Flash and Raider engaged — move or Stop to cancel your attack"
+		status_label.text = "  Raider guards this area; your Flash is attacking"
 
 func run_combat_demo(verify: bool) -> bool:
 	if not run_factory_demo():

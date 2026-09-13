@@ -2,6 +2,8 @@
 
 ## Raider cannon and two-way duel
 
+**Add armed Raider** now enables a provisional stationary guard controller on the spawned enemy. Every15 simulation ticks it keeps a valid enemy target or selects the nearest enemy within the lesser of weapon range and sight distance, breaking distance ties by unit ID. It reacquires after a kill/removal and releases targets outside that radius. Six integration checks cover acquisition, allied-unit exclusion, damage, reacquisition, range loss and destroyed-controller cleanup. This behavior is not reconstructed original AI: visibility/occlusion, threat scoring, alliances, pursuit and base economy remain absent. Passive practice targets and explicitly scripted duel checks retain their existing behavior.
+
 Select a produced Flash and use **Add armed Raider** to spawn an enemy Raider and order both tanks to attack each other. The existing practice target remains passive. This is a development duel control, not autonomous skirmish AI.
 
 `--duel-demo` builds a Vehicle Plant, produces a Flash, spawns an armed Raider and starts the battle on Comet Catcher. `--verify-duel` runs through destruction and checks that both tanks took damage and the surviving weapon hosts have no VM faults; it is included in normal verification. The cannon suite now has14 checks, including all four cardinal firing directions and targets on terrain raised8 and24 units. These integration tests catch host wiring errors; they do not establish full native targeting fidelity.

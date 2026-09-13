@@ -64,6 +64,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Combat host checks failed' }
     & $godotPath --headless --path godot --script res://test_cannon_combat.gd
     if ($LASTEXITCODE -ne 0) { throw 'Cannon combat checks failed' }
+    & $godotPath --headless --path godot --script res://test_guard_combat.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Guard combat checks failed' }
     & $godotPath --headless --path godot --script res://test_weapon_damage.gd
     if ($LASTEXITCODE -ne 0) { throw 'Weapon damage checks failed' }
     & $godotPath --headless --path godot -- --verify

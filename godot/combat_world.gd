@@ -15,6 +15,7 @@ var world: RefCounted
 var orders: Dictionary = {}
 var cycles: Dictionary = {}
 var launch_offsets: Dictionary = {}
+var guards: Dictionary = {}
 var projectiles: Array = []
 var effects: Array = []
 var destroyed: Array[int] = []
@@ -29,6 +30,44 @@ func stop(id: int) -> void:
 	orders.erase(id)
 	if cycles.has(id):
 		cycles[id].stop()
+
+func enable_guard(id: int) -> bool:
+	if not world.units.has(id) or world.units[id].type not in ["armflash", "corraid"] or float(world.units[id].remaining) > 0:
+		return false
+	guards[id] = tick
+	return true
+
+func step_guards() -> void:
+	for id: int in guards.keys():
+		if not world.units.has(id):
+			guards.erase(id)
+			stop(id)
+			cycles.erase(id)
+			launch_offsets.erase(id)
+			continue
+		if tick < int(guards[id]):
+			continue
+		guards[id] = tick + 15
+		var unit: Dictionary = world.units[id]
+		var weapon: Dictionary = world.catalog.weapon("EMG" if unit.type == "armflash" else "CORE_LIGHTCANNON").definition
+		var radius := minf(float(weapon.range), float(world.catalog.definition(unit.type).get("sightdistance", "0")))
+		if orders.has(id):
+			var previous := int(orders[id].target)
+			if world.units.has(previous) and world.units[previous].get("team", 0) != unit.get("team", 0) and unit.position.distance_to(world.units[previous].position) <= radius:
+				continue
+			stop(id)
+		var chosen := 0
+		var nearest := radius * radius
+		for candidate: int in world.units:
+			var target: Dictionary = world.units[candidate]
+			if target.get("team", 0) == unit.get("team", 0):
+				continue
+			var distance: float = unit.position.distance_squared_to(target.position)
+			if distance <= nearest and (chosen == 0 or distance < nearest or candidate < chosen):
+				chosen = candidate
+				nearest = distance
+		if chosen != 0:
+			attack(id, chosen)
 
 func attack(source: int, target: int) -> bool:
 	if not world.units.has(source) or not world.units.has(target) or source == target:
@@ -71,6 +110,7 @@ static func render_point(raw: Array) -> Vector3:
 
 func step() -> void:
 	tick += 1
+	step_guards()
 	destroyed.clear()
 	for effect: Dictionary in effects:
 		effect.life -= 1
