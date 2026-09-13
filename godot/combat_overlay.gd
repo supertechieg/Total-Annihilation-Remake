@@ -17,4 +17,11 @@ func _draw() -> void:
 		draw_line(Vector2(previous.x, previous.z), Vector2(point.x, point.z), Color("fff0a0"), 2)
 	for effect: Dictionary in combat.effects:
 		var point: Vector3 = effect.position
+		var frames: Array = combat.effect_assets.frames(str(effect.get("explosion", "")))
+		if not frames.is_empty():
+			var frame: Dictionary = frames[clampi(int(effect.duration) - int(effect.life), 0, frames.size() - 1)]
+			var texture: Texture2D = combat.effect_assets.texture(str(frame.file))
+			if texture != null:
+				draw_texture(texture, Vector2(point.x - float(frame.x), point.z - float(frame.y)))
+				continue
 		draw_arc(Vector2(point.x, point.z), 10 - float(effect.life), 0, TAU, 16, Color(1, 0.6, 0.1, float(effect.life) / 8), 2)

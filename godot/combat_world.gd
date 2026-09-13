@@ -33,6 +33,8 @@ var launch_offsets: Dictionary = {}
 var guards: Dictionary = {}
 var projectiles: Array = []
 var effects: Array = []
+const EffectAssets = preload("res://weapon_effects.gd")
+var effect_assets := EffectAssets.new(ProjectSettings.globalize_path("res://../local/weapon-effects/"))
 var destroyed: Array[int] = []
 var shots_fired := 0
 var hits := 0
@@ -209,14 +211,14 @@ func step() -> void:
 					"ballistic": true, "timer": timer, "burnblow": burn,
 					"deadline": Launch.deadline(tick, timer, burn, raw, raw_point(center(target)), launch.trig.velocity_component(pitch, speed, 16384)),
 					"area": int(cycle.definition.get("areaofeffect", "0")), "edge": float(cycle.definition.get("edgeeffectiveness", "0")),
-					"soundhit": str(cycle.definition.get("soundhit", "")), "damage": cycle.definition.get("damage", {})})
+					"explosion": str(cycle.definition.get("explosiongaf", "")) + "/" + str(cycle.definition.get("explosionart", "")), "soundhit": str(cycle.definition.get("soundhit", "")), "damage": cycle.definition.get("damage", {})})
 				shots_fired += 1
 				continue
 			var direct := DirectLaunch.solve(raw_point(start), raw_point(center(target)), int(shot.velocity_raw_per_tick), int(cycle.runtime.start_velocity_raw_per_tick), int(cycle.runtime.acceleration_raw_per_tick_squared))
 			var velocity_raw: Array = direct.velocity
 			var projectile := {"source": source, "owner": int(world.units[source].get("team", 0)), "position": start, "previous": start,
 				"position_raw": raw_point(start), "velocity_raw": velocity_raw,
-				"soundhit": str(cycle.definition.get("soundhit", "")), "distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"})}
+				"explosion": str(cycle.definition.get("explosiongaf", "")) + "/" + str(cycle.definition.get("explosionart", "")), "soundhit": str(cycle.definition.get("soundhit", "")), "distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"})}
 			if int(cycle.definition.get("selfprop", "0")) != 0:
 				projectile.merge({"rocket": true, "guided": int(cycle.definition.get("guidance", "0")) != 0,
 					"target_id": target, "saved_target": raw_point(center(target)), "turn": int(cycle.runtime.turn_raw_per_tick), "speed": int(direct.initial_speed),
@@ -265,7 +267,7 @@ func step() -> void:
 			var damage := Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0)
 			world.units[target].health = maxi(0, int(world.units[target].health) - damage)
 			hits += 1
-			effects.append({"position": end, "life": 8})
+			add_effect(end, str(projectile.get("explosion", "")))
 			request_sound(str(projectile.get("soundhit", "")), end)
 			if int(world.units[target].health) == 0:
 				destroyed.append(target)
@@ -360,13 +362,18 @@ func step_shell(projectile: Dictionary) -> bool:
 		return false
 	return true
 
+func add_effect(position: Vector3, key: String) -> void:
+	var frames: Array = effect_assets.frames(key)
+	var duration := frames.size() if not frames.is_empty() else 8
+	effects.append({"position": position, "life": duration, "duration": duration, "explosion": key})
+
 func request_sound(name: String, position: Vector3) -> void:
 	if not name.is_empty():
 		sound_requested.emit(name, position)
 
 func blast(projectile: Dictionary) -> void:
 	request_sound(str(projectile.get("soundhit", "")), projectile.position)
-	effects.append({"position": projectile.position, "life": 8})
+	add_effect(projectile.position, str(projectile.get("explosion", "")))
 	@warning_ignore("integer_division")
 	var radius: int = int(projectile.area) / 2
 	for id: int in world.collision.records.keys():

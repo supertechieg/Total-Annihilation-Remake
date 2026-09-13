@@ -1,0 +1,6 @@
+{
+  "animations": 15,
+  "failures": [],
+  "frames": 208,
+  "scope": "Godot texture loading, frame dimensions and texture caching for prepared original explosion artwork; excludes original renderer comparison and animation timing"
+}
