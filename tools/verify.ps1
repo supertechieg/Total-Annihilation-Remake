@@ -157,6 +157,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original Flash firing reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_firing.gd
         if ($LASTEXITCODE -ne 0) { throw 'Flash firing script differs from original interpreter' }
+        python tools\native_tank_targets.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original tank target reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_tank_targets.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Tank targets differ from original executable' }
         python tools\native_tank_origins.py
         if ($LASTEXITCODE -ne 0) { throw 'Original tank origin reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_tank_origins.gd

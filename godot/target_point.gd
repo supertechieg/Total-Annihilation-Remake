@@ -3,6 +3,25 @@ extends RefCounted
 const Ground = preload("res://ground_motion.gd")
 const Origin = preload("res://piece_origin.gd")
 
+static func model_point(model: Dictionary, poses: Array, name: String, angles: Array, position: Array) -> Array:
+	var by_name := {}
+	for pose: Dictionary in poses:
+		by_name[str(pose.name).to_lower()] = pose
+	var pieces: Array = []
+	var target := -1
+	for item: Dictionary in model.pieces:
+		var pose: Dictionary = by_name.get(str(item.name).to_lower(), {})
+		if str(item.name).to_lower() == name.to_lower():
+			target = pieces.size()
+		pieces.append({"parent": item.parent, "offset": [-int(item.offset[0]), int(item.offset[1]), -int(item.offset[2])],
+			"move": pose.get("position", [0, 0, 0]), "rotation": pose.get("rotation", [0, 0, 0])})
+	if target < 0:
+		return position.duplicate()
+	var vertices: Array = []
+	for vertex: Array in model.pieces[target].vertices:
+		vertices.append(transform_vertex(pieces, target, [-int(vertex[0]), int(vertex[1]), -int(vertex[2])], angles))
+	return from_runtime_vertices(vertices, position)
+
 static func transform_vertex(pieces: Array, target: int, vertex: Array, angles: Array) -> Array:
 	var point := vertex.duplicate()
 	while target >= 0:

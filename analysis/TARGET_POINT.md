@@ -16,10 +16,10 @@ Original wrapper `0x43e3c0` initializes the piece index to zero and invokes the
 unit's `SweetSpot` script before calling this routine. Unit-target resolution
 `0x48a1e0` calls that wrapper. Target leading is a separate behavior.
 
-This primitive is not yet connected to combat. The SweetSpot script host behavior
-and real-model adapter still need verification.
-Raw prepared model vertices are not a verified substitute. Combat currently
-targets the unit position plus half its static blast-bound height.
+Combat now uses the verified model adapter and synchronous SweetSpot query for
+Flash, Raider and Stumpy targets. Other unit types retain the approximate half
+blast-height target until their scripts and models are covered. The adapter
+converts prepared vertices and offsets through the original loader convention.
 
 Reproduce with `python tools/native_target_point.py`, then run Godot headless
 with `--path godot --script res://compare_native_target_point.gd`.
@@ -45,3 +45,21 @@ seven; that update threshold is not implemented here.
 Reproduce with `python tools/native_target_vertices.py` and Godot script
 `res://compare_native_target_vertices.gd`. Both are in the optional native suite.
 Original geometry must still undergo the loader's X/Z inversion before use.
+
+## Real tank integration
+
+108 cases compare Flash, Raider and Stumpy using recorded native firing poses,
+script statics, four headings and a nonzero world position. The oracle executes
+original axis conversion `0x4cb590`, full model update `0x45ab10` and SweetSpot
+wrapper `0x43e3c0`, including the original script interpreter. All match the Godot
+adapter. Runtime records are arranged by script piece names; the full original
+model loader and its allocation/reordering remain outside this test.
+
+Live combat uses these points for horizontal aiming, cannon elevation, projectile
+direction and burn-blow distance. Target vertices are recomputed from current
+poses; original angle-cache thresholds and refresh scheduling remain unmodeled.
+This does not establish original leading behavior or fidelity for other units.
+The normal verification suite, including Flash and Stumpy duels, passes.
+
+Reproduce with `python tools/native_tank_targets.py` and Godot script
+`res://compare_native_tank_targets.gd` after generating the native firing traces.

@@ -8,6 +8,8 @@ const Launch = preload("res://ballistic_launch.gd")
 const Motion = preload("res://ballistic_motion.gd")
 const Splash = preload("res://splash_damage.gd")
 const Mobile = preload("res://mobile_unit.gd")
+const TargetPoint = preload("res://target_point.gd")
+const Queries = preload("res://weapon_queries.gd")
 const SUPPORTED_UNITS = ["armflash", "corraid", "armstump"]
 var launch := Launch.new()
 var gravity := 8155
@@ -98,6 +100,14 @@ func attack(source: int, target: int, pursue := false) -> bool:
 
 func center(id: int) -> Vector3:
 	var unit: Dictionary = world.units[id]
+	if unit.type in SUPPORTED_UNITS and world.scripts.has(id):
+		var vm = world.scripts[id]
+		var query := Queries.new(vm)
+		var piece := query.output("SweetSpot", 0)
+		if query.fault.is_empty() and piece >= 0 and piece < vm.pieces.size():
+			var heading := int(world.mobile_units[id].heading) if world.mobile_units.has(id) else 32768
+			var position := raw_point(Vector3(unit.position.x, world.navigation.height_at(unit.position), unit.position.y))
+			return render_point(TargetPoint.model_point(world.catalog.load_unit(unit.type).model, vm.pieces, str(vm.pieces[piece].name), [0, heading, 0], position))
 	var height := 12.0
 	if world.collision.records.has(id):
 		height = float(world.collision.records[id].bounds.upper[1]) / 131072.0
@@ -137,7 +147,8 @@ func step() -> void:
 			stop(source)
 			continue
 		var aim_origin := muzzle(source, aim_piece)
-		var heading := roundi(atan2(aim_origin.x - destination.x, aim_origin.z - destination.y) * 65536.0 / TAU) - int(world.mobile_units[source].heading)
+		var target_point := center(target)
+		var heading := roundi(atan2(aim_origin.x - target_point.x, aim_origin.z - target_point.z) * 65536.0 / TAU) - int(world.mobile_units[source].heading)
 		var within_range := origin.distance_to(destination) <= float(cycle.definition.get("range", "0"))
 		if order.pursue:
 			if not within_range and tick >= int(order.next_path):
@@ -150,7 +161,7 @@ func step() -> void:
 				world.mobile_units[source].stop()
 				order.chasing = false
 		var ballistic := int(cycle.definition.get("ballistic", "0")) != 0
-		var pitch := Aim.solve(raw_point(aim_origin - center(target)), int(cycle.runtime.velocity_raw_per_tick), gravity, float(cycle.runtime.minimum_barrel_angle)) if ballistic else 0
+		var pitch := Aim.solve(raw_point(aim_origin - target_point), int(cycle.runtime.velocity_raw_per_tick), gravity, float(cycle.runtime.minimum_barrel_angle)) if ballistic else 0
 		within_range = within_range and pitch != 0x8000
 		if cycle.aim_id < 0 and (not cycle.requested or heading != int(order.heading) or pitch != int(order.pitch)):
 			cycle.aim(heading, pitch)
