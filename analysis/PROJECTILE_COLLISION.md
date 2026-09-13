@@ -17,3 +17,9 @@ Empty slots receive the inserting unit ID. Occupied slots normally retain their 
 `collision_grid.gd` reconstructs these ordinary-slot operations. All300 native insert/remove scenarios match across every cell and all three units' flags, including both slots, overlaps, replacement and rejected edge rectangles. The original routines run with coarse-list linking suppressed; downstream overlap notifications and visibility refresh are stubbed. Eight normal checks cover insertion, flags, removal ownership and boundary rejection. See `native-collision-grid-validation.json`.
 
 World integration still requires rectangle derivation from position, slot classification, building yard maps, movement ordering and overlap notification behavior. This helper is not yet used by playable combat.
+
+## Building yard maps
+
+The same insertion routine uses unit flag0x20000000 to select the yard-map path. This always writes slot0, regardless of the low slot bits. Each row-major yard byte selects occupancy with bit4 when unit+0x10f bit4 is clear, or bit2 when that unit flag is set. Yard bit1 independently sets cell+12 bit2, even on cells that do not receive the unit ID. Existing occupant replacement and overlap flags follow the ordinary-slot rules. Removal clears matching IDs and clears that cell flag wherever the yard byte has bit1.
+
+The helper now accepts supplied decoded yard bytes and the yard-state flag. Native comparison has expanded to600 insert/remove cases, including300 building cases with both yard states, all ten decoded yard values, varied initial cell flags and overlapping occupants. All cell slots, cell flags and unit overlap flags match. Additional map refresh calls `0x483210` and `0x440a40` are stubbed along with the previously documented callbacks. Sixteen normal checks cover ordinary and building behavior. This verifies consumption of decoded yard bytes; text decoding and world yard-state updates still need integration.
