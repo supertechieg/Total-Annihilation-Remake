@@ -14,6 +14,8 @@ const Combat = preload("res://combat_world.gd")
 const CombatOverlay = preload("res://combat_overlay.gd")
 const WeaponAudio = preload("res://weapon_audio.gd")
 var weapon_audio: Node
+const Opponent = preload("res://opponent.gd")
+var opponent: RefCounted
 var combat: RefCounted
 var combat_overlay: Node2D
 var economy: RefCounted
@@ -124,6 +126,18 @@ func start_world_movement() -> void:
 	combat_overlay.z_index = 10
 	world.add_child(combat_overlay)
 	map_center = unit_position
+	if "--verify-opponent" in OS.get_cmdline_user_args():
+		start_opponent()
+		var initial_health: int = economy.units[economy.builder_id].health
+		for tick in range(6500):
+			step_script()
+			if not economy.units.has(economy.builder_id) or int(economy.units[economy.builder_id].health) < initial_health:
+				break
+		if opponent == null or opponent.structures_started < 2 or opponent.attacks == 0 or (economy.units.has(economy.builder_id) and int(economy.units[economy.builder_id].health) == initial_health):
+			push_error("Opponent scenario failed")
+			get_tree().quit(1)
+		else:
+			print("OPPONENT_VIEWER_OK constructed base, produced units and damaged Commander")
 	if "--move" in OS.get_cmdline_user_args():
 		issue_move(unit_position + Vector2(128, -96))
 	if "--construction-demo" in OS.get_cmdline_user_args():
@@ -608,6 +622,8 @@ func step_script() -> void:
 		var was_building: bool = economy.task_id != 0
 		var selected_target: int = economy.builder_jobs[selected_unit].target if economy.builder_jobs.has(selected_unit) else 0
 		economy.step()
+		if opponent != null:
+			opponent.step()
 		combat.step()
 		combat_overlay.queue_redraw()
 		for id: int in structure_sprites.keys():
@@ -771,6 +787,7 @@ func build_interface() -> void:
 	column.add_child(button("Select Commander", func() -> void: select_unit(0)))
 	column.add_child(button("Add practice target", func() -> void: add_practice_target()))
 	column.add_child(button("Add armed Raider", add_armed_raider))
+	column.add_child(button("Start opponent", start_opponent))
 	column.add_child(label("Click terrain to move · Right-click / S to stop", 11))
 	column.add_child(button("Stop movement  [S]", stop_order))
 	walk_button = button("Play walk cycle  [Space]", toggle_walk)
@@ -1019,3 +1036,30 @@ func _process(delta: float) -> void:
 		if frames == 60:
 			print("VIEWER_RECORD_OK ticks=", script_vm.ticks)
 			get_tree().quit()
+
+func start_opponent() -> void:
+	if opponent != null:
+		status_label.text = "  Opponent already active"
+		return
+	var nav = economy.unit_navigation("armcv")
+	for offset in [Vector2(512, 0), Vector2(-512, 0), Vector2(0, 512), Vector2(0, -512)]:
+		var point: Vector2 = nav.nearest_open(unit_position + offset)
+		if point.x < 0 or point.distance_to(unit_position) < 256:
+			continue
+		var occupied := false
+		for unit: Dictionary in economy.units.values():
+			occupied = occupied or economy.footprint("armcv", point).intersects(economy.footprint(unit.type, unit.position))
+		if occupied:
+			continue
+		var id: int = economy.add_unit("armcv", point, 0, 1)
+		economy.mobile_units[id] = MobileUnit.new(nav, unit_catalog.definition("armcv"), point, economy.scripts[id])
+		var policy := Opponent.new(economy, combat, 1)
+		policy.build_base()
+		if policy.structures_started == 0:
+			economy.remove_unit(id)
+			continue
+		opponent = policy
+		add_structure_sprite(id)
+		status_label.text = "  Opponent active  -  build an army to defend your Commander"
+		return
+	status_label.text = "  No nearby opponent build site found"

@@ -36,3 +36,18 @@ builder/factory scripts and the existing provisional economy, not original AI
 strategy. Site search is local; no builder relocation, resource expansion, metal
 extraction or recovery of abandoned unfinished jobs is implemented yet. The
 controller is still awaiting a viewer scenario.
+
+
+## Viewer scenario
+
+The Start opponent button creates one enemy Construction Vehicle at a nearby
+passable, unoccupied site with room for its first build. The controller then
+runs alongside normal economy and combat ticks. Repeated starts are ignored.
+The opponent uses team 1's normal initial account and builds its own structures;
+its units are rendered through the existing world view and accept attack clicks.
+
+The --verify-opponent viewer check on Comet Catcher requires two construction
+starts, an attack order and actual Commander damage within 6500 ticks. It passes
+and is included in normal verification. This is an opt-in development scenario,
+not a finished skirmish mode: no victory screen, map setup, difficulty selection,
+fog, resource expansion or complete Commander weapon behavior yet.

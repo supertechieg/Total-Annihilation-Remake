@@ -39,6 +39,8 @@ Select a produced Construction Vehicle, Construction Kbot or Minelayer to use it
 
 For combat practice, select a produced Flash, Stumpy, Hammer, Peewee, Rocko, Warrior, Samson or Jethro, choose **Add practice target**, then click the red-ringed target. Raider is also supported in combat. The shared host includes attack pursuit and basic guards; the factory-duel checks exercise armed opponents. Original weapon sounds and explosion frames are connected, with provisional mixing and animation timing. Full skirmish AI, aircraft, naval combat, missions and several original damage rules remain unfinished. [Combat scope](analysis/COMBAT.md), [missile progress](analysis/MISSILE_STEERING.md), [sounds](analysis/WEAPON_SOUNDS.md), [effects](analysis/WEAPON_EFFECTS.md).
 
+Use **Start opponent** to add an enemy builder on Comet Catcher. It builds power and a factory, produces units and attacks. Build your own army to defend the Commander. This is an opt-in development scenario with provisional AI and no victory screen yet. [Opponent scope](analysis/OPPONENT.md).
+
 Requires Godot 4 (tested on installed 4.6.2) and Python with Pillow for preparation. To recreate generated assets:
 
 ```powershell

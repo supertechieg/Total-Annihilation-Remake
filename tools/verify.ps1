@@ -18,6 +18,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Opponent production/combat checks failed' }
     & $godotPath --headless --path godot --script res://test_opponent_base.gd
     if ($LASTEXITCODE -ne 0) { throw 'Opponent base-building checks failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-opponent
+    if ($LASTEXITCODE -ne 0) { throw 'Opponent viewer scenario failed' }
     python tools\test_assets.py
     if ($LASTEXITCODE -ne 0) { throw 'Asset parser tests failed' }
     python tools\test_cob.py
