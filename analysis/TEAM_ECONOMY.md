@@ -14,3 +14,5 @@ This is a host prerequisite for base-building opponents, not reconstructed
 original AI. Immediate payment and base starting storage/resources remain
 provisional. Diplomacy, shared resources, per-player unit limits, capture,
 selection permissions and an autonomous base-building policy remain unfinished.
+
+Ownership checks now reject cross-team resume and construction spending, including calls directly into advance_construction. The viewer rejects direct selection of enemy units; enemy map clicks already route to attack orders. Nine team-economy checks and 48 mobile-builder checks pass. Allied assistance is not implemented; the current rule requires the same team.

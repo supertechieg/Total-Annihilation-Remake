@@ -313,6 +313,9 @@ func resume_build(id: int, source_id := 0) -> bool:
 		return false
 	if not units.has(id) or float(units[id].remaining) <= 0:
 		return false
+	if int(units[id].get("team", 0)) != int(units[source_id].get("team", 0)):
+		status = "Cannot build an enemy structure"
+		return false
 	if not in_build_range(units[id].type, units[id].position, source_id):
 		status = "Move builder closer to resume"
 		return false
@@ -403,6 +406,9 @@ func step() -> void:
 		task_id = 0
 
 func advance_construction(target_id: int, source_id: int) -> bool:
+	if int(units[target_id].get("team", 0)) != int(units[source_id].get("team", 0)):
+		status = "Cannot build an enemy structure"
+		return false
 	var unit: Dictionary = units[target_id]
 	if float(unit.remaining) == 0:
 		return true

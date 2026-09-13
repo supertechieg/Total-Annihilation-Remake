@@ -36,5 +36,11 @@ func _initialize() -> void:
 		if produced != 0:
 			break
 	checks.append(produced != 0 and int(world.units[produced].team) == 1)
+	var hostile: int = world.add_unit("armsolar", Vector2(192, 128), 1, 1)
+	var balance: float = world.metal
+	checks.append(not world.resume_build(hostile) and world.task_id == 0)
+	checks.append(not world.advance_construction(hostile, world.builder_id) and world.units[hostile].remaining == 1.0 and world.metal == balance)
+	world.units[hostile].team = 0
+	checks.append(world.resume_build(hostile) and world.task_id == hostile)
 	print("TEAM_ECONOMY %d / %d checks pass" % [checks.size() - checks.count(false), checks.size()])
 	quit(0 if checks.count(false) == 0 else 1)

@@ -437,6 +437,9 @@ func structure_texture(type: String, id: int) -> Texture2D:
 	return view.get_texture()
 
 func select_unit(id: int) -> void:
+	if id != 0 and economy.units.has(id) and int(economy.units[id].get("team", 0)) != 0:
+		status_label.text = "  Select one of your units"
+		return
 	selected_unit = id
 	placement_type = ""
 	var source_id: int = economy.builder_id if id == 0 else id
