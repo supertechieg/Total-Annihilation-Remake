@@ -211,7 +211,7 @@ func step_factories() -> void:
 			factory.status = "Opening factory"
 			continue
 		if product == 0:
-			if units.size() >= unit_limit:
+			if team_unit_count(int(units[id].get("team", 0))) >= unit_limit:
 				factory.status = "Unit limit reached"
 				continue
 			var point := factory_build_position(id)
@@ -247,7 +247,7 @@ func placement_error(type: String, point: Vector2, source_id := 0) -> String:
 		source_id = builder_id
 	if not can_build(source_id):
 		return "Select a completed construction unit"
-	if units.size() >= unit_limit:
+	if team_unit_count(int(units[source_id].get("team", 0))) >= unit_limit:
 		return "Unit limit reached"
 	if type not in catalog.build_options(units[source_id].type):
 		return "Builder cannot build that unit"
@@ -457,3 +457,10 @@ func store_resources(team: int, account: Dictionary) -> void:
 		metal_storage = float(account.metal_storage)
 	else:
 		team_resources[team] = account.duplicate()
+
+func team_unit_count(team: int) -> int:
+	var count := 0
+	for unit: Dictionary in units.values():
+		if int(unit.get("team", 0)) == team:
+			count += 1
+	return count

@@ -22,6 +22,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Opponent viewer scenario failed' }
     & $godotPath --headless --path godot --script res://test_scenario_result.gd
     if ($LASTEXITCODE -ne 0) { throw 'Scenario result checks failed' }
+    & $godotPath --headless --path godot --script res://test_team_unit_limit.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Team unit limit checks failed' }
     python tools\test_assets.py
     if ($LASTEXITCODE -ne 0) { throw 'Asset parser tests failed' }
     python tools\test_cob.py
