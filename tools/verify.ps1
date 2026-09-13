@@ -139,6 +139,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original placement defaults differ' }
         python tools\native_movement_definition.py
         if ($LASTEXITCODE -ne 0) { throw 'Original movement definition differs' }
+        python tools\native_terrain_limits.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original terrain limits trace failed' }
+        & $godotPath --headless --path godot --script res://compare_native_terrain_limits.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Original terrain limits differ' }
         foreach ($generator in @('armwin', 'armtide')) {
             python tools\native_solar_reference.py --unit $generator
             if ($LASTEXITCODE -ne 0) { throw 'Original generator script failed' }

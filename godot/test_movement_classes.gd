@@ -30,5 +30,12 @@ func _initialize() -> void:
 		checks.append(dry.footprint(type, Vector2(512, 512)).size == Vector2(size) * 16)
 		dry.remove_unit(id)
 	checks.append(differing == 13)
+	# A submerged ridge can exceed the dry-land slope limit of a movement class.
+	var ridge := heights.duplicate()
+	ridge[32 * 64 + 32] = 40
+	var submerged := Navigation.new(64, 64, ridge, 64, 12, 10000, Vector2i(2, 2), -10000, 255)
+	var exposed := Navigation.new(64, 64, ridge, 0, 12, 10000, Vector2i(2, 2), -10000, 255)
+	checks.append(submerged.passable(Vector2i(32, 32)))
+	checks.append(not exposed.passable(Vector2i(32, 32)))
 	print("MOVEMENT_CLASSES %d / %d checks pass" % [checks.size() - checks.count(false), checks.size()])
 	quit(0 if checks.count(false) == 0 else 1)

@@ -1,6 +1,7 @@
 extends RefCounted
 ## Provisional footprint-aware terrain A*. Not the original TA pathfinder.
 const CELL := 16
+const Limits = preload("res://terrain_limits.gd")
 const DIRECTIONS := [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1),
 	Vector2i(1, 1), Vector2i(-1, 1), Vector2i(-1, -1), Vector2i(1, -1)]
 var width: int
@@ -11,7 +12,7 @@ var sea_level := 0
 var last_expanded := 0
 var failure := ""
 
-func _init(w: int, h: int, data: PackedByteArray, sea := 0, slope := 20, depth := 35, footprint := Vector2i(2, 2), minimum_depth := -10000) -> void:
+func _init(w: int, h: int, data: PackedByteArray, sea := 0, slope := 20, depth := 35, footprint := Vector2i(2, 2), minimum_depth := -10000, water_slope := -1) -> void:
 	width = w
 	height = h
 	heights = data
@@ -32,7 +33,7 @@ func _init(w: int, h: int, data: PackedByteArray, sea := 0, slope := 20, depth :
 					var value := int(heights[sample.y * width + sample.x])
 					low = mini(low, value)
 					high = maxi(high, value)
-			blocked[y * width + x] = int(solid or high - low > slope or sea_level - low > depth or sea_level - high < minimum_depth)
+			blocked[y * width + x] = int(solid or not Limits.passable(low, high, sea_level, depth, minimum_depth, slope, slope if water_slope < 0 else water_slope))
 
 func inside(cell: Vector2i) -> bool:
 	return cell.x >= 0 and cell.y >= 0 and cell.x < width and cell.y < height

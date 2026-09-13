@@ -151,7 +151,7 @@ func unit_navigation(type: String) -> RefCounted:
 		var size := Vector2i(int(fields.get("footprintx", "2")), int(fields.get("footprintz", "2")))
 		var nav = Navigation.new(navigation.width, navigation.height, navigation.heights, navigation.sea_level,
 			int(fields.get("maxslope", "255")), int(fields.get("maxwaterdepth", "10000")), size,
-			int(fields.get("minwaterdepth", "-10000")))
+			int(fields.get("minwaterdepth", "-10000")), int(fields.get("maxwaterslope", "255")))
 		navigation_cache[type] = {"nav": nav, "terrain": nav.blocked.duplicate(), "footprint": size}
 		refresh_navigation(true)
 	return navigation_cache[type].nav
