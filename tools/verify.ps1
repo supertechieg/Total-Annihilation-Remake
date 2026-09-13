@@ -119,6 +119,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "$missileUnit factory duel failed" }
     }
     if ($Native) {
+        python tools\native_upkeep_gate.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native upkeep gate failed' }
+        & $godotPath --headless --path godot --script res://compare_native_upkeep_gate.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Upkeep gate differs from original' }
         python tools\native_solar_reference.py --unit armmakr
         if ($LASTEXITCODE -ne 0) { throw 'Original metal maker lifecycle failed' }
         & $godotPath --headless --path godot --script res://compare_native_solar.gd -- --armmakr

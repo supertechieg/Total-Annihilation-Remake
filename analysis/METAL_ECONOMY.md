@@ -18,3 +18,5 @@ Run native_solar_reference.py --unit armmakr and compare_native_solar.gd with
 -- --armmakr. The native suite includes this check. Live metal-maker income,
 energy starvation, extractor map data and original settlement timing remain
 unfinished. Do not treat the script comparison as proof of economic behavior.
+
+The isolated nonnegative upkeep branch at 0x4013eb..0x401480 now matches 32 native cases. It always adds upkeep to requested (+0xc0), adds it to accepted (+0xc4) only when debt (+0xc8) is nonpositive, and returns the productive flag. Values are float32. This helper is not yet live: settlement, cadence and debt creation must be mapped before its behavior can replace the provisional immediate-payment economy.
