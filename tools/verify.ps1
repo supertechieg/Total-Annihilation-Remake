@@ -119,6 +119,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "$missileUnit factory duel failed" }
     }
     if ($Native) {
+        python tools\prepare_map_metal.py
+        if ($LASTEXITCODE -ne 0) { throw 'Comet metal preparation failed' }
+        python tools\native_comet_metal.py
+        if ($LASTEXITCODE -ne 0) { throw 'Comet metal grid differs from original feature pass' }
         python tools\native_feature_metal.py
         if ($LASTEXITCODE -ne 0) { throw 'Feature metal overlay differs from original' }
         python tools\native_extractor_yield.py
