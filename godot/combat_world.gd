@@ -42,6 +42,7 @@ var status := ""
 
 func _init(source: RefCounted) -> void:
 	world = source
+	burst_random = world.game_random
 
 func stop(id: int, stop_movement := true) -> void:
 	if stop_movement and orders.has(id) and orders[id].get("chasing", false) and world.mobile_units.has(id):

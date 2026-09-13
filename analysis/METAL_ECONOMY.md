@@ -221,3 +221,21 @@ acceleration, shading/caching, statics and thread state all match without VM
 changes. Both checks are in the native suite. These supplied callbacks do not
 yet prove wind evolution or world callback scheduling; neither generator is
 enabled live by this checkpoint.
+
+## Live wind generation
+
+The viewer now configures world wind from the imported map minimum/maximum.
+World.step schedules the existing reconstructed wind update before scripts and
+resource settlement. It uses normalization 5000, as assigned during original
+game setup, and publishes changed direction and strength-shifted-by-four to
+healthy Arm wind-generator scripts. Active completed wind generators contribute
+the verified renewable income during settlement and support on/off control.
+Combat spread and wind bounded draws share the world's game RNG instance.
+
+The wind oracle now covers normalization 1000 and 5000: 600/600 cases match.
+Comparisons normalize JSON-parsed ratio values to their stored float32 precision.
+Seven live checks cover deadline equality, first change, 500-strength generation
+yielding 3 energy per period, shared RNG identity, toggling and script health.
+Original initial RNG seeds and the complete ordering of all RNG consumers remain
+provisional (current seeds are 1). This does not yet connect wind drift to every
+projectile path or enable tidal generation.

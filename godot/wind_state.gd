@@ -1,5 +1,5 @@
 extends RefCounted
-## Original wind update with explicit RNG states; not yet scheduled by the world.
+## Original wind update with explicit RNG states, scheduled by configured worlds.
 const Ground = preload("res://ground_motion.gd")
 var trig := Ground.new()
 var game_seed := 1

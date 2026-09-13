@@ -5,6 +5,12 @@ const ResourceSchedule = preload("res://resource_schedule.gd")
 const Upkeep = preload("res://upkeep_gate.gd")
 const ExtractorYield = preload("res://extractor_yield.gd")
 const FootprintOrigin = preload("res://footprint_origin.gd")
+const Wind = preload("res://wind_state.gd")
+const Renewable = preload("res://renewable_energy.gd")
+var game_random := Wind.new()
+var wind_state: Dictionary = {}
+var wind_minimum := 100
+var wind_maximum := 2000
 var terrain_metal := PackedByteArray()
 var resource_deadline := 0
 const BuildMath = preload("res://construction_math.gd")
@@ -17,7 +23,7 @@ const WeaponQueries = preload("res://weapon_queries.gd")
 const PieceOrigin = preload("res://piece_origin.gd")
 const BallisticLaunch = preload("res://ballistic_launch.gd")
 var collision: RefCounted
-const SCRIPTED_UNITS = ["armmex", "armmakr", "armsolar", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv", "corraid"]
+const SCRIPTED_UNITS = ["armwin", "armmex", "armmakr", "armsolar", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv", "corraid"]
 var mobile_units: Dictionary = {}
 var navigation_cache: Dictionary = {}
 var yard_signature := ""
@@ -66,14 +72,14 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 	if type in SCRIPTED_UNITS:
 		var vm = VM.new(catalog.load_script(type))
 		vm.read_values = {4: 100, 17: ceili(remaining * 100)}
-		if type in ["armsolar", "armmakr", "armmex"]:
+		if type in ["armsolar", "armmakr", "armmex", "armwin"]:
 			vm.writable_values.assign([1, 5, 20])
 		elif type in ["armvp", "armlab"]:
 			vm.writable_values.assign([5, 18, 19])
 			vm.readback_values.assign([18])
 			factories[id] = {"queue": [], "product": 0, "opening": false, "status": "Idle"}
 		vm.invoke("Create")
-		if remaining == 0 and type in ["armsolar", "armmakr", "armmex"]:
+		if remaining == 0 and type in ["armsolar", "armmakr", "armmex", "armwin"]:
 			vm.invoke("Activate")
 		scripts[id] = vm
 		if not str(definition.get("weapon1", "")).is_empty():
@@ -90,7 +96,7 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 	return id
 
 func set_active(id: int, active: bool) -> bool:
-	if not scripts.has(id) or units[id].type not in ["armsolar", "armmakr", "armmex"] or float(units[id].remaining) > 0:
+	if not scripts.has(id) or units[id].type not in ["armsolar", "armmakr", "armmex", "armwin"] or float(units[id].remaining) > 0:
 		return false
 	if bool(units[id].active) != active:
 		units[id].active = active
@@ -365,6 +371,7 @@ func step_builders() -> void:
 
 func step() -> void:
 	ticks += 1
+	step_wind()
 	completed.clear()
 	for id: int in scripts:
 		# Construction health is not combat damage. Damaged smoke awaits its opcodes.
@@ -417,7 +424,7 @@ func advance_construction(target_id: int, source_id: int) -> bool:
 		if float(unit.remaining) == 0:
 			if scripts.has(target_id):
 				scripts[target_id].read_values[17] = 0
-				if unit.type in ["armsolar", "armmakr", "armmex"]:
+				if unit.type in ["armsolar", "armmakr", "armmex", "armwin"]:
 					scripts[target_id].invoke("Activate")
 			completed.append(target_id)
 			status = "Construction complete"
@@ -471,6 +478,8 @@ func settle_economy() -> void:
 		account.metal_storage = Upkeep.float32(account.metal_storage + float(fields.get("metalstorage", "0")))
 		var e: Dictionary = unit.energy_ledger
 		var m: Dictionary = unit.metal_ledger
+		if not wind_state.is_empty():
+			e.income = Renewable.accumulate(e.income, bool(unit.active), float(fields.get("extractsmetal", "0")), int(fields.get("makesmetal", "0")), float(fields.get("windgenerator", "0")), 0.0, wind_state.ratio, 0.0)
 		if bool(unit.active):
 			var upkeep := float(fields.get("energyuse", "0"))
 			if upkeep < 0:
@@ -525,3 +534,21 @@ func refresh_extractor(id: int) -> void:
 	if scripts.has(id):
 		var speed := int(ExtractorYield.calculate(terrain_metal, navigation.width, navigation.height, cells, 1.0))
 		scripts[id].invoke("SetSpeed", [speed])
+
+func configure_wind(minimum: int, maximum: int) -> void:
+	wind_minimum = minimum
+	wind_maximum = maximum
+	wind_state = {"next_tick": 0, "strength": 0, "heading": 0, "drift": [0, 0, 0], "ratio": 0.0, "crt_seed": 1, "game_seed": game_random.game_seed}
+
+func step_wind() -> void:
+	if wind_state.is_empty():
+		return
+	var input := wind_state.duplicate(true)
+	input.merge({"tick": ticks - 1, "minimum": wind_minimum, "maximum": wind_maximum, "normalization": 5000, "game_seed": game_random.game_seed}, true)
+	wind_state = game_random.advance(input)
+	game_random.game_seed = wind_state.game_seed
+	if wind_state.changed:
+		for id: int in scripts:
+			if float(catalog.definition(units[id].type).get("windgenerator", "0")) > 0:
+				scripts[id].invoke("SetDirection", [wind_state.heading])
+				scripts[id].invoke("SetSpeed", [int(wind_state.strength) << 4])

@@ -8,6 +8,8 @@ $godotPath = if ($godotCommand) { $godotCommand.Source } else {
 if (-not $godotPath) { throw 'Godot 4 is required. Add godot to PATH.' }
 Push-Location $workspacePath
 try {
+    & $godotPath --headless --path godot --script res://test_live_wind.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Live wind generation failed' }
     & $godotPath --headless --path godot --script res://test_opponent_metal_expansion.gd
     if ($LASTEXITCODE -ne 0) { throw 'Opponent metal expansion failed' }
     & $godotPath --headless --path godot --script res://test_opponent_power.gd

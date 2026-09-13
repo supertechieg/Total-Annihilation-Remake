@@ -20,7 +20,7 @@ def main():
     for index in range(600):
         case = dict(tick=[1000, 100, 99][index % 3], next_tick=100,
                     minimum=[0, 100, 1000][index % 3], maximum=[0, 101, 2000][index % 3],
-                    normalization=1000, strength=100, heading=rng.randrange(65536),
+                    normalization=[1000, 5000][index % 2], strength=100, heading=rng.randrange(65536),
                     drift=[12, 34, 56], ratio=0.5,
                     crt_seed=rng.randrange(0x100000000), game_seed=rng.randrange(1, 2147483647))
         # Ensure both calm and non-calm updates, plus unchanged/equal timer states.

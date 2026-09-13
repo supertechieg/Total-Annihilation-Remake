@@ -123,6 +123,8 @@ func start_world_movement() -> void:
 		get_tree().quit(1)
 		return
 	combat = Combat.new(economy)
+	var environment: Dictionary = scene_data.get("environment", {})
+	economy.configure_wind(int(environment.get("min_wind", 100)), int(environment.get("max_wind", 2000)))
 	weapon_audio = WeaponAudio.new()
 	add_child(weapon_audio)
 	combat.sound_requested.connect(weapon_audio.play_sound)
