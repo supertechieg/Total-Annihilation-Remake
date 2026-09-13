@@ -50,6 +50,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Wind state checks failed' }
     & $godotPath --headless --path godot --script res://test_piece_origin.gd
     if ($LASTEXITCODE -ne 0) { throw 'Piece origin checks failed' }
+    & $godotPath --headless --path godot --script res://test_splash_damage.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Splash falloff checks failed' }
     & $godotPath --headless --path godot --script res://test_combat_world.gd
     if ($LASTEXITCODE -ne 0) { throw 'Combat host checks failed' }
     & $godotPath --headless --path godot -- --verify
@@ -61,6 +63,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     if ($Native) {
+        python tools\native_splash_reference.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original splash reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_splash.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Splash falloff differs from original executable' }
         python tools\native_piece_origin.py
         if ($LASTEXITCODE -ne 0) { throw 'Original piece origin reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_piece_origin.gd

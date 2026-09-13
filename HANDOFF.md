@@ -6,6 +6,8 @@ Use Light/low by default, including reverse engineering when it can be done reli
 
 ## Completed
 
+Splash falloff: splash_damage.gd matches600 native0x49a2aa..0x49a3ee cases, six normalfixtures. Distance to translated axis-aligned unit bounds, truncate towholeunits, reject>=AoE/2, quadratic edgefalloff storedfloat32. RaiderAoE32=>radius16. Not world-integrated: nativebounds generation/targetenumeration/damage dispatcher still needed. See SPLASH_DAMAGE.md/native-splash-validation.json. Damage dispatch0x499cd0 has multipliertruncation thenattacker experience/globalflags; originalimpact0x499eb0 usesdirectunitdamage whenAoE<17.
+
 AimFrom helper integration: weapon_queries.gd handles synchronous output, -1 AimFrom fallback to QueryPrimary(default0), fault checks and completion cleanup. Tank origin oracle now216/216 including72 original AimFrom calls and72 forced-missing fallbacks. Native harness now relocates COB name strings for name-based calls. Combat heading uses queried aim-origin position; normal queries6checks and combat regressions pass. Next environment/ballistic integration and lifetime/collision/splash for armed Raider.
 
 Flash muzzle integration: piece_origin.model_origin matches72 real Flash/Raider firing query cases through original setters/traversal, four headings. Native setter movement direct, rotationlow16; name-order binding supported by loader inspection, original loader not executed. Combat now uses native-compared origins instead of renderer matrices. Normal combat and real-map destruction still pass. Host roll/pitch remainzero; rendererunchanged. See PIECE_ORIGINS.md/native-tank-origin-validation.json. Next AimFrom integration and cannon lifetime/collision/splash.
