@@ -21,6 +21,9 @@ func _init(folder: String) -> void:
 func definition(unit_id: String) -> Dictionary:
 	return index.get("units", {}).get(unit_id.to_lower(), {}).get("definition", {})
 
+func movement(unit_id: String) -> Dictionary:
+	return index.get("units", {}).get(unit_id.to_lower(), {}).get("movement", definition(unit_id))
+
 func weapon(name: String) -> Dictionary:
 	var item: Dictionary = index.get("weapons", {}).get(name.to_lower(), {})
 	if item.is_empty():

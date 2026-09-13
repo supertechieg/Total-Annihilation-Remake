@@ -147,10 +147,11 @@ func refresh_navigation(force := false) -> void:
 
 func unit_navigation(type: String) -> RefCounted:
 	if not navigation_cache.has(type):
-		var fields: Dictionary = catalog.definition(type)
+		var fields: Dictionary = catalog.movement(type)
 		var size := Vector2i(int(fields.get("footprintx", "2")), int(fields.get("footprintz", "2")))
 		var nav = Navigation.new(navigation.width, navigation.height, navigation.heights, navigation.sea_level,
-			int(fields.get("maxslope", "10")), int(fields.get("maxwaterdepth", "0")), size)
+			int(fields.get("maxslope", "255")), int(fields.get("maxwaterdepth", "10000")), size,
+			int(fields.get("minwaterdepth", "-10000")))
 		navigation_cache[type] = {"nav": nav, "terrain": nav.blocked.duplicate(), "footprint": size}
 		refresh_navigation(true)
 	return navigation_cache[type].nav
@@ -245,7 +246,7 @@ func step_factories() -> void:
 			factory.status = status
 
 func footprint(type: String, position: Vector2) -> Rect2:
-	var definition: Dictionary = catalog.definition(type)
+	var definition: Dictionary = catalog.movement(type)
 	var size := Vector2(float(definition.get("footprintx", "1")), float(definition.get("footprintz", "1"))) * 16.0
 	return Rect2(position - size * 0.5, size)
 
@@ -277,7 +278,7 @@ func placement_error(type: String, point: Vector2, source_id := 0) -> String:
 			var value: int = navigation.heights[y * navigation.width + x]
 			low = mini(low, value)
 			high = maxi(high, value)
-	var definition: Dictionary = catalog.definition(type)
+	var definition: Dictionary = catalog.movement(type)
 	if high - low > int(definition.get("maxslope", "255")):
 		return "Terrain is too steep"
 	# Original movement-definition initializer 0x4402e0 supplies omitted limits.

@@ -8,6 +8,8 @@ $godotPath = if ($godotCommand) { $godotCommand.Source } else {
 if (-not $godotPath) { throw 'Godot 4 is required. Add godot to PATH.' }
 Push-Location $workspacePath
 try {
+    & $godotPath --headless --path godot --script res://test_movement_classes.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Movement class integration failed' }
     & $godotPath --headless --path godot --script res://test_live_tidal.gd
     if ($LASTEXITCODE -ne 0) { throw 'Live tidal generation failed' }
     & $godotPath --headless --path godot --script res://test_live_wind.gd
@@ -135,6 +137,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original tidal environment differs' }
         python tools\native_placement_defaults.py
         if ($LASTEXITCODE -ne 0) { throw 'Original placement defaults differ' }
+        python tools\native_movement_definition.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original movement definition differs' }
         foreach ($generator in @('armwin', 'armtide')) {
             python tools\native_solar_reference.py --unit $generator
             if ($LASTEXITCODE -ne 0) { throw 'Original generator script failed' }

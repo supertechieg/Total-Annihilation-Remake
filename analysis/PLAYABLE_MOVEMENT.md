@@ -25,3 +25,11 @@ Visual capture: Godot `--path godot -- --move --record ABSOLUTE_OUTPUT_DIRECTORY
 ## Next playable systems
 
 Add an expandable original-data bundle for buildable units and structures, separate reusable model instances from the current single-unit viewer, and implement resource accounting and construction orders. Keep the provisional navigation boundary explicit while recovering native terrain/collision semantics. The overall active goal is the entire playable game, including both factions, supported maps, units, weapons, opponents, campaigns and the remaining game systems; this movement slice is an intermediate checkpoint.
+
+## Movement-class terrain fields
+
+The unit bundle now resolves `gamedata/moveinfo.tdf` names and stores normalized movement fields separately from raw FBI data. Original loader analysis shows a resolved class replaces the FBI movement fields; an unresolved class falls back to the FBI. The same content-profile precedence caveat applies to this file as to other imported content. Bundle version `movement_runtime_version=1` makes the launcher rebuild older bundles automatically.
+
+`native_movement_definition.py` executes original initializer 0x4402e0 and loader 0x440340 with supplied integer TDF lookups. All 201 cases match signed 16-bit footprint/depth conversion, byte slope conversion, defaults and slope clamps. Text parsing and the class-name lookup are outside that oracle. Original lookup 0x440420 searches up to 32 class records; the installed selected file contains 15 named classes.
+
+Construction footprints, placement terrain limits, produced-unit navigation and the viewer Commander now use these resolved fields. Navigation also honors minimum water depth, preventing boat routes over dry ground. Eight integration checks cover Commander deep-water access, tank rejection, constructor footprint inheritance, and boat water/land access. This does not implement naval combat, waterline movement, original slope sampling, path costs or the original pathfinder. The A* and footprint sampling remain provisional.

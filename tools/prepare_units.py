@@ -13,6 +13,7 @@ from tdf import parse
 from prepare_viewer import model_3do, gaf_entries, gaf_frame
 from cob import decode
 from weapon_math import weapon_runtime
+from movement_definition import movement_definition
 
 PROFILE = ['rev31.gp3', 'btdata.ccx', 'ccdata.ccx', 'totala1.hpi']
 
@@ -67,6 +68,8 @@ def prepare(root, output):
         raise ValueError('Output must be outside the game installation')
     output.mkdir(parents=True, exist_ok=True)
     content = Content(root)
+    movement_classes = {fields['name'].lower(): fields for fields in
+                        parse(content.read('gamedata/moveinfo.tdf')).values()}
     units = {}
     required_textures = set()
     issues = []
@@ -102,7 +105,9 @@ def prepare(root, output):
         else:
             issues.append(dict(unit=unit_id, missing_script=script_path))
         (folder / 'unit.json').write_text(json.dumps(unit), encoding='utf-8')
-        units[unit_id] = dict(name=unit['name'], path=f'{unit_id}/unit.json', definition=fields)
+        movement_fields = movement_classes.get(fields.get('movementclass', '').lower(), fields)
+        units[unit_id] = dict(name=unit['name'], path=f'{unit_id}/unit.json', definition=fields,
+                             movement=movement_definition(movement_fields))
     palette_bytes = content.read('palettes/palette.pal')
     if len(palette_bytes) != 1024:
         raise FormatError('Unexpected palette length')
@@ -132,7 +137,7 @@ def prepare(root, output):
                 if name in weapons:
                     issues.append(dict(duplicate_weapon=name, previous=weapons[name]['source'], source=path))
                 weapons[name] = dict(source=path, definition=fields, runtime=weapon_runtime(fields))
-    index = dict(weapon_runtime_version=4, profile=PROFILE, profile_status='provisional archive precedence', units=units,
+    index = dict(movement_runtime_version=1, weapon_runtime_version=4, profile=PROFILE, profile_status='provisional archive precedence', units=units,
                  build_menus=menus, menu_additions=additions, weapons=weapons, textures=textures,
                  palette=[palette[i:i + 3] for i in range(0, 768, 3)], issues=issues,
                  missing_textures=missing_textures, missing_menu_units=missing_menu_units)

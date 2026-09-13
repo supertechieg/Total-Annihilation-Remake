@@ -11,7 +11,7 @@ var sea_level := 0
 var last_expanded := 0
 var failure := ""
 
-func _init(w: int, h: int, data: PackedByteArray, sea := 0, slope := 20, depth := 35, footprint := Vector2i(2, 2)) -> void:
+func _init(w: int, h: int, data: PackedByteArray, sea := 0, slope := 20, depth := 35, footprint := Vector2i(2, 2), minimum_depth := -10000) -> void:
 	width = w
 	height = h
 	heights = data
@@ -32,7 +32,7 @@ func _init(w: int, h: int, data: PackedByteArray, sea := 0, slope := 20, depth :
 					var value := int(heights[sample.y * width + sample.x])
 					low = mini(low, value)
 					high = maxi(high, value)
-			blocked[y * width + x] = int(solid or high - low > slope or sea_level - low > depth)
+			blocked[y * width + x] = int(solid or high - low > slope or sea_level - low > depth or sea_level - high < minimum_depth)
 
 func inside(cell: Vector2i) -> bool:
 	return cell.x >= 0 and cell.y >= 0 and cell.x < width and cell.y < height

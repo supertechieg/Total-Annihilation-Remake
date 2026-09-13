@@ -111,9 +111,12 @@ func _ready() -> void:
 
 func start_world_movement() -> void:
 	var fields: Dictionary = unit_data.definition
+	var terrain_fields: Dictionary = unit_catalog.movement("armcom")
 	navigation = Navigation.new(int(scene_data.height_grid_width), int(scene_data.height_grid_height),
 		FileAccess.get_file_as_bytes(assets.path_join("heights.bin")), int(scene_data.sea_level),
-		int(fields.get("maxslope", "20")), int(fields.get("maxwaterdepth", "35")))
+		int(terrain_fields.get("maxslope", 255)), int(terrain_fields.get("maxwaterdepth", 10000)),
+		Vector2i(int(terrain_fields.get("footprintx", 2)), int(terrain_fields.get("footprintz", 2))),
+		int(terrain_fields.get("minwaterdepth", -10000)))
 	unit_position = navigation.nearest_open(unit_position)
 	assert(unit_position.x >= 0, "Map has no passable starting point")
 	mobile = MobileUnit.new(navigation, fields, unit_position, script_vm)
