@@ -196,3 +196,19 @@ The display tooltip explains that unpaid costs can pause construction and metal
 production. render_resource_display.gd captures the actual viewer with supplied
 shortage values; the 1440x900 render was inspected and all six lines fit the
 sidebar. The screenshot stays under ignored local/.
+
+## Wind and tidal production
+
+renewable_energy.gd matches 120 cases from the full original resource settlement
+routine with supplied environment values. For active completed building fixtures,
+positive extractsmetal or nonzero byte makesmetal suppresses the wind/tidal
+branch. Otherwise positive windgenerator takes priority over positive
+tidalgenerator. The selected definition multiplier times its environment value
+is added to existing income, with a float32 store after the addition. Positive
+energy debt does not suppress this renewable branch. Tests include inactive
+units, both generator fields together, extractor/maker priority, negative wind
+definition, fractional environment values and supplied debt.
+
+The helper is not live yet: original wind evolution, environment import and
+generator scripts still need connection. The native fixture uses player type 3
+to bypass the cloak callback and does not exercise AI handicap branches.

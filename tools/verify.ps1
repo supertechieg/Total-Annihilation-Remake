@@ -127,6 +127,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "$missileUnit factory duel failed" }
     }
     if ($Native) {
+        python tools\native_renewable_energy.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original renewable energy failed' }
+        & $godotPath --headless --path godot --script res://compare_native_renewable_energy.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Renewable energy differs from original' }
         python tools\native_maker_economy.py --remove-maker
         if ($LASTEXITCODE -ne 0) { throw 'Original removed-maker settlement failed' }
         & $godotPath --headless --path godot --script res://compare_native_live_makers.gd -- --remove-maker
