@@ -107,6 +107,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original projectile collision reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_projectile_collision.gd
         if ($LASTEXITCODE -ne 0) { throw 'Projectile collision differs from original executable' }
+        python tools\native_target_point.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original target point reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_target_point.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Target point differs from original executable' }
         python tools\native_unit_bounds.py
         if ($LASTEXITCODE -ne 0) { throw 'Original unit bounds reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_unit_bounds.gd
