@@ -1,9 +1,16 @@
 extends RefCounted
+const Ground = preload("res://ground_motion.gd")
 ## Unit slots and yard maps; overlap callbacks remain separate.
 var width: int
 var depth: int
 var cells: Array = []
 var terrain_flags: Array = []
+
+static func unit_rect(position_raw: Array, footprint: Vector2i) -> Rect2i:
+	var origin := Vector2i.ZERO
+	for axis in range(2):
+		origin[axis] = Ground.signed32(int(position_raw[axis]) - footprint[axis] * 524288 + 524288) >> 20
+	return Rect2i(origin, footprint)
 
 func _init(map_width: int, map_depth: int) -> void:
 	width = map_width

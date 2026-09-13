@@ -71,6 +71,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     if ($Native) {
+        python tools\native_collision_rect.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original collision rectangle reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_collision_rect.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Collision rectangle differs from original executable' }
         python tools\native_collision_grid.py
         if ($LASTEXITCODE -ne 0) { throw 'Original collision grid reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_collision_grid.gd
