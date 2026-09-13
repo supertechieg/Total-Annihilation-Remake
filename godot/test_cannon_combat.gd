@@ -15,6 +15,8 @@ func _initialize() -> void:
 	var flash: int = world.add_unit("armflash", Vector2(384, 384), 0)
 	world.units[raider].team = 1
 	var combat = Combat.new(world)
+	var sound_events: Array = []
+	combat.sound_requested.connect(func(name: String, position: Vector3) -> void: sound_events.append({"name": name, "position": position}))
 	combat.gravity = 4369
 	var checks := [combat.attack(raider, flash)]
 	var initial_health: int = world.units[flash].health
@@ -88,6 +90,11 @@ func _initialize() -> void:
 		checks.append(damaged)
 		if not damaged:
 			printerr("Elevated cannon target missed: ", elevation, " shots=", firing.shots_fired)
+	var weapon: Dictionary = catalog.weapon(str(catalog.definition(cannon_type).weapon1)).definition
+	var starts := sound_events.filter(func(event: Dictionary) -> bool: return event.name == str(weapon.soundstart))
+	var impacts := sound_events.filter(func(event: Dictionary) -> bool: return event.name == str(weapon.soundhit))
+	checks.append(starts.size() == combat.shots_fired and not starts.is_empty())
+	checks.append(not impacts.is_empty())
 	var failures := checks.count(false)
 	print("CANNON_COMBAT %d / %d checks pass; shots=%d hits=%d" % [checks.size() - failures, checks.size(), combat.shots_fired, combat.hits])
 	quit(0 if failures == 0 else 1)

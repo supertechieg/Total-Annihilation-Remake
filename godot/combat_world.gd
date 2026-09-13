@@ -1,4 +1,5 @@
 extends RefCounted
+signal sound_requested(name: String, position: Vector3)
 ## Initial EMG combat host. See analysis/COMBAT.md for provisional simulation rules.
 const Cycle = preload("res://weapon_cycle.gd")
 const Origin = preload("res://piece_origin.gd")
@@ -195,6 +196,7 @@ func step() -> void:
 			continue
 		for shot: Dictionary in cycle.shots:
 			var start: Vector3 = shot.position
+			request_sound(str(cycle.definition.get("soundstart", "")), start)
 			if ballistic:
 				var speed := int(shot.velocity_raw_per_tick)
 				var raw := raw_point(start)
@@ -207,14 +209,14 @@ func step() -> void:
 					"ballistic": true, "timer": timer, "burnblow": burn,
 					"deadline": Launch.deadline(tick, timer, burn, raw, raw_point(center(target)), launch.trig.velocity_component(pitch, speed, 16384)),
 					"area": int(cycle.definition.get("areaofeffect", "0")), "edge": float(cycle.definition.get("edgeeffectiveness", "0")),
-					"damage": cycle.definition.get("damage", {})})
+					"soundhit": str(cycle.definition.get("soundhit", "")), "damage": cycle.definition.get("damage", {})})
 				shots_fired += 1
 				continue
 			var direct := DirectLaunch.solve(raw_point(start), raw_point(center(target)), int(shot.velocity_raw_per_tick), int(cycle.runtime.start_velocity_raw_per_tick), int(cycle.runtime.acceleration_raw_per_tick_squared))
 			var velocity_raw: Array = direct.velocity
 			var projectile := {"source": source, "owner": int(world.units[source].get("team", 0)), "position": start, "previous": start,
 				"position_raw": raw_point(start), "velocity_raw": velocity_raw,
-				"distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"})}
+				"soundhit": str(cycle.definition.get("soundhit", "")), "distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"})}
 			if int(cycle.definition.get("selfprop", "0")) != 0:
 				projectile.merge({"rocket": true, "guided": int(cycle.definition.get("guidance", "0")) != 0,
 					"target_id": target, "saved_target": raw_point(center(target)), "turn": int(cycle.runtime.turn_raw_per_tick), "speed": int(direct.initial_speed),
@@ -264,6 +266,7 @@ func step() -> void:
 			world.units[target].health = maxi(0, int(world.units[target].health) - damage)
 			hits += 1
 			effects.append({"position": end, "life": 8})
+			request_sound(str(projectile.get("soundhit", "")), end)
 			if int(world.units[target].health) == 0:
 				destroyed.append(target)
 				world.remove_unit(target)
@@ -357,7 +360,12 @@ func step_shell(projectile: Dictionary) -> bool:
 		return false
 	return true
 
+func request_sound(name: String, position: Vector3) -> void:
+	if not name.is_empty():
+		sound_requested.emit(name, position)
+
 func blast(projectile: Dictionary) -> void:
+	request_sound(str(projectile.get("soundhit", "")), projectile.position)
 	effects.append({"position": projectile.position, "life": 8})
 	@warning_ignore("integer_division")
 	var radius: int = int(projectile.area) / 2

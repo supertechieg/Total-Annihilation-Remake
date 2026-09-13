@@ -12,6 +12,8 @@ const MobileUnit = preload("res://mobile_unit.gd")
 const ConstructionWorld = preload("res://construction_world.gd")
 const Combat = preload("res://combat_world.gd")
 const CombatOverlay = preload("res://combat_overlay.gd")
+const WeaponAudio = preload("res://weapon_audio.gd")
+var weapon_audio: Node
 var combat: RefCounted
 var combat_overlay: Node2D
 var economy: RefCounted
@@ -113,6 +115,9 @@ func start_world_movement() -> void:
 	mobile = MobileUnit.new(navigation, fields, unit_position, script_vm)
 	economy = ConstructionWorld.new(unit_catalog, navigation, unit_position)
 	combat = Combat.new(economy)
+	weapon_audio = WeaponAudio.new()
+	add_child(weapon_audio)
+	combat.sound_requested.connect(weapon_audio.play_sound)
 	combat.gravity = int(scene_data.get("environment", {}).get("gravity_raw_per_tick", 8155))
 	combat_overlay = CombatOverlay.new()
 	combat_overlay.combat = combat
