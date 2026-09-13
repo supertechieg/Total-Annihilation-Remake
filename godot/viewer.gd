@@ -113,6 +113,7 @@ func start_world_movement() -> void:
 	mobile = MobileUnit.new(navigation, fields, unit_position, script_vm)
 	economy = ConstructionWorld.new(unit_catalog, navigation, unit_position)
 	combat = Combat.new(economy)
+	combat.gravity = int(scene_data.get("environment", {}).get("gravity_raw_per_tick", 8155))
 	combat_overlay = CombatOverlay.new()
 	combat_overlay.combat = combat
 	combat_overlay.z_index = 10
@@ -161,6 +162,13 @@ func add_practice_target() -> int:
 		return id
 	status_label.text = "  No clear nearby target location"
 	return 0
+
+func add_armed_raider() -> void:
+	var raider := add_practice_target()
+	if raider != 0:
+		combat.attack(raider, selected_unit)
+		combat.attack(selected_unit, raider)
+		status_label.text = "  Flash and Raider engaged — move or Stop to cancel your attack"
 
 func run_combat_demo(verify: bool) -> bool:
 	if not run_factory_demo():
@@ -694,6 +702,7 @@ func build_interface() -> void:
 	factory_controls.add_child(button("Clear pending orders", func() -> void: economy.clear_factory_queue(selected_unit)))
 	column.add_child(button("Select Commander", func() -> void: select_unit(0)))
 	column.add_child(button("Add practice target", func() -> void: add_practice_target()))
+	column.add_child(button("Add armed Raider", add_armed_raider))
 	column.add_child(label("Click terrain to move · Right-click / S to stop", 11))
 	column.add_child(button("Stop movement  [S]", stop_order))
 	walk_button = button("Play walk cycle  [Space]", toggle_walk)
