@@ -49,8 +49,15 @@ remaining counts, expiration, removal flags and refresh invocation. Cases cover
 counts one through five, intervals 0/1/3/4/5/30, explicit and calculated lifetime,
 and unsigned due boundaries. The source and copy are inspected separately.
 
-This verifies one update per supplied state. Consecutive updates, random spread,
-sounds, full pool capacity, source death and exact cached piece resolution still
+The fixture now retains each native source across subsequent increasing tick
+values (with unsigned wrap), while advancing the supplied muzzle position. All
+1,200 transitions across 240 sequences match. Copies are removed from the fixture
+pool between updates so their independent movement/collision is excluded. The
+query hook checks that refresh retains unit, slot zero and cached piece index two.
+The Godot comparison carries its own previous state forward rather than replacing
+it with native state, exposing cumulative count/timestamp errors.
+
+Random spread, sounds, full pool capacity, source death and actual cached piece transforms still
 need coverage. It does not verify all copied bytes or replace the live burst host.
 Run `python tools/native_burst_update.py` followed by Godot headless with
 `--path godot --script res://compare_native_burst.gd`. The optional native suite

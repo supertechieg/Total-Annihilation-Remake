@@ -72,6 +72,25 @@ def main():
                           position=position, fresh=fresh[:], speed=speed, distance=distance,
                           source=state(POOL), copy=state(POOL + 0x6b) if native.read(GAME + 0x141f3) == 2 else None,
                           queries=calls[:]))
+        # Keep the native source intact across updates. Emitted copies are removed
+        # from this fixture's pool so their movement/collision is a separate test.
+        steps = []
+        for step in range(20):
+            if state(POOL)['removed']:
+                break
+            tick = (tick + max(1, interval // 2)) & 0xffffffff
+            fresh[:] = [value + 65536 for value in fresh]
+            native.write(GAME + 0x141f3, 1)
+            native.write(GAME + 0x38a47, tick)
+            native.mu.mem_write(POOL + 0x6b, bytes(0x6b))
+            calls.clear()
+            native.call(0x49b720, [])
+            if any(call != dict(unit=UNIT, slot=0, piece=2) for call in calls):
+                raise AssertionError(f'Unexpected cached muzzle query: {calls}')
+            steps.append(dict(tick=tick, fresh=fresh[:], source=state(POOL),
+                              copy=state(POOL + 0x6b) if native.read(GAME + 0x141f3) == 2 else None,
+                              queries=calls[:]))
+        cases[-1]['steps'] = steps
     folder = Path('local/burst')
     folder.mkdir(exist_ok=True)
     (folder / 'native.json').write_text(json.dumps(dict(exe_sha256=EXE_HASH, cases=cases)))
