@@ -57,8 +57,22 @@ query hook checks that refresh retains unit, slot zero and cached piece index tw
 The Godot comparison carries its own previous state forward rather than replacing
 it with native state, exposing cumulative count/timestamp errors.
 
-Random spread, sounds, full pool capacity, source death and actual cached piece transforms still
+Sounds, duration randomness, full pool capacity, source death and actual cached piece transforms still
 need coverage. It does not verify all copied bytes or replace the live burst host.
 Run `python tools/native_burst_update.py` followed by Godot headless with
 `--path godot --script res://compare_native_burst.gd`. The optional native suite
 includes both; raw traces remain under ignored `local/burst`.
+
+## Spread and random-state validation
+
+The same 1,200 transitions now include spray angles 0, 1024 (Flash EMG) and 5000,
+random headings/pitches, arbitrary starting velocities and seeded original game
+randomness. The native fixture executes `0x4b6c30`; it does not replace the random
+function. Comparison checks source and copy velocity plus final RNG state after
+each transition, using the already reconstructed game RNG.
+
+`Burst.apply_spread` modifies source X/Z velocity after copying, using the source
+heading minus half the spray angle plus the bounded random draw. It preserves
+source Y velocity and stored heading/pitch. The emitted copy retains the prior
+velocity. All transitions match, including sequential RNG advancement. This
+helper remains separate from the live host pending burst integration.
