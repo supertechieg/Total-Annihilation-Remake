@@ -56,6 +56,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Unit bounds checks failed' }
     & $godotPath --headless --path godot --script res://test_projectile_collision.gd
     if ($LASTEXITCODE -ne 0) { throw 'Projectile collision checks failed' }
+    & $godotPath --headless --path godot --script res://test_collision_grid.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Collision grid checks failed' }
     & $godotPath --headless --path godot --script res://test_combat_world.gd
     if ($LASTEXITCODE -ne 0) { throw 'Combat host checks failed' }
     & $godotPath --headless --path godot --script res://test_weapon_damage.gd
@@ -69,6 +71,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     if ($Native) {
+        python tools\native_collision_grid.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original collision grid reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_collision_grid.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Collision grid differs from original executable' }
         python tools\native_projectile_collision.py
         if ($LASTEXITCODE -ne 0) { throw 'Original projectile collision reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_projectile_collision.gd
