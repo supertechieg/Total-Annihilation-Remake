@@ -19,6 +19,14 @@ func step() -> void:
 		return
 	next_decision = world.ticks + 30
 	build_base()
+	var builder_available := false
+	for unit: Dictionary in world.units.values():
+		if int(unit.get("team", 0)) == team and unit.type in ["armcv", "armck"]:
+			builder_available = true
+	for factory_id: int in world.factories:
+		if int(world.units[factory_id].get("team", 0)) == team:
+			for pending in world.factories[factory_id].queue:
+				builder_available = builder_available or pending in ["armcv", "armck"]
 	for id: int in world.factories:
 		if int(world.units[id].get("team", 0)) != team or float(world.units[id].remaining) > 0:
 			continue
@@ -26,8 +34,12 @@ func step() -> void:
 		if not factory.queue.is_empty() or int(factory.product) != 0:
 			continue
 		var type := "armpw" if world.units[id].type == "armlab" else "armflash"
+		if not builder_available:
+			type = "armck" if world.units[id].type == "armlab" else "armcv"
 		if world.queue_unit(id, type):
 			queued += 1
+			if type in ["armcv", "armck"]:
+				builder_available = true
 	for id: int in world.units:
 		var unit: Dictionary = world.units[id]
 		if int(unit.get("team", 0)) != team or float(unit.remaining) > 0 or unit.type not in combat.SUPPORTED_UNITS:

@@ -95,3 +95,19 @@ signal-to-reload path, not a physical mouse click. Run with Godot `--path godot
 --rendering-method gl_compatibility --minimized --script res://test_scenario_restart.gd`.
 It requires a rendering display and is separate from normal headless checks.
 The capture stays ignored because it includes original game artwork.
+
+
+## Builder replacement
+
+If no owned Arm Construction Vehicle/Kbot exists or is queued, an idle factory
+now queues its construction unit before another combat unit. In-progress builders
+count as available, and a newly queued replacement suppresses duplicates from
+other factories during the same decision. Construction still needs normal funds;
+a stranded factory with insufficient energy and no income can stall.
+
+The factory-only test now supplies a surviving solar collector and allows time
+for builder production before combat. It requires exactly one usable construction
+vehicle followed by produced combat units and target damage: nine checks pass.
+The original builder-start base scenario still passes ten checks. The policy
+covers absence of a builder; it does not yet replace an inaccessible, disabled
+or permanently stuck surviving builder.

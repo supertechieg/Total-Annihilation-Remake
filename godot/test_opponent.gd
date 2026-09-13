@@ -11,12 +11,13 @@ func _initialize() -> void:
 	heights.fill(0)
 	var world = World.new(catalog, Navigation.new(64, 64, heights), Vector2(128, 128))
 	var factory: int = world.add_unit("armvp", Vector2(512, 512), 0, 1)
+	world.add_unit("armsolar", Vector2(800, 512), 0, 1)
 	var victim: int = world.add_unit("armstump", Vector2(512, 800), 0, 0)
 	var initial: int = world.units[victim].health
 	var combat = Combat.new(world)
 	var opponent := Opponent.new(world, combat, 1)
 	var spent := false
-	for tick in range(2400):
+	for tick in range(6500):
 		world.step()
 		opponent.step()
 		combat.step()
@@ -29,6 +30,11 @@ func _initialize() -> void:
 	for unit: Dictionary in world.units.values():
 		if unit.type == "armflash":
 			checks.append(int(unit.team) == 1)
+	var replacements := 0
+	for unit: Dictionary in world.units.values():
+		if unit.type == "armcv" and world.can_build(int(unit.id)):
+			replacements += 1
+	checks.append(replacements == 1)
 	world.remove_unit(factory)
 	var queued := opponent.queued
 	for tick in range(60):
