@@ -113,6 +113,16 @@ covers absence of a builder; it does not yet replace an inaccessible, disabled
 or permanently stuck surviving builder.
 # Metal expansion
 
+The base policy now prioritizes another solar collector when owned units have
+unpaid energy debt and the initial solar/factory exist. An unfinished solar
+suppresses additional power starts. Construction uses the normal builder and
+resource APIs; no income or completion shortcuts are supplied. The focused
+power test runs a metal maker against insufficient generation and verifies
+actual debt, a second completed solar, no duplicate pending solar and a healthy
+builder script (5 checks). This is a reactive capacity increase, not proof of
+steady-state resource balance under arbitrary demand. Busy builders, metal
+starvation, unavailable sites and predictive power planning remain limitations.
+
 After its initial solar and factory exist, the opponent attempts one extractor
 on a known metal deposit. An idle construction vehicle/kbot searches deposit
 cells by distance, rejects invalid/occupied sites through normal placement

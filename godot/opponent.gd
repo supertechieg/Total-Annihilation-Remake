@@ -90,14 +90,21 @@ func build_base() -> void:
 				return
 	var has_solar := false
 	var has_factory := false
+	var pending_solar := false
+	var energy_debt := 0.0
 	for unit: Dictionary in world.units.values():
 		if int(unit.get("team", 0)) == team:
 			has_solar = has_solar or unit.type == "armsolar"
 			has_factory = has_factory or unit.type in ["armvp", "armlab"]
+			pending_solar = pending_solar or (unit.type == "armsolar" and float(unit.remaining) > 0)
+			energy_debt += float(unit.energy_ledger.debt)
 	var type := "armsolar" if not has_solar else "armvp"
 	if has_solar and has_factory:
-		build_extractor()
-		return
+		if energy_debt > 0 and not pending_solar:
+			type = "armsolar"
+		else:
+			build_extractor()
+			return
 	for id: int in world.units.keys():
 		var unit: Dictionary = world.units[id]
 		if int(unit.get("team", 0)) != team or not world.can_build(id):
