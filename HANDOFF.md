@@ -6,6 +6,8 @@ Use Light/low by default, including reverse engineering when it can be done reli
 
 ## Completed
 
+Mobile-builder extension: Arm Construction Vehicles, Construction Kbots and Minelayers now expose original menus and independent construction jobs. StartBuilding/readiness/StopBuilding, range, pause/resume and move cancellation are integrated. 48 host checks and a real-map factory-produced Construction Vehicle building solar pass; see analysis/MOBILE_BUILDERS.md. Normal verifier includes --builder-demo. Older notes saying mobile-builder commands are missing are superseded. Combat/opponents and Core coverage remain the next major gameplay work.
+
 Latest extension: all twelve Arm Vehicle Plant/Kbot Lab products execute healthy original COB scripts. Native playback matches 3,661 snapshots; 73 host checks cover production, animation and exit for every product. Odd-sized footprint alignment in the yard overlay was fixed to agree with terrain_navigation. Both real-map factory demos pass. See analysis/MOBILE_SCRIPTS.md; this supersedes older notes about static Kbot poses. Next major gameplay work remains mobile-builder controls, combat and opponents, alongside Core coverage and fidelity work.
 
 - Installation inventory and PE inspection in `analysis/`.

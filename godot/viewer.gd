@@ -12,6 +12,8 @@ const MobileUnit = preload("res://mobile_unit.gd")
 const ConstructionWorld = preload("res://construction_world.gd")
 var economy: RefCounted
 var build_picker: OptionButton
+var place_button: Button
+var selection_label: Label
 var resource_label: Label
 var placement_type := ""
 var structure_sprites: Dictionary = {}
@@ -119,8 +121,12 @@ func start_world_movement() -> void:
 		if not run_factory_demo("armlab", "armpw"):
 			push_error("Kbot demo failed")
 			get_tree().quit(1)
+	if "--builder-demo" in OS.get_cmdline_user_args():
+		if not run_builder_demo():
+			push_error("Mobile builder demo failed")
+			get_tree().quit(1)
 
-func run_factory_demo(factory_type := "armvp", product_type := "armflash") -> bool:
+func run_factory_demo(factory_type := "armvp", product_type := "armflash", product_count := 2) -> bool:
 	select_unit(0)
 	var offset := float(unit_catalog.definition(factory_type).get("footprintx", "8")) * 8 + 48
 	var point := unit_position + Vector2(-offset, 0)
@@ -135,15 +141,16 @@ func run_factory_demo(factory_type := "armvp", product_type := "armflash") -> bo
 	for index in range(factory_picker.item_count):
 		if factory_picker.get_item_metadata(index) == product_type:
 			factory_picker.select(index)
-	queue_factory_unit()
-	queue_factory_unit()
-	for tick in range(1600):
+	for item in range(product_count):
+		queue_factory_unit()
+	var production_ticks := ceili(float(unit_catalog.definition(product_type).buildtime) * 30.0 / float(unit_catalog.definition(factory_type).workertime)) * product_count + 900
+	for tick in range(production_ticks):
 		step_script()
 	var produced: Array = []
 	for unit: Dictionary in economy.units.values():
 		if int(unit.get("produced_by", 0)) == id:
 			produced.append(unit.id)
-	if produced.size() != 2 or int(economy.factories[id].product) != 0:
+	if produced.size() != product_count or int(economy.factories[id].product) != 0:
 		return false
 	for product: int in produced:
 		if float(economy.units[product].remaining) != 0 or not economy.scripts[product].fault.is_empty():
@@ -157,7 +164,32 @@ func run_factory_demo(factory_type := "armvp", product_type := "armflash") -> bo
 	if economy.units[produced[0]].position.distance_to(target) > 5:
 		return false
 	select_unit(id)
-	print("FACTORY_VERIFY_OK built=%s produced=2 %s; exit and selected movement passed" % [factory_type, product_type])
+	print("FACTORY_VERIFY_OK built=%s produced=%d %s; exit and selected movement passed" % [factory_type, product_count, product_type])
+	return true
+
+func run_builder_demo() -> bool:
+	if not run_factory_demo("armvp", "armcv", 1):
+		return false
+	var source := 0
+	for unit: Dictionary in economy.units.values():
+		if unit.type == "armcv":
+			source = unit.id
+	if source == 0:
+		return false
+	select_unit(source)
+	for index in range(build_picker.item_count):
+		if build_picker.get_item_metadata(index) == "armsolar":
+			build_picker.select(index)
+	choose_build()
+	var point: Vector2 = economy.units[source].position + Vector2(-64, 0)
+	if placement_type != "armsolar" or not place_structure(placement_type, point):
+		return false
+	var target: int = economy.builder_jobs[source].target
+	for tick in range(1800):
+		step_script()
+	if float(economy.units[target].remaining) != 0 or economy.builder_jobs.has(source) or not economy.scripts[source].fault.is_empty():
+		return false
+	print("BUILDER_VERIFY_OK factory-produced Construction Vehicle built a solar collector through selected-unit controls")
 	return true
 
 func issue_move(target: Vector2) -> bool:
@@ -185,7 +217,10 @@ func issue_move(target: Vector2) -> bool:
 func stop_order() -> void:
 	placement_type = ""
 	if selected_unit != 0 and economy.mobile_units.has(selected_unit):
+		economy.stop_build(selected_unit)
 		economy.mobile_units[selected_unit].stop()
+		return
+	if selected_unit != 0:
 		return
 	if economy != null:
 		economy.stop_build()
@@ -201,24 +236,27 @@ func stop_order() -> void:
 		status_label.text = "  Stop order — braking"
 
 func choose_build() -> void:
-	select_unit(0)
+	if build_picker.selected < 0 or build_picker.disabled:
+		return
 	stop_order()
 	placement_type = str(build_picker.get_item_metadata(build_picker.selected))
 	var fields: Dictionary = unit_catalog.definition(placement_type)
 	status_label.text = "  Place %s nearby · %s metal / %s energy · Right-click cancels" % [fields.name, fields.get("buildcostmetal", "0"), fields.get("buildcostenergy", "0")]
 
 func place_structure(type: String, point: Vector2) -> bool:
-	if mobile.speed != 0:
-		status_label.text = "  Wait for Commander to stop before placing"
+	var source_id: int = economy.builder_id if selected_unit == 0 else selected_unit
+	var controller: RefCounted = mobile if selected_unit == 0 else economy.mobile_units.get(selected_unit)
+	if controller == null or controller.speed != 0:
+		status_label.text = "  Wait for a construction unit to stop before placing"
 		return false
-	var id: int = economy.begin_build(type, point)
+	var id: int = economy.begin_build(type, point, source_id)
 	if id == 0:
 		status_label.text = "  " + economy.status
 		return false
 	placement_type = ""
 	add_structure_sprite(id)
 	economy.refresh_navigation(true)
-	if not building:
+	if selected_unit == 0 and not building:
 		toggle_build()
 	return true
 
@@ -261,6 +299,17 @@ func structure_texture(type: String, id: int) -> Texture2D:
 
 func select_unit(id: int) -> void:
 	selected_unit = id
+	placement_type = ""
+	var source_id: int = economy.builder_id if id == 0 else id
+	selection_label.text = "Selected: " + unit_catalog.definition(economy.units[source_id].type).get("name", economy.units[source_id].type)
+	var builder: bool = economy.can_build(source_id)
+	build_picker.clear()
+	build_picker.disabled = not builder
+	place_button.disabled = not builder
+	if builder:
+		for type: String in unit_catalog.build_options(economy.units[source_id].type):
+			build_picker.add_item(unit_catalog.definition(type).get("name", type))
+			build_picker.set_item_metadata(build_picker.item_count - 1, type)
 	factory_controls.visible = economy != null and economy.factories.has(id)
 	if factory_controls.visible:
 		factory_picker.clear()
@@ -405,6 +454,7 @@ func step_script() -> void:
 		economy.units[economy.builder_id].position = unit_position
 		economy.builder_ready = mobile.speed == 0 and script_vm.values.get(5, 0) == 1
 		var was_building: bool = economy.task_id != 0
+		var selected_target: int = economy.builder_jobs[selected_unit].target if economy.builder_jobs.has(selected_unit) else 0
 		economy.step()
 		for id: int in economy.units:
 			if id != economy.builder_id and not structure_sprites.has(id):
@@ -426,6 +476,10 @@ func step_script() -> void:
 			status_label.text = "  " + economy.status
 		if was_building and economy.task_id == 0 and building:
 			toggle_build()
+			status_label.text = "  Construction complete"
+		if economy.builder_jobs.has(selected_unit):
+			status_label.text = "  " + economy.builder_jobs[selected_unit].status
+		elif selected_target != 0 and selected_target in economy.completed:
 			status_label.text = "  Construction complete"
 	var restore_id := int(get_meta("pending_build", -1))
 	if restore_id >= 0 and script_vm.completions.has(restore_id):
@@ -530,12 +584,15 @@ func build_interface() -> void:
 	column.add_child(label("Original geometry, textures & script", 13))
 	resource_label = label("Metal 1000\nEnergy 1000", 14, Color("d5e4ac"))
 	column.add_child(resource_label)
+	selection_label = label("Selected: Arm Commander", 13)
+	column.add_child(selection_label)
 	build_picker = OptionButton.new()
 	for type: String in unit_catalog.build_options("armcom"):
 		build_picker.add_item(unit_catalog.definition(type).get("name", type))
 		build_picker.set_item_metadata(build_picker.item_count - 1, type)
 	column.add_child(build_picker)
-	column.add_child(button("Place selected structure", choose_build))
+	place_button = button("Place selected structure", choose_build)
+	column.add_child(place_button)
 	factory_controls = VBoxContainer.new()
 	factory_controls.visible = false
 	column.add_child(factory_controls)
@@ -644,9 +701,11 @@ func map_input(event: InputEvent) -> void:
 							status_label.text = "  Solar collector " + ("on" if unit.active else "off")
 							resumed = true
 							break
-						if economy.footprint(unit.type, unit.position).has_point(pos) and economy.resume_build(id):
-							mobile.stop()
-							if not building:
+						var source_id: int = economy.builder_id if selected_unit == 0 else selected_unit
+						if economy.footprint(unit.type, unit.position).has_point(pos) and economy.resume_build(id, source_id):
+							if selected_unit == 0:
+								mobile.stop()
+							if selected_unit == 0 and not building:
 								toggle_build()
 							resumed = true
 							break

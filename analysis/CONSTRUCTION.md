@@ -21,7 +21,7 @@ All 1,000 seeded cases match, including zero work, already-complete targets, par
 - Production/storage use the selected definitions. Negative EnergyUse produces energy while active; e.g. the Commander plus completed solar produce 45 energy/second, or 25 with solar disabled. Extractor terrain-metal sampling, wind, tide, metal conversion, other activation scripts and special-unit production remain unfinished.
 - Starting resources/storage are 1,000 each. They are prototype host defaults, not recovered game setup rules.
 - Build range measures to a footprint edge. Footprints, height-range slope checks, water checks, collision-grid reservations and arrival/placement semantics need original-engine comparison.
-- One Commander task runs at a time. New build orders leave prior unfinished structures paused. Arm Vehicle Plants and Kbot Labs now produce queued menu entries; see FACTORIES.md. Mobile construction units do not yet expose their own menus.
+- One Commander task runs at a time. New build orders leave prior unfinished structures paused. Arm Vehicle Plants and Kbot Labs produce queued menu entries; see FACTORIES.md. Arm Construction Vehicles, Construction Kbots and Minelayers now have independent build jobs and menus; see MOBILE_BUILDERS.md.
 - The host has a configurable `unit_limit` field, default 1,000 including the Commander. This is a capacity setting, not a demonstrated battle-performance limit.
 - Arm solar and enabled factories use animated viewports per instance. Produced mobile units also have separate views for heading changes; other building types retain static views cached per type. This has not been benchmarked for large armies. Depth sorting, original construction effects and exact scale/projection remain unfinished.
 

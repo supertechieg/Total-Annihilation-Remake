@@ -9,7 +9,7 @@ static func overlay(nav: RefCounted, terrain: PackedByteArray, units: Dictionary
 			continue
 		var width := int(fields.get("footprintx", "1"))
 		var height := int(fields.get("footprintz", "1"))
-		var origin: Vector2 = unit.position - Vector2(width, height) * 8
+		var origin: Vector2 = unit.position - Vector2(width >> 1, height >> 1) * 16
 		var yard := str(fields.get("yardmap", "")).replace(" ", "").replace("\n", "").replace("\r", "")
 		var opened := scripts.has(unit.id) and int(scripts[unit.id].values.get(18, 0)) != 0
 		for y in range(height):

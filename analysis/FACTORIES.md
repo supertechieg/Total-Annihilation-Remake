@@ -4,7 +4,7 @@ Arm Vehicle Plants and Kbot Labs accept their original six-entry build menus aft
 
 QueryBuildInfo supplies the model piece used for the build position. Both enabled factory pads are directly under an unrotated base; their original local offsets and current COB translation supply the planar position. The finished unit receives a movement controller and an exit order. The next queued product waits until its predecessor's footprint clears the factory footprint. The factory deactivates when its queue and pad are empty, retaining its original delayed closing script.
 
-The viewer selects completed factories to expose production controls, displays products during construction, and selects completed products for movement. All twelve original Arm ground factory products now execute their healthy scripts, including Kbot walking and stopping; see MOBILE_SCRIPTS.md. A construction vehicle does not yet expose its own construction menu. No produced unit has combat yet.
+The viewer selects completed factories to expose production controls, displays products during construction, and selects completed products for movement. All twelve original Arm ground factory products now execute their healthy scripts, including Kbot walking and stopping; see MOBILE_SCRIPTS.md. Construction Vehicles, Construction Kbots and Minelayers expose their original construction menus; see MOBILE_BUILDERS.md. No produced unit has combat yet.
 
 ## Verified behavior
 

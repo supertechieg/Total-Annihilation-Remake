@@ -35,6 +35,8 @@ Original speed caps, heading-to-velocity rounding, supplied-waypoint steering an
 
 All twelve Arm ground factory products now execute their healthy original scripts, including Kbot walking and stopping. Product-script playback matches 3,661 native snapshots; [scope and verification](analysis/MOBILE_SCRIPTS.md).
 
+Select a produced Construction Vehicle, Construction Kbot or Minelayer to use its original build menu. Builders can work independently alongside the Commander. Stop/move preserves unfinished structures; select a builder and click an unfinished structure to resume. [Mobile-builder scope and checks](analysis/MOBILE_BUILDERS.md).
+
 Requires Godot 4 (tested on installed 4.6.2) and Python with Pillow for preparation. To recreate generated assets:
 
 ```powershell

@@ -81,10 +81,15 @@ func step() -> void:
 	var blocked: bool = not navigation.can_cross(navigation.cell_at(point()), navigation.cell_at(proposed))
 	if blocked:
 		speed = 0
-		turn_step = 0
-		route.clear()
-		status = "Route blocked"
+		if turn_step != 0 and not route.is_empty():
+			# Provisional collision response: retain a valid route while turning in place.
+			status = "Turning around obstruction"
+		else:
+			route.clear()
+			status = "Route blocked"
 	else:
+		if status == "Turning around obstruction":
+			status = "Moving"
 		position_raw[0] = int(position_raw[0]) + int(result.velocity[0])
 		position_raw[1] = int(position_raw[1]) + int(result.velocity[2])
 		height = navigation.height_at(point())
