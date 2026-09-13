@@ -14,6 +14,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'COB parser tests failed' }
     & $godotPath --headless --path godot --script res://test_cob_vm.gd
     if ($LASTEXITCODE -ne 0) { throw 'COB runtime checks failed' }
+    & $godotPath --headless --path godot --script res://test_ground_motion.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Ground motion checks failed' }
     & $godotPath --headless --path godot -- --verify
     if ($LASTEXITCODE -ne 0) { throw 'Viewer checks failed' }
     if ($Native) {
@@ -21,5 +23,9 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original interpreter reference run failed' }
         & $godotPath --headless --path godot --script res://compare_native_cob.gd
         if ($LASTEXITCODE -ne 0) { throw 'Runtime differs from original interpreter' }
+        python tools\native_movement_reference.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original movement reference run failed' }
+        & $godotPath --headless --path godot --script res://compare_native_movement.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Movement primitives differ from original executable' }
     }
 } finally { Pop-Location }

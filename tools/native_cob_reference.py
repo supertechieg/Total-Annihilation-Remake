@@ -98,14 +98,14 @@ class NativeReference:
         elif index == 16:
             self.values[str(args[0])] = args[1]
 
-    def call(self, address, args):
+    def call(self, address, args, this=CONTEXT, timeout=1000000):
         sp = STACK_TOP - (len(args) + 1) * 4
         self.write(sp, STOP)
         for i, value in enumerate(args):
             self.write(sp + 4 + i * 4, value)
         self.mu.reg_write(UC_X86_REG_ESP, sp)
-        self.mu.reg_write(UC_X86_REG_ECX, CONTEXT)
-        self.mu.emu_start(address, STOP, timeout=1000000, count=2000000)
+        self.mu.reg_write(UC_X86_REG_ECX, this)
+        self.mu.emu_start(address, STOP, timeout=timeout, count=2000000)
         if self.mu.reg_read(UC_X86_REG_EIP) != STOP:
             raise RuntimeError('Native interpreter failed to return within execution limit')
         return self.mu.reg_read(UC_X86_REG_EAX)

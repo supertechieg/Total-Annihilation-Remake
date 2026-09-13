@@ -25,6 +25,8 @@ The viewer displays Comet Catcher's original terrain and the textured Arm Comman
 
 Original renderer fidelity and world simulation are still under reconstruction. There is no world movement, projectile, damage, or resource simulation yet.
 
+The next simulation foundation is implemented separately: original speed caps, heading-to-velocity rounding and movement-animation transitions match 5,637 native comparison checks. See [ground movement evidence and remaining work](analysis/GROUND_MOVEMENT.md).
+
 Requires Godot 4 (tested on installed 4.6.2) and Python with Pillow for preparation. To recreate generated assets:
 
 ```powershell
