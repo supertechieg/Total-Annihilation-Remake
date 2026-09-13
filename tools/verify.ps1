@@ -83,6 +83,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-stumpy
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Stumpy duel failed' }
     if ($Native) {
+        python tools\native_firing_reference.py --unit armham
+        if ($LASTEXITCODE -ne 0) { throw 'Original Hammer firing reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --armham
+        if ($LASTEXITCODE -ne 0) { throw 'Hammer firing differs from original executable' }
         python tools\native_firing_reference.py --unit armstump
         if ($LASTEXITCODE -ne 0) { throw 'Original Stumpy firing reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --armstump

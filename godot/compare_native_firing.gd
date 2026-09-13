@@ -6,6 +6,8 @@ func _initialize() -> void:
 	var unit := "corraid" if "--corraid" in OS.get_cmdline_user_args() else "armflash"
 	if "--armstump" in OS.get_cmdline_user_args():
 		unit = "armstump"
+	if "--armham" in OS.get_cmdline_user_args():
+		unit = "armham"
 	var trace_folder := "firing/" + unit if unit != "armflash" else "firing"
 	var trace: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(folder.path_join(trace_folder + "/native-trace.json")))
 	var program: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(folder.path_join("unit-assets/" + unit + "/script.json")))
