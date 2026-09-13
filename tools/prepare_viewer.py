@@ -10,6 +10,8 @@ from pathlib import Path
 from PIL import Image
 from ta_assets import Archive, FormatError, span, unpack
 from cob import decode as decode_cob, disassemble
+from tdf import parse as parse_tdf
+from map_environment import environment
 
 
 def text_at(data, offset):
@@ -202,7 +204,11 @@ def main():
     (output / 'armcom.cob').write_bytes(compiled_script)
     (output / 'armcom.cob.json').write_text(json.dumps(script_program), encoding='utf-8')
     (output / 'armcom.cob.asm').write_text(disassemble(script_program), encoding='utf-8')
-    image, map_info, heights = tnt_image(asset('ccmaps.ccx', 'maps/comet catcher.tnt'), palette)
+    terrain_data = asset('ccmaps.ccx', 'maps/comet catcher.tnt')
+    descriptor = parse_tdf(asset('ccmaps.ccx', 'maps/comet catcher.ota'))['globalheader']
+    image, map_info, heights = tnt_image(terrain_data, palette)
+    map_info['environment'] = environment(unpack('<16I', terrain_data), descriptor)
+    map_info['environment_version'] = 1
     image.save(output / 'terrain.png')
     image.copy().resize((384, 480), Image.Resampling.NEAREST).save(output / 'minimap.png')
     (output / 'heights.bin').write_bytes(heights)

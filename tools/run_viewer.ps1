@@ -1,7 +1,12 @@
 param([switch]$Prepare)
 $ErrorActionPreference = 'Stop'
 $workspacePath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-if ($Prepare -or -not (Test-Path -LiteralPath (Join-Path $workspacePath 'local\viewer-assets\armcom.cob.json'))) {
+$scenePath = Join-Path $workspacePath 'local\viewer-assets\scene.json'
+$viewerBundleCurrent = $false
+if (Test-Path -LiteralPath $scenePath) {
+    $viewerBundleCurrent = (Get-Content -LiteralPath $scenePath -Raw | ConvertFrom-Json).environment_version -eq 1
+}
+if ($Prepare -or -not $viewerBundleCurrent -or -not (Test-Path -LiteralPath (Join-Path $workspacePath 'local\viewer-assets\armcom.cob.json'))) {
     Push-Location $workspacePath
     try {
         python (Join-Path $PSScriptRoot 'prepare_viewer.py')

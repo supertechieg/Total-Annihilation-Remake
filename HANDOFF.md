@@ -6,6 +6,8 @@ Use Light/low by default, including reverse engineering when it can be done reli
 
 ## Completed
 
+Map gravity: native_map_gravity.py matches96 loader cases; map_environment.py recovers default/override and x87 scale. Comet Catcher is gravity60 ->raw4369, winds10..15 (not default8155 used by isolated fixtures). prepare_viewer now reads OTA and writes scene.environment +environment_version1; launcher upgrades older bundles. Six normal tests. See analysis/BALLISTICS.md and native-map-gravity-validation.json. Remaining integration: controller accumulator/min-angle evolution, wind initialization/scheduling, lifetime/collision/splash before armed Raider.
+
 Wind update: wind_state.gd matches 600 native 0x490c40 cases including both original RNG final states, timer gating, strength/heading, quantized X/Z drift and float32 ratio; 8 normal checks. Oracle replaces only CRT thread-storage lookup, not randomness. See analysis/WIND.md and native-wind-validation.json. Not world-scheduled yet: initial normalization, seeds, Y drift initialization and shared random consumers remain. Ballistic controller accumulator/map gravity/lifetime/splash still block faithful armed Raider integration, not work overall.
 
 Ballistic launch velocity: ballistic_launch.gd matches 1,000 native cases at 0x49ce4f..0x49cecc, using original integer trig plus gravity * unsigned(controller+0x10)/speed vertical correction. Six normal native fixtures. See analysis/BALLISTICS.md and native-ballistic-launch-validation.json. Controller accumulator evolution is still untraced; do not assume always zero. Drift writer located at wind update0x490c40: X/Z=-2*sin/cos(wind heading+0x37ed8,strength+0x37eda). Next recover controller state/map gravity/wind and lifetime/splash, then integrate armed Raider.

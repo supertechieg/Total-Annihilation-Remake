@@ -16,6 +16,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'TDF parser tests failed' }
     python tools\test_weapon_math.py
     if ($LASTEXITCODE -ne 0) { throw 'Weapon scalar checks failed' }
+    python tools\test_map_environment.py
+    if ($LASTEXITCODE -ne 0) { throw 'Map environment checks failed' }
     & $godotPath --headless --path godot --script res://test_unit_catalog.gd
     if ($LASTEXITCODE -ne 0) { throw 'Unit catalog checks failed' }
     & $godotPath --headless --path godot --script res://test_unit_visuals.gd
@@ -55,6 +57,8 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     if ($Native) {
+        python tools\native_map_gravity.py
+        if ($LASTEXITCODE -ne 0) { throw 'Map gravity differs from original executable' }
         python tools\native_wind_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original wind update reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_wind.gd
