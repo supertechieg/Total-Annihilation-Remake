@@ -94,7 +94,15 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Rocket combat failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-rocko
     if ($LASTEXITCODE -ne 0) { throw 'Rocko factory duel failed' }
+    & $godotPath --headless --path godot --script res://test_cannon_combat.gd -- --armwar
+    if ($LASTEXITCODE -ne 0) { throw 'Warrior cannon combat failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-warrior
+    if ($LASTEXITCODE -ne 0) { throw 'Warrior factory duel failed' }
     if ($Native) {
+        python tools\native_firing_reference.py --unit armwar
+        if ($LASTEXITCODE -ne 0) { throw 'Original Warrior firing reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --armwar
+        if ($LASTEXITCODE -ne 0) { throw 'Warrior firing differs from original executable' }
         python tools\native_firing_reference.py --unit armrock
         if ($LASTEXITCODE -ne 0) { throw 'Original Rocko firing reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --armrock

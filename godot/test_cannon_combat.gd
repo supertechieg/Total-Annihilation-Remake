@@ -5,12 +5,13 @@ const World = preload("res://construction_world.gd")
 const Combat = preload("res://combat_world.gd")
 
 func _initialize() -> void:
+	var cannon_type := "armwar" if "--armwar" in OS.get_cmdline_user_args() else "corraid"
 	var catalog = Catalog.new(ProjectSettings.globalize_path("res://../local/unit-assets/"))
 	var heights := PackedByteArray()
 	heights.resize(64 * 64)
 	heights.fill(0)
 	var world = World.new(catalog, Navigation.new(64, 64, heights), Vector2(128, 128))
-	var raider: int = world.add_unit("corraid", Vector2(512, 384), 0)
+	var raider: int = world.add_unit(cannon_type, Vector2(512, 384), 0)
 	var flash: int = world.add_unit("armflash", Vector2(384, 384), 0)
 	world.units[raider].team = 1
 	var combat = Combat.new(world)
@@ -32,7 +33,7 @@ func _initialize() -> void:
 	checks.append(combat.cycles[raider].fault.is_empty())
 	var duel = World.new(catalog, Navigation.new(64, 64, heights), Vector2(128, 128))
 	var a: int = duel.add_unit("armflash", Vector2(384, 384), 0)
-	var b: int = duel.add_unit("corraid", Vector2(512, 384), 0)
+	var b: int = duel.add_unit(cannon_type, Vector2(512, 384), 0)
 	duel.units[b].team = 1
 	var battle = Combat.new(duel)
 	battle.gravity = 4369
@@ -49,7 +50,7 @@ func _initialize() -> void:
 	checks.append(not duel.units.has(a) or not duel.units.has(b))
 	for offset: Vector2 in [Vector2(128, 0), Vector2(-128, 0), Vector2(0, 128), Vector2(0, -128)]:
 		var arena = World.new(catalog, Navigation.new(64, 64, heights), Vector2(128, 128))
-		var shooter: int = arena.add_unit("corraid", Vector2(512, 512), 0)
+		var shooter: int = arena.add_unit(cannon_type, Vector2(512, 512), 0)
 		var victim: int = arena.add_unit("armflash", Vector2(512, 512) + offset, 0)
 		arena.units[shooter].team = 1
 		var firing = Combat.new(arena)
@@ -71,7 +72,7 @@ func _initialize() -> void:
 			for x in range(38, 46):
 				terrain_heights[z * 64 + x] = elevation
 		var arena = World.new(catalog, Navigation.new(64, 64, terrain_heights), Vector2(128, 128))
-		var shooter: int = arena.add_unit("corraid", Vector2(512, 512), 0)
+		var shooter: int = arena.add_unit(cannon_type, Vector2(512, 512), 0)
 		var victim: int = arena.add_unit("armflash", Vector2(640, 512), 0)
 		arena.units[shooter].team = 1
 		var firing = Combat.new(arena)
