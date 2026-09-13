@@ -37,3 +37,23 @@ Samson's 30000 becomes 999; Jethro's 33000 becomes 1099. Boundary value 30
 becomes zero, demonstrating why ordinary rounding or integer division changes
 behavior. The scalar oracle now covers turnrate in every bundled definition
 and supplied fractional boundaries. Steering remains separate from live combat.
+
+
+## Ordinary target point selection
+
+Full original function 0x49b3e0, with cruise flag 0x02000000 clear, selects:
+
+1. The referenced projectile's position (+4) when projectile +0x56 is nonzero.
+2. The referenced unit's position (+0x6a) when projectile +0x4e is nonzero and
+   that unit has flag 0x10000000 at +0x110.
+3. The projectile's saved point (+0x28) otherwise.
+
+It performs no SweetSpot query or target leading in this branch. The pure
+selection helper matches 48 native calls over changing point coordinates,
+competing references, absent references and valid/invalid units. The oracle
+executes the full function without stubs; cruise branches are not exercised.
+
+This does not yet establish target-reference assignment, destruction cleanup,
+or when saved points are refreshed. It must not be interpreted as proof of
+complete target-loss behavior. The native verification suite runs the new
+native_missile_target.py and compare_native_missile_target.gd comparison.
