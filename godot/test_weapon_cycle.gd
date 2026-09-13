@@ -71,5 +71,28 @@ func _initialize() -> void:
 		sustained_shots += cycle.shots.size()
 	check(sustained_shots >= 100, "Sustained firing continues without accumulating blocked callbacks")
 	check(cycle.fault.is_empty() and vm.fault.is_empty(), "Repeated aiming and firing remain fault-free")
+	var raider_vm = VM.new(catalog.load_script("corraid"))
+	raider_vm.read_values = {4: 100, 17: 0}
+	raider_vm.invoke("Create")
+	var cannon = Cycle.new(raider_vm, catalog.weapon("CORE_LIGHTCANNON"))
+	cannon.aim(8192, 1024)
+	var cannon_shots: Array = []
+	var cannon_aim_correct := true
+	for tick in range(300):
+		raider_vm.step()
+		cannon.step()
+		for shot: Dictionary in cannon.shots:
+			cannon_shots.append(shot)
+			cannon_aim_correct = cannon_aim_correct and int(raider_vm.pieces[2].rotation[1]) == 8192
+	check(cannon_shots.size() >= 5, "Raider cannon sustains single-shot cycles")
+	check(cannon_aim_correct, "Raider turret is aimed when cannon fires")
+	var cannon_values_correct := true
+	for index in range(cannon_shots.size()):
+		var shot: Dictionary = cannon_shots[index]
+		cannon_values_correct = cannon_values_correct and shot.piece_name == "flare" and int(shot.velocity_raw_per_tick) == 371370
+		if index > 0:
+			cannon_values_correct = cannon_values_correct and int(shot.tick) - int(cannon_shots[index - 1].tick) >= 45
+	check(cannon_values_correct, "Raider uses queried flare, converted speed and reload gate")
+	check(cannon.fault.is_empty() and raider_vm.fault.is_empty(), "Raider repeated firing remains fault-free")
 	print("WEAPON_CYCLE %d / %d checks pass" % [checks - failures, checks])
 	quit(0 if failures == 0 else 1)

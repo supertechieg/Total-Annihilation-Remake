@@ -47,6 +47,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     if ($Native) {
+        python tools\native_firing_reference.py --unit corraid
+        if ($LASTEXITCODE -ne 0) { throw 'Original Raider firing reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --corraid
+        if ($LASTEXITCODE -ne 0) { throw 'Raider firing script differs from original interpreter' }
         python tools\native_firing_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original Flash firing reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_firing.gd

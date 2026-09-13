@@ -1,4 +1,5 @@
-"""Flash firing-script oracle with supplied callback timing, not native shot scheduling."""
+"""Tank firing-script oracle with supplied callback timing, not native shot scheduling."""
+import argparse
 import json
 from pathlib import Path
 from native_factory_reference import FactoryReference
@@ -7,13 +8,21 @@ from cob import signed
 
 
 def main():
-    native = FactoryReference(Path('local/original/TotalA.exe').read_bytes(), Path('local/unit-assets/armflash/script.cob').read_bytes())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--unit', choices=['armflash', 'corraid'], default='armflash')
+    unit = parser.parse_args().unit
+    native = FactoryReference(Path('local/original/TotalA.exe').read_bytes(), Path(f'local/unit-assets/{unit}/script.cob').read_bytes())
     native.read_values[17] = 0
     events = {0: [('Create', []), ('SetMaxReloadTime', [400])],
               1: [('AimPrimary', [8192, 1024])], 120: [('AimPrimary', [-8192, 2048])],
               180: [('AimPrimary', [4096, 0])]}
     for tick in [50, 53, 56, 80, 83, 86, 160, 163, 166]:
         events[tick] = [('QueryPrimary', [0]), ('FirePrimary', [])]
+    if unit == 'corraid':
+        # Exercise cannon recoil recovery and hit-induced rocking independently
+        # of the still-unreconstructed ballistic projectile host.
+        events[100] = [('HitByWeapon', [1024, -2048])]
+        events[210] = [('HitByWeapon', [-2048, 1024])]
     snapshots = []
     queries = []
     for tick in range(301):
@@ -30,10 +39,10 @@ def main():
                 item['query_piece'] = signed(native.read(CONTEXT + 0x1c + slot * 0xa4 + 0x24))
                 queries.append(dict(tick=tick, piece=item['query_piece']))
             snapshots.append(item)
-    folder = Path('local/firing')
-    folder.mkdir(exist_ok=True)
-    (folder / 'native-trace.json').write_text(json.dumps(dict(exe_sha256=EXE_HASH, snapshots=snapshots, queries=queries)), encoding='utf-8')
-    print(f'NATIVE_FIRING_REFERENCE {len(snapshots)} snapshots; queries={queries}')
+    folder = Path('local/firing') if unit == 'armflash' else Path('local/firing') / unit
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / 'native-trace.json').write_text(json.dumps(dict(unit=unit, exe_sha256=EXE_HASH, snapshots=snapshots, queries=queries)), encoding='utf-8')
+    print(f'NATIVE_FIRING_REFERENCE {unit}: {len(snapshots)} snapshots; queries={queries}')
 
 
 if __name__ == '__main__':

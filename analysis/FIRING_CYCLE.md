@@ -1,4 +1,8 @@
-# Flash firing callback and burst-controller prerequisite
+# Tank firing callbacks and burst controller
+
+Core Raider extension: `native_firing_reference.py --unit corraid` and `compare_native_firing.gd -- --corraid` compare 325 original-interpreter snapshots, including Create, reload input, repeated aiming/firing, and two HitByWeapon rocking callbacks. All match. Nine supplied QueryPrimary calls return piece 1 (`flare`). The close-spaced firing calls deliberately stress overlap; they are not the cannon's native firing cadence. Healthy Raider scripts now run on practice targets, including original muzzle visibility. Damage smoke and destruction callbacks remain unimplemented.
+
+Four additional controller checks exercise sustained Raider cannon firing, turret orientation, queried muzzle, converted speed (371370 raw units/tick), reload gate (45 ticks), and faults. These bring the normal weapon-controller checks to 18. The Core light cannon requires ballistic trajectories and area damage; it is not yet enabled in world combat. This avoids treating its shells as EMG projectiles. The compact native result is `native-raider-firing-validation.json`.
 
 `native_firing_reference.py` runs the original Flash COB with healthy host input, SetMaxReloadTime, supplied aim angles, and nine QueryPrimary/FirePrimary pairs across three supplied three-shot groups. It compares query output locals as well as piece transforms, recoil targets/velocities, visibility, statics, threads and other VM state. All 323 snapshots match through `compare_native_firing.gd`; the compact result is native-firing-validation.json.
 
@@ -12,4 +16,4 @@ Fourteen host checks cover aiming readiness, two bursts, turret orientation, int
 
 The controller is now connected to a first Flash projectile/damage loop; see COMBAT.md for integration and fidelity limits. Spread/random state, original collision/damage/destruction behavior and opponents still require reconstruction. The complete-game objective remains active.
 
-Normal checks run via `tools/verify.ps1`; `-Native` includes the original Flash comparison.
+Normal checks run via `tools/verify.ps1`; `-Native` includes the original Flash and Raider comparisons.
