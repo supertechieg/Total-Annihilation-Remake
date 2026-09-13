@@ -33,8 +33,15 @@ line-of-sight flag, with collision and pool consolidation stubbed. Unsigned
 deadline comparison and signed-wrapped position updates match the tested rule.
 Live regression covers movement beyond range and expiration on the deadline.
 
-Remaining host limitations: the initial EMG direction still uses the existing
-normalized-vector approximation. RNG starts at a
+Initial EMG direction now uses `direct_launch.gd`, compared against original
+`0x49ca37..0x49cb1c` in 240 cases. It computes horizontal distance, rounds heading
+with the native scale, quantizes the vertical angle inputs to signed whole-world
+units, and obtains velocity from the original integer sine-table convention.
+The burst source retains these verified heading/pitch/distance values for later
+spray. The oracle covers zero start velocity/acceleration, including axis-aligned
+and coincident coordinates; accelerating weapons remain outside the helper.
+
+Remaining host limitations: RNG starts at a
 fixed seed independent of other world random consumers. Source death currently
 cancels outstanding bursts as a provisional teardown rule. Original pool capacity,
 sounds, duration randomness and health/experience reload settlement remain pending.

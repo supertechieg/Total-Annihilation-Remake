@@ -89,6 +89,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --verify-hammer
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Hammer duel failed' }
     if ($Native) {
+        python tools\native_emg_launch.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original direct launch failed' }
+        & $godotPath --headless --path godot --script res://compare_native_direct_launch.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Direct launch differs from original executable' }
         python tools\native_emg_lifetime.py
         if ($LASTEXITCODE -ne 0) { throw 'Original EMG lifetime checks failed' }
         python tools\native_burst_cleanup.py

@@ -14,6 +14,7 @@ const Burst = preload("res://burst_schedule.gd")
 const GameRandom = preload("res://wind_state.gd")
 const Reload = preload("res://weapon_reload.gd")
 const Ground = preload("res://ground_motion.gd")
+const DirectLaunch = preload("res://direct_launch.gd")
 var burst_random := GameRandom.new()
 var bursts: Array = []
 const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham"]
@@ -205,20 +206,17 @@ func step() -> void:
 					"damage": cycle.definition.get("damage", {})})
 				shots_fired += 1
 				continue
-			var direction := (center(target) - start).normalized()
-			var velocity_raw := [int(direction.x * int(shot.velocity_raw_per_tick)), int(direction.y * int(shot.velocity_raw_per_tick)), int(direction.z * int(shot.velocity_raw_per_tick))]
+			var direct := DirectLaunch.solve(raw_point(start), raw_point(center(target)), int(shot.velocity_raw_per_tick))
+			var velocity_raw: Array = direct.velocity
 			var projectile := {"source": source, "owner": int(world.units[source].get("team", 0)), "position": start, "previous": start,
 				"position_raw": raw_point(start), "velocity_raw": velocity_raw,
 				"distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"})}
 			if int(shot.burst) > 0:
-				var delta := start - center(target)
-				var horizontal := Vector2(delta.x, delta.z).length()
 				bursts.append({"source": source, "piece_name": shot.piece_name, "projectile": projectile,
 					"interval": int(cycle.runtime.burst_interval_ticks), "timer": int(float(cycle.definition.get("weapontimer", "0")) * 30),
-					"speed": int(shot.velocity_raw_per_tick), "distance": roundi(horizontal * 65536.0), "spray": int(cycle.definition.get("sprayangle", "0")),
+					"speed": int(shot.velocity_raw_per_tick), "distance": int(direct.distance), "spray": int(cycle.definition.get("sprayangle", "0")),
 					"state": {"position": raw_point(start), "velocity": velocity_raw, "remaining": int(shot.burst), "timestamp": tick, "deadline": 0, "removed": false,
-						"heading": roundi(atan2(delta.x, delta.z) * 10430.37835047) & 65535,
-						"pitch": roundi(atan2(-delta.y, horizontal) * 10430.37835047) & 65535}})
+						"heading": int(direct.heading), "pitch": int(direct.pitch)}})
 			else:
 				projectiles.append(projectile)
 				shots_fired += 1
