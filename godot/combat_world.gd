@@ -12,6 +12,7 @@ const TargetPoint = preload("res://target_point.gd")
 const Queries = preload("res://weapon_queries.gd")
 const Burst = preload("res://burst_schedule.gd")
 const GameRandom = preload("res://wind_state.gd")
+const Reload = preload("res://weapon_reload.gd")
 var burst_random := GameRandom.new()
 var bursts: Array = []
 const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham"]
@@ -179,7 +180,9 @@ func step() -> void:
 			cycle.aim(heading, pitch)
 			order.heading = heading
 			order.pitch = pitch
-		cycle.step(within_range and world.mobile_units[source].speed == 0, func(piece: String) -> Vector3: return muzzle(source, piece))
+		var unit: Dictionary = world.units[source]
+		var reload_delay := Reload.ticks(int(cycle.runtime.reload_ticks), int(unit.health), int(world.catalog.definition(unit.type).maxdamage), int(unit.get("experience", 0)))
+		cycle.step(within_range and world.mobile_units[source].speed == 0, func(piece: String) -> Vector3: return muzzle(source, piece), reload_delay)
 		if not cycle.fault.is_empty():
 			status = cycle.fault
 			stop(source)

@@ -50,7 +50,7 @@ func stop() -> void:
 	remaining = 0
 	shots.clear()
 
-func step(can_fire := true, resolve_muzzle := Callable()) -> void:
+func step(can_fire := true, resolve_muzzle := Callable(), reload_delay := -1) -> void:
 	tick += 1
 	shots.clear()
 	if not vm.fault.is_empty():
@@ -72,8 +72,6 @@ func step(can_fire := true, resolve_muzzle := Callable()) -> void:
 		# One script dispatch creates a projectile-owned burst source.
 		remaining = 1
 		next_shot = tick
-		# Provisional policy: reload starts at burst start, not its final shot.
-		next_burst = tick + maxi(1, int(runtime.reload_ticks))
 	if tick < next_shot:
 		return
 	var query: int = vm.invoke("QueryPrimary", [0])
@@ -94,6 +92,8 @@ func step(can_fire := true, resolve_muzzle := Callable()) -> void:
 		fault = vm.fault
 		return
 	shots.append(shot)
+	# Settle only successful dispatch; projectile-owned rounds do not reset reload.
+	next_burst = tick + maxi(1, int(runtime.reload_ticks) if reload_delay < 0 else reload_delay)
 	remaining -= 1
 	next_shot = tick + maxi(1, int(runtime.burst_interval_ticks))
 	if remaining == 0:

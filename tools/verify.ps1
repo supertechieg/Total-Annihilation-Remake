@@ -64,6 +64,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Combat host checks failed' }
     & $godotPath --headless --path godot --script res://test_burst_combat.gd
     if ($LASTEXITCODE -ne 0) { throw 'Burst combat checks failed' }
+    & $godotPath --headless --path godot --script res://test_reload_combat.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Reload combat checks failed' }
     & $godotPath --headless --path godot --script res://test_cannon_combat.gd
     if ($LASTEXITCODE -ne 0) { throw 'Cannon combat checks failed' }
     & $godotPath --headless --path godot --script res://test_guard_combat.gd
