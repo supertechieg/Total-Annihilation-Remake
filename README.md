@@ -27,7 +27,7 @@ The viewer displays Comet Catcher's original terrain and a controllable Arm Comm
 | Q / E | Rotate whole model |
 | F / R | Center commander / reset zoom |
 
-Original renderer fidelity and world simulation are still under reconstruction. Terrain routing and arrival handling are provisional. Construction, resource accounting and an initial Flash projectile/damage loop are available.
+Original renderer fidelity and world simulation are still under reconstruction. Terrain routing and arrival handling are provisional. Construction, resource accounting and ground combat with nine supported units are available.
 
 Choose a structure in the dropdown, press **Place selected structure**, and click nearby terrain. Right-click/S pauses Commander construction; click an unfinished structure to resume. Completed solar collectors generate energy and toggle on/off when clicked. Build an Arm Vehicle Plant or Kbot Lab, click it, choose a unit and press **Queue unit**. Completed units leave the pad and can be selected and moved. **Clear pending orders** retains the current unit. Combat and several resource sources remain unfinished; see [construction scope](analysis/CONSTRUCTION.md) and [factory scope and verification](analysis/FACTORIES.md).
 
@@ -37,20 +37,20 @@ All twelve Arm ground factory products now execute their healthy original script
 
 Select a produced Construction Vehicle, Construction Kbot or Minelayer to use its original build menu. Builders can work independently alongside the Commander. Stop/move preserves unfinished structures; select a builder and click an unfinished structure to resume. [Mobile-builder scope and checks](analysis/MOBILE_BUILDERS.md).
 
-For the first combat demo, select a produced Flash, choose **Add practice target**, then click the red-ringed target. Shots reduce its health and can destroy it. Stop/move cancels the attack. This is stationary target practice; enemy AI, other weapon types and several original damage rules remain unfinished. [Combat scope and verification](analysis/COMBAT.md).
+For combat practice, select a produced Flash, Stumpy, Hammer, Peewee, Rocko, Warrior, Samson or Jethro, choose **Add practice target**, then click the red-ringed target. Raider is also supported in combat. The shared host includes attack pursuit and basic guards; the factory-duel checks exercise armed opponents. Original weapon sounds and explosion frames are connected, with provisional mixing and animation timing. Full skirmish AI, aircraft, naval combat, missions and several original damage rules remain unfinished. [Combat scope](analysis/COMBAT.md), [missile progress](analysis/MISSILE_STEERING.md), [sounds](analysis/WEAPON_SOUNDS.md), [effects](analysis/WEAPON_EFFECTS.md).
 
 Requires Godot 4 (tested on installed 4.6.2) and Python with Pillow for preparation. To recreate generated assets:
 
 ```powershell
 python -m pip install -r requirements.txt
 python tools\catalog_assets.py 'C:\Program Files (x86)\GOG Galaxy\Games\Total Annihilation'
-python tools\prepare_viewer.py
+.\tools\run_viewer.ps1 -Prepare -PrepareOnly
 python tools\test_assets.py
 ```
 
 Run all normal checks with `.\tools\verify.ps1`. See [COB_VM.md](analysis/COB_VM.md) for the optional native-interpreter comparison.
 
-Generated assets stay in Git-ignored `local/viewer-assets/` and are prepared from your installed game. Source selection, validation, and limitations are in [asset notes](analysis/ASSET_FORMATS.md); the next-work checkpoint is in [HANDOFF.md](HANDOFF.md).
+Generated assets stay in Git-ignored `local/` and are prepared from your installed game. Source selection, validation, and limitations are in [asset notes](analysis/ASSET_FORMATS.md); the next-work checkpoint is in [HANDOFF.md](HANDOFF.md).
 
 The shared unit bundle in `local/unit-assets/` now supplies 272 units from both factions, their models/scripts, weapon definitions and build relationships. The launcher prepares it automatically; see [unit bundle scope and validation](analysis/UNIT_BUNDLE.md). Complete construction behavior and combat simulation are still being implemented.
 

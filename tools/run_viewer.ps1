@@ -1,4 +1,4 @@
-param([switch]$Prepare)
+param([switch]$Prepare, [switch]$PrepareOnly)
 $ErrorActionPreference = 'Stop'
 $workspacePath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $scenePath = Join-Path $workspacePath 'local\viewer-assets\scene.json'
@@ -16,7 +16,7 @@ if ($Prepare -or -not $viewerBundleCurrent -or -not (Test-Path -LiteralPath (Joi
 $unitIndexPath = Join-Path $workspacePath 'local\unit-assets\index.json'
 $unitBundleCurrent = $false
 if (Test-Path -LiteralPath $unitIndexPath) {
-    $unitBundleCurrent = (Get-Content -LiteralPath $unitIndexPath -Raw | ConvertFrom-Json).weapon_runtime_version -eq 2
+    $unitBundleCurrent = (Get-Content -LiteralPath $unitIndexPath -Raw | ConvertFrom-Json).weapon_runtime_version -eq 4
 }
 if ($Prepare -or -not $unitBundleCurrent) {
     Push-Location $workspacePath
@@ -24,6 +24,22 @@ if ($Prepare -or -not $unitBundleCurrent) {
         python (Join-Path $PSScriptRoot 'prepare_units.py')
         if ($LASTEXITCODE -ne 0) { throw 'Unit bundle preparation failed' }
     } finally { Pop-Location }
+}
+foreach ($bundle in @(
+    @{ Index = 'local\weapon-sounds\index.json'; Script = 'prepare_weapon_sounds.py' },
+    @{ Index = 'local\weapon-effects\index.json'; Script = 'prepare_weapon_effects.py' }
+)) {
+    if ($Prepare -or -not $unitBundleCurrent -or -not (Test-Path -LiteralPath (Join-Path $workspacePath $bundle.Index))) {
+        Push-Location $workspacePath
+        try {
+            python (Join-Path $PSScriptRoot $bundle.Script)
+            if ($LASTEXITCODE -ne 0) { throw "Preparation failed: $($bundle.Script)" }
+        } finally { Pop-Location }
+    }
+}
+if ($PrepareOnly) {
+    Write-Output 'All viewer bundles are prepared.'
+    return
 }
 $godotCommand = Get-Command godot -ErrorAction SilentlyContinue
 $godotPath = if ($godotCommand) { $godotCommand.Source } else {
