@@ -3,6 +3,12 @@ extends RefCounted
 const Ground = preload("res://ground_motion.gd")
 var trig := Ground.new()
 
+static func initial_offset(muzzle_z: int, aim_z: int) -> int:
+	# Original weapon initialization uses world Z separation, not 3D distance.
+	@warning_ignore("integer_division")
+	var scaled: int = Ground.signed32(muzzle_z - aim_z) * 5 / 4
+	return Ground.signed32(scaled)
+
 func velocity(heading: int, pitch: int, speed: int, gravity: int, travel: int) -> Array:
 	assert(speed > 0, "Ballistic launch requires positive weapon speed")
 	@warning_ignore("integer_division")

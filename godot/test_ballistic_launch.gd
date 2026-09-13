@@ -18,5 +18,11 @@ func _initialize() -> void:
 		if actual != case[5]:
 			failures += 1
 			printerr("FAIL: ballistic launch ", case, " returned ", actual)
-	print("BALLISTIC_LAUNCH %d / %d checks pass" % [cases.size() - failures, cases.size()])
+	var offsets := [[0, 0], [1, 1], [-1, -1], [3, 3], [-3, -3], [65536, 81920], [-65536, -81920], [2147483647, -1610612738]]
+	for case: Array in offsets:
+		if Launch.initial_offset(case[0], 0) != int(case[1]):
+			failures += 1
+			printerr("FAIL: initial muzzle offset ", case)
+	var total := cases.size() + offsets.size()
+	print("BALLISTIC_LAUNCH %d / %d checks pass" % [total - failures, total])
 	quit(0 if failures == 0 else 1)

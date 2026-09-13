@@ -12,8 +12,12 @@ func _initialize() -> void:
 			if actual[axis] != int(case.expected[axis]):
 				mismatches += 1
 				break
-	var report := {"exe_sha256": trace.exe_sha256, "cases": trace.cases.size(), "mismatches": mismatches,
-		"scope": "Launch velocity block 0x49ce4f..0x49cecc using original trig helpers, supplied heading/pitch, positive speed, gravity and unsigned travel accumulator; excludes accumulator evolution and lifetime"}
+	for case: Dictionary in trace.offsets:
+		if Launch.initial_offset(int(case.muzzle_z), int(case.aim_z)) != int(case.expected):
+			mismatches += 1
+	var total: int = trace.cases.size() + trace.offsets.size()
+	var report := {"exe_sha256": trace.exe_sha256, "cases": total, "velocity_cases": trace.cases.size(), "offset_cases": trace.offsets.size(), "mismatches": mismatches,
+		"scope": "Launch velocity block 0x49ce4f..0x49cecc and initial offset block 0x49e0fb..0x49e11e; original trig helpers and arithmetic with supplied controller/coordinate inputs; excludes native piece transforms, subsequent offset writes and lifetime"}
 	FileAccess.open(folder.path_join("native-launch-comparison.json"), FileAccess.WRITE).store_string(JSON.stringify(report, "  "))
-	print("NATIVE_BALLISTIC_LAUNCH_COMPARISON %d / %d cases match" % [trace.cases.size() - mismatches, trace.cases.size()])
+	print("NATIVE_BALLISTIC_LAUNCH_COMPARISON %d / %d cases match" % [total - mismatches, total])
 	quit(0 if mismatches == 0 else 1)
