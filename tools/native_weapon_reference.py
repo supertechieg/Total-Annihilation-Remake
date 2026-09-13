@@ -1,0 +1,50 @@
+"""Execute original numeric weapon-loader conversions, including its text parser."""
+import json
+from pathlib import Path
+import struct
+from native_movement_reference import MovementReference
+from native_cob_reference import EXE_HASH
+
+
+class WeaponReference(MovementReference):
+    def convert(self, value, kind):
+        entry, end = {'velocity': (0x42e4c6, 0x42e4d1), 'reload': (0x42e54b, 0x42e556),
+                      'burst_rate': (0x42e645, 0x42e650)}[kind]
+        stub, string = 0x1008000, 0x1009000
+        self.mu.mem_write(string, str(value).encode('ascii') + b'\0')
+        code = b'\x68' + struct.pack('<I', string)
+        code += b'\xe8' + struct.pack('<i', 0x4e4560 - (stub + len(code) + 5))
+        code += b'\x83\xc4\x04'
+        code += b'\xe9' + struct.pack('<i', entry - (stub + len(code) + 5))
+        self.mu.mem_write(stub, code)
+        self.mu.mem_write(end, b'\xc3')
+        self.mu.ctl_remove_cache(stub, stub + len(code))
+        self.mu.ctl_remove_cache(entry, end + 1)
+        result = self.call(stub, [])
+        if kind != 'velocity':
+            result &= 0xffff  # Original loader stores AX into the weapon record.
+        elif result >= 0x80000000:
+            result -= 0x100000000
+        return result
+
+
+def main():
+    native = WeaponReference(Path('local/original/TotalA.exe').read_bytes(), Path('local/viewer-assets/armcom.cob').read_bytes())
+    index = json.loads(Path('local/unit-assets/index.json').read_text())
+    cases = []
+    for weapon, item in index['weapons'].items():
+        for kind, field in [('velocity', 'weaponvelocity'), ('reload', 'reloadtime'), ('burst_rate', 'burstrate')]:
+            value = item['definition'].get(field, '0')
+            cases.append(dict(weapon=weapon, kind=kind, value=value, result=native.convert(value, kind)))
+    for value in ['0', '.1', '.2', '.3', '.4', '1.1', '1.2', '29.999', '30', '300', '-.1', '-.3', '.03333333333333333']:
+        for kind in ['velocity', 'reload', 'burst_rate']:
+            cases.append(dict(weapon='synthetic', kind=kind, value=value, result=native.convert(value, kind)))
+    folder = Path('local/weapons')
+    folder.mkdir(exist_ok=True)
+    (folder / 'native-conversions.json').write_text(json.dumps(dict(exe_sha256=EXE_HASH, cases=cases)), encoding='utf-8')
+    print(f'NATIVE_WEAPON_CONVERSIONS {len(cases)} cases')
+    print([item for item in cases if item['weapon'] == 'emg'])
+
+
+if __name__ == '__main__':
+    main()

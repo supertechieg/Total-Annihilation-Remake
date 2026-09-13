@@ -1,0 +1,15 @@
+# Original weapon scalar conversions
+
+The weapon loader at 0x0042e440 parses text values through 0x004c4760/0x004e4560, multiplies using x87 arithmetic, then truncates through the original CRT routine 0x004e43a0. Its velocity multiplier at 0x004fd240 is the binary64 approximation of 65536/30. Reload and burst interval use 30 at 0x004fd250. Velocity is stored as a 32-bit integer at weapon offset 0x68; reload and burst interval store the low 16 bits at offsets 0xe4 and 0xec.
+
+This matters at boundaries: the original loader converts text `.3` seconds to 8 ticks and `1.2` seconds to 35 ticks. Ordinary binary64 multiplication rounds those products to 9 and 36 before truncation. EMG velocity text `300` becomes 655359 fixed-point units per tick, not 655360. Its `.4` reload and `.1` burst interval become 12 and 3 ticks.
+
+`native_weapon_reference.py` executes the original text-to-float function and the three unmodified multiply/truncate sequences. A synthetic caller supplies the string and returns immediately after each conversion, before the loader's unrelated record setup. The harness initializes x87 as FINIT and invalidates Unicorn translated blocks when changing the tiny caller. It checks the same executable hash as the existing native oracles.
+
+`weapon_math.py` reproduces these conversions during local asset preparation. It uses exact rational multiplication of binary64 operands, rounds to the x87 64-bit significand with nearest/even behavior, then truncates and applies the original integer storage width. All 618 native cases match: three fields from all 193 selected installed weapon definitions plus thirteen boundary/signed inputs. This demonstrates the inspected dataset and tested boundaries, not every possible legacy numeric string, overflow or non-default x87 configuration.
+
+Prepared weapon entries now have a `runtime` dictionary with `velocity_raw_per_tick`, `reload_ticks` and `burst_interval_ticks`. `unit_catalog.weapon(name)` exposes definition and runtime data together. The launcher regenerates older bundles using `weapon_runtime_version=1`. Original definitions and generated values stay in ignored local assets; the tracked compact report contains only comparison metadata. Five normal scalar tests and a catalog EMG integration check supplement the native comparison.
+
+These values are inputs to upcoming combat work. Actual reload countdown ordering, burst sequencing, targeting, spread/random state, projectile motion/collision, area damage, armor, destruction and opponent behavior are not implemented by this checkpoint. The supplied timing conversions do not prove original firing cadence. Flash FirePrimary also alternates its muzzle static and runs timed recoil; its overlap with burst callbacks requires further native comparison before integration.
+
+Run `python tools/native_weapon_reference.py` followed by `python tools/compare_native_weapons.py`, or the complete `tools/verify.ps1 -Native` suite. Normal verification uses `tools/test_weapon_math.py` and the catalog check.

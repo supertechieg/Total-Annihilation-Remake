@@ -14,6 +14,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'COB parser tests failed' }
     python tools\test_tdf.py
     if ($LASTEXITCODE -ne 0) { throw 'TDF parser tests failed' }
+    python tools\test_weapon_math.py
+    if ($LASTEXITCODE -ne 0) { throw 'Weapon scalar checks failed' }
     & $godotPath --headless --path godot --script res://test_unit_catalog.gd
     if ($LASTEXITCODE -ne 0) { throw 'Unit catalog checks failed' }
     & $godotPath --headless --path godot --script res://test_unit_visuals.gd
@@ -39,6 +41,10 @@ try {
     & $godotPath --headless --path godot --quit-after 2 -- --builder-demo
     if ($LASTEXITCODE -ne 0) { throw 'Real-map mobile builder construction failed' }
     if ($Native) {
+        python tools\native_weapon_reference.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original weapon scalar reference failed' }
+        python tools\compare_native_weapons.py
+        if ($LASTEXITCODE -ne 0) { throw 'Weapon scalars differ from original executable' }
         python tools\native_mobile_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original mobile script reference run failed' }
         & $godotPath --headless --path godot --script res://compare_native_units.gd

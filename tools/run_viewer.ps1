@@ -8,7 +8,12 @@ if ($Prepare -or -not (Test-Path -LiteralPath (Join-Path $workspacePath 'local\v
         if ($LASTEXITCODE -ne 0) { throw 'Asset preparation failed' }
     } finally { Pop-Location }
 }
-if ($Prepare -or -not (Test-Path -LiteralPath (Join-Path $workspacePath 'local\unit-assets\index.json'))) {
+$unitIndexPath = Join-Path $workspacePath 'local\unit-assets\index.json'
+$unitBundleCurrent = $false
+if (Test-Path -LiteralPath $unitIndexPath) {
+    $unitBundleCurrent = (Get-Content -LiteralPath $unitIndexPath -Raw | ConvertFrom-Json).weapon_runtime_version -eq 1
+}
+if ($Prepare -or -not $unitBundleCurrent) {
     Push-Location $workspacePath
     try {
         python (Join-Path $PSScriptRoot 'prepare_units.py')

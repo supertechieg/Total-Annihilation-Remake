@@ -21,6 +21,15 @@ func _init(folder: String) -> void:
 func definition(unit_id: String) -> Dictionary:
 	return index.get("units", {}).get(unit_id.to_lower(), {}).get("definition", {})
 
+func weapon(name: String) -> Dictionary:
+	var item: Dictionary = index.get("weapons", {}).get(name.to_lower(), {})
+	if item.is_empty():
+		fault = "Unknown weapon: " + name
+	elif not item.has("runtime"):
+		fault = "Prepare current weapon values with python tools/prepare_units.py"
+		return {}
+	return item
+
 func build_options(unit_id: String) -> Array:
 	return index.get("build_menus", {}).get(unit_id.to_lower(), [])
 

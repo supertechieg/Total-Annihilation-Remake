@@ -12,6 +12,7 @@ from ta_assets import Archive, FormatError
 from tdf import parse
 from prepare_viewer import model_3do, gaf_entries, gaf_frame
 from cob import decode
+from weapon_math import weapon_runtime
 
 PROFILE = ['rev31.gp3', 'btdata.ccx', 'ccdata.ccx', 'totala1.hpi']
 
@@ -130,8 +131,8 @@ def prepare(root, output):
             for name, fields in parse(content.read(path)).items():
                 if name in weapons:
                     issues.append(dict(duplicate_weapon=name, previous=weapons[name]['source'], source=path))
-                weapons[name] = dict(source=path, definition=fields)
-    index = dict(profile=PROFILE, profile_status='provisional archive precedence', units=units,
+                weapons[name] = dict(source=path, definition=fields, runtime=weapon_runtime(fields))
+    index = dict(weapon_runtime_version=1, profile=PROFILE, profile_status='provisional archive precedence', units=units,
                  build_menus=menus, menu_additions=additions, weapons=weapons, textures=textures,
                  palette=[palette[i:i + 3] for i in range(0, 768, 3)], issues=issues,
                  missing_textures=missing_textures, missing_menu_units=missing_menu_units)
