@@ -12,6 +12,7 @@ def main():
     address = 0x1020000
     rng = random.Random(483210)
     differences = []
+    traces = []
     count = 0
     for case in range(50):
         width, height = rng.randrange(2, 32), rng.randrange(2, 32)
@@ -25,11 +26,16 @@ def main():
         native.write(GAME + 0x14237, height)
         native.call(0x483210, [0, width | (height << 16)])
         result = bytes(native.mu.mem_read(address, len(data)))
+        traces.append(dict(width=width, height=height, heights=list(heights),
+                           low=list(result[6::13]), high=list(result[5::13])))
         low, high = cell_extrema(heights, width, height)
         for index in range(width * height):
             count += 1
             if (low[index], high[index]) != (result[index * 13 + 6], result[index * 13 + 5]):
                 differences.append(dict(case=case, index=index))
+    folder = Path('local/terrain-heights')
+    folder.mkdir(exist_ok=True)
+    (folder / 'native.json').write_text(json.dumps(dict(cases=traces, exe_sha256=EXE_HASH)), encoding='utf-8')
     Path('analysis/native-terrain-heights-validation.json').write_text(json.dumps(dict(
         maps=50, cells=count, differences=differences, exe_sha256=EXE_HASH,
         scope='Original 0x483210 full-map rectangle with supplied height bytes and zero-initialized output; excludes partial updates, TNT decoding, boundary feature blocking and navigation'

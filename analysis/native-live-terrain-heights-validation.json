@@ -1,0 +1,6 @@
+{
+  "cells": 14106,
+  "differences": [],
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "scope": "Godot full-map cell extrema compared to original 0x483210 with supplied grids; excludes footprint aggregation, feature boundaries and pathfinding"
+}

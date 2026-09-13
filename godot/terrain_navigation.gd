@@ -2,6 +2,7 @@ extends RefCounted
 ## Provisional footprint-aware terrain A*. Not the original TA pathfinder.
 const CELL := 16
 const Limits = preload("res://terrain_limits.gd")
+const Heights = preload("res://terrain_heights.gd")
 const DIRECTIONS := [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1),
 	Vector2i(1, 1), Vector2i(-1, 1), Vector2i(-1, -1), Vector2i(1, -1)]
 var width: int
@@ -19,10 +20,16 @@ func _init(w: int, h: int, data: PackedByteArray, sea := 0, slope := 20, depth :
 	sea_level = sea
 	assert(width > 0 and height > 0 and heights.size() == width * height)
 	blocked.resize(width * height)
+	var extrema := Heights.prepare(heights, width, height)
+	var cell_blocked := PackedByteArray()
+	cell_blocked.resize(width * height)
 	for y in range(height):
 		for x in range(width):
-			var low := 255
-			var high := 0
+			var index := y * width + x
+			# Last row/column have no complete terrain quad.
+			cell_blocked[index] = int(x == width - 1 or y == height - 1 or not Limits.passable(extrema.low[index], extrema.high[index], sea_level, depth, minimum_depth, slope, slope if water_slope < 0 else water_slope))
+	for y in range(height):
+		for x in range(width):
 			var solid := false
 			for dz in range(footprint.y):
 				for dx in range(footprint.x):
@@ -30,10 +37,8 @@ func _init(w: int, h: int, data: PackedByteArray, sea := 0, slope := 20, depth :
 					if not inside(sample):
 						solid = true
 						continue
-					var value := int(heights[sample.y * width + sample.x])
-					low = mini(low, value)
-					high = maxi(high, value)
-			blocked[y * width + x] = int(solid or not Limits.passable(low, high, sea_level, depth, minimum_depth, slope, slope if water_slope < 0 else water_slope))
+					solid = solid or cell_blocked[sample.y * width + sample.x] != 0
+			blocked[y * width + x] = int(solid)
 
 func inside(cell: Vector2i) -> bool:
 	return cell.x >= 0 and cell.y >= 0 and cell.x < width and cell.y < height

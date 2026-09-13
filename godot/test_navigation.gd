@@ -65,5 +65,16 @@ func _initialize() -> void:
 	nav.blocked[1] = 1
 	nav.blocked[3] = 1
 	check(nav.path(Vector2.ZERO, Vector2(16, 16)).is_empty(), "Diagonal cannot cut a blocked corner")
+	var ramp := PackedByteArray()
+	ramp.resize(16 * 16)
+	for y in range(16):
+		for x in range(16):
+			ramp[y * 16 + x] = x * 10
+	nav = Navigation.new(16, 16, ramp, 0, 12, 35, Vector2i(3, 3))
+	check(nav.passable(Vector2i(8, 8)), "Wide unit accepts gradual ramp with legal individual slopes")
+	check(not nav.path(Vector2(48, 128), Vector2(192, 128)).is_empty(), "Wide unit can route along gradual ramp")
+	ramp[8 * 16 + 8] = 200
+	nav = Navigation.new(16, 16, ramp, 0, 12, 35, Vector2i(3, 3))
+	check(not nav.passable(Vector2i(8, 8)), "Sharp local rise blocks wide footprint")
 	print("NAVIGATION %d / %d checks pass" % [checks - failures, checks])
 	quit(0 if failures == 0 else 1)
