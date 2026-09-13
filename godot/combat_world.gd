@@ -26,8 +26,8 @@ var status := ""
 func _init(source: RefCounted) -> void:
 	world = source
 
-func stop(id: int) -> void:
-	if orders.has(id) and orders[id].get("chasing", false) and world.mobile_units.has(id):
+func stop(id: int, stop_movement := true) -> void:
+	if stop_movement and orders.has(id) and orders[id].get("chasing", false) and world.mobile_units.has(id):
 		world.mobile_units[id].stop()
 	orders.erase(id)
 	if cycles.has(id):

@@ -202,7 +202,7 @@ func add_armed_raider() -> void:
 	var raider := add_practice_target()
 	if raider != 0:
 		combat.enable_guard(raider)
-		combat.attack(selected_unit, raider)
+		combat.attack(selected_unit, raider, true)
 		status_label.text = "  Raider engages nearby enemies; your Flash is attacking"
 
 func run_combat_demo(verify: bool) -> bool:
@@ -301,7 +301,7 @@ func issue_move(target: Vector2) -> bool:
 	if selected_unit != 0:
 		var accepted: bool = economy.move_unit(selected_unit, target)
 		if accepted:
-			combat.stop(selected_unit)
+			combat.stop(selected_unit, false)
 		status_label.text = "  Move order accepted" if accepted else "  Select a completed mobile unit to move"
 		return accepted
 	if mobile == null:
@@ -829,7 +829,7 @@ func map_input(event: InputEvent) -> void:
 					for id: int in ids:
 						var unit: Dictionary = economy.units[id]
 						if int(unit.get("team", 0)) != 0 and economy.footprint(unit.type, unit.position).has_point(pos):
-							combat.attack(economy.builder_id if selected_unit == 0 else selected_unit, id)
+							combat.attack(economy.builder_id if selected_unit == 0 else selected_unit, id, true)
 							status_label.text = "  " + combat.status
 							resumed = true
 							break
