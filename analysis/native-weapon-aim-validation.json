@@ -1,0 +1,16 @@
+{
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "cases": 368,
+  "checks": 656272,
+  "matching": 656272,
+  "coverage": {
+    "aim_starts": 866,
+    "dropped": 89,
+    "attempts": 37996,
+    "launches": 393,
+    "target_cleared": 53,
+    "range_flags": 7545
+  },
+  "mismatches": [],
+  "scope": "Original 0x49e1a0 per-slot update with 0x48a1e0/0x485070 targets, 0x49aa80 range, 0x49a890/0x4b715a/0x49d910 angle solves, turret callback 0x49d580 (0x49d880 tolerance, 0x4b6c30 spread) and vlaunch callback 0x49db70, script starts through the original 0x4b0a70/0x4b0b00/0x4b08c0 and completion vtable 0x481490; COB threads, piece queries, launchers, payment and network echo replaced by a scripted fake layer"
+}

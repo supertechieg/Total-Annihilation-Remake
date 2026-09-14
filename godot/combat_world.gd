@@ -312,6 +312,36 @@ static func ballistic_angles(aim_raw: Array, target_raw: Array, unit_heading: in
 	var heading := roundi(atan2(float(delta[0]), float(delta[2])) * 65536.0 / TAU) - unit_heading
 	return [heading, Aim.solve(delta, speed, gravity, minimum_angle)]
 
+## 0x4b715a: fistp(fpatan(x, z) * 10430.37835047), rounded to nearest even.
+static func native_atan(x: int, z: int) -> int:
+	var value := atan2(float(x), float(z)) * 10430.37835047
+	var rounded := roundi(value)
+	if absf(value - float(rounded)) == 0.5:
+		rounded = 2 * roundi(value / 2.0)
+	return rounded
+
+## Source-minus-target line angles shared by 0x49d910 (turret lineofsight solve) and 0x49db70 (vlaunch callback):
+## heading atan(dx, dz); pitch atan(-int16(dy >> 16), int16(ftol(hypot(dx, dz)) >> 16)). Unsigned 16-bit results.
+static func line_angles(source_raw: Array, target_raw: Array) -> Array:
+	var dx := Ground.signed32(int(source_raw[0]) - int(target_raw[0]))
+	var dy := Ground.signed32(int(source_raw[1]) - int(target_raw[1]))
+	var dz := Ground.signed32(int(source_raw[2]) - int(target_raw[2]))
+	var distance := int(sqrt(float(dx) * dx + float(dz) * dz))
+	return [native_atan(dx, dz) & 0xffff, native_atan(-Ground.signed16(dy >> 16), Ground.signed16(distance >> 16)) & 0xffff]
+
+## Turret angle solve of 0x49e1a0 (and the re-solve in 0x49d580) from an AimFrom point: ballistic weapons use atan
+## and 0x49a890 (fails on 0x8000), lineofsight weapons 0x49d910 (always succeeds), others fail. Returns [ok, heading
+## relative to the unit, pitch], both as unsigned words.
+static func turret_solve(aim_raw: Array, target_raw: Array, unit_heading: int, definition: Dictionary, speed: int, gravity: int, minimum_angle: float) -> Array:
+	if int(str(definition.get("ballistic", "0")).to_int()) & 1:
+		var delta := [Ground.signed32(int(aim_raw[0]) - int(target_raw[0])), Ground.signed32(int(aim_raw[1]) - int(target_raw[1])), Ground.signed32(int(aim_raw[2]) - int(target_raw[2]))]
+		var pitch := Aim.solve(delta, speed, gravity, minimum_angle)
+		return [pitch != 0x8000, (native_atan(int(delta[0]), int(delta[2])) - unit_heading) & 0xffff, pitch & 0xffff]
+	if int(str(definition.get("lineofsight", "0")).to_int()) & 1:
+		var angles := line_angles(aim_raw, target_raw)
+		return [true, (int(angles[0]) - unit_heading) & 0xffff, int(angles[1])]
+	return [false, 0, 0]
+
 ## Turret fire callback 0x49d580 spread: damage and accuracy widen, experience narrows, two game-RNG draws.
 ## Returns the perturbed absolute heading and pitch (16-bit). Direct launchers recompute direction, so only the draws matter there.
 static func firing_spread(heading: int, pitch: int, accuracy: int, health: int, maxdamage: int, experience: int, rng: RefCounted) -> Array:
@@ -361,6 +391,10 @@ func step() -> void:
 		if not active.has(source):
 			continue
 		if not world.units.has(source) or (not active[source].has("point") and not world.units.has(active[source].target)):
+			if world.units.has(source):
+				# 0x48a1e0 finds the target unit dead: clear the target, start TargetCleared(slot) and drop the request bit.
+				var lost = command_cycles[source] if command else cycles[source]
+				lost.update({"tick": tick, "target": Cycle.TARGET_DEAD})
 			end_order(source, command)
 			continue
 		var order: Dictionary = active[source]
@@ -377,8 +411,8 @@ func step() -> void:
 		var aim_origin := muzzle(source, aim_piece)
 		var target_point := order_target_point(order)
 		var ballistic := int(cycle.definition.get("ballistic", "0")) != 0
-		var angles := ballistic_angles(raw_point(aim_origin), raw_point(target_point), int(world.mobile_units[source].heading), int(cycle.runtime.velocity_raw_per_tick), gravity, float(cycle.runtime.minimum_barrel_angle))
-		var heading := int(angles[0])
+		var unit_heading := int(world.mobile_units[source].heading)
+		var solve := turret_solve(raw_point(aim_origin), raw_point(target_point), unit_heading, cycle.definition, int(cycle.runtime.velocity_raw_per_tick), gravity, float(cycle.runtime.minimum_barrel_angle))
 		var within_range := origin.distance_to(destination) <= float(cycle.definition.get("range", "0"))
 		if ground:
 			step_ground_approach(source, order, origin, destination, within_range, float(cycle.definition.get("range", "0")))
@@ -392,17 +426,23 @@ func step() -> void:
 			elif within_range and order.chasing:
 				world.mobile_units[source].stop()
 				order.chasing = false
-		var pitch := int(angles[1]) if ballistic else 0
-		within_range = within_range and pitch != 0x8000
-		if cycle.aim_id < 0 and (not cycle.requested or heading != int(order.heading) or pitch != int(order.pitch)):
-			cycle.aim(heading, pitch)
-			order.heading = heading
-			order.pitch = pitch
+		# Host range test (not 0x49aa80); a ballistic weapon without a solution cannot reach.
+		within_range = within_range and (not ballistic or bool(solve[0]))
 		var unit: Dictionary = world.units[source]
 		var reload_delay := Reload.ticks(int(cycle.runtime.reload_ticks), int(unit.health), int(world.catalog.definition(unit.type).maxdamage), int(unit.get("experience", 0)))
 		# 0x49e1a0 fires a non-stockpile weapon only when the owner's stock covers its per-shot energy and metal.
 		var affordable := shot_affordable(source, cycle.definition)
-		cycle.step(within_range and world.mobile_units[source].speed == 0 and affordable, func(piece: String) -> Vector3: return muzzle(source, piece), reload_delay, tick)
+		var fields: Dictionary = world.catalog.definition(unit.type)
+		var accuracy := int(cycle.definition.get("accuracy", "0"))
+		var fire_point := raw_point(target_point)
+		# Original state machine (weapon_cycle.gd): Aim is issued only when no request is outstanding; the turret callback
+		# re-solves, applies the tolerance and spread at the fire attempt. Holding fire while moving is a host rule.
+		cycle.update({"tick": tick, "target": Cycle.TARGET_VALID, "solve": solve, "unit_heading": unit_heading, "unit_flags": 0,
+			"in_range": within_range, "affordable": affordable, "permit": world.mobile_units[source].speed == 0,
+			"resolve_muzzle": func(piece: String) -> Vector3: return muzzle(source, piece),
+			"line_angles": func(piece: String) -> Array: return line_angles(raw_point(muzzle(source, piece)), fire_point),
+			"spread": func(h: int, p: int) -> Array: return firing_spread(h, p, accuracy, int(unit.health), int(fields.get("maxdamage", "1")), int(unit.get("experience", 0)), burst_random),
+			"reload_delay": reload_delay})
 		if not cycle.fault.is_empty():
 			status = cycle.fault
 			end_order(source, command)
@@ -416,14 +456,9 @@ func step() -> void:
 			var start: Vector3 = shot.position
 			pay_shot(source, cycle.definition)
 			request_sound(str(cycle.definition.get("soundstart", "")), start)
-			var world_heading := (heading + int(world.mobile_units[source].heading)) & 0xffff
-			var shot_pitch := pitch & 0xffff
-			if int(cycle.definition.get("turret", "0")) & 1:
-				var source_unit: Dictionary = world.units[source]
-				var spread := firing_spread(world_heading, shot_pitch, int(cycle.definition.get("accuracy", "0")), int(source_unit.health),
-					int(world.catalog.definition(source_unit.type).get("maxdamage", "1")), int(source_unit.get("experience", 0)), burst_random)
-				world_heading = int(spread[0])
-				shot_pitch = int(spread[1])
+			# The turret callback already made the stored heading absolute and applied the spread draws.
+			var world_heading := int(shot.heading)
+			var shot_pitch := int(shot.pitch)
 			if ballistic:
 				var speed := int(shot.velocity_raw_per_tick)
 				var raw := raw_point(start)

@@ -12,7 +12,7 @@ class ImmediateRecoil extends RefCounted:
 	var pieces := [{"name": "barrel"}]
 	var position := Vector3(10, 20, 30)
 	var invocation := 0
-	func invoke(callback: String, _args: Array = []) -> int:
+	func invoke(callback: String, _args: Array = [], _immediate := true) -> int:
 		invocation += 1
 		if callback == "QueryPrimary":
 			completions[invocation] = {"locals": [0]}
@@ -40,7 +40,7 @@ func _initialize() -> void:
 	check(resolutions[0] == 0, "Muzzle is not resolved when no shot is emitted")
 	recoil_cycle.aim(0, 0)
 	recoil_cycle.step(true, resolver)
-	check(recoil.position == Vector3(40, 50, 60), "Firing callback applies immediate recoil")
+	check(recoil.position == Vector3(40, 50, 60), "Firing callback applies recoil")
 	check(recoil_cycle.shots.size() == 1 and recoil_cycle.shots[0].position == Vector3(10, 20, 30), "Shot retains muzzle position from before firing callback")
 	check(resolutions[0] == 1, "Muzzle resolves once per emitted shot")
 	recoil_cycle.stop()
@@ -89,20 +89,26 @@ func _initialize() -> void:
 		vm.step()
 		cycle.step(false)
 	check(cycle.aimed and cycle.shots.is_empty(), "Host can deny firing while aim completes")
+	vm.step()
 	cycle.step(true)
-	check(cycle.shots.is_empty(), "Permission recovery refreshes potentially restored turret aim")
-	for tick in range(80):
+	# 0x49e1a0 has no re-aim after a held attempt: the completed Aim result is used even if the script restored the turret.
+	check(cycle.shots.size() == 1 and cycle.events.all(func(e: Dictionary) -> bool: return e.type != "aim"), "Permission recovery fires on the completed aim without re-aiming")
+	for tick in range(20):
 		vm.step()
-		cycle.step(true)
-		if not cycle.shots.is_empty():
-			break
-	check(cycle.shots.size() == 1 and int(vm.pieces[2].rotation[1]) == (-8192 & 65535), "Firing resumes only after turret returns to aim")
+		cycle.step(false)
+	cycle.stop()
 	cycle.aim(32768, 0)
 	cycle.aim(0, 0)
 	for tick in range(80):
 		vm.step()
 		cycle.step(false)
-	check(cycle.aimed, "Replacement aim waits for newest script invocation")
+	check(cycle.aimed and cycle.heading == 32768, "A second aim while a request is outstanding issues no new Aim")
+	vm.step()
+	cycle.step(true)
+	check(cycle.shots.is_empty() and not cycle.requested, "The outstanding aim fails the tolerance check at the fire attempt")
+	vm.step()
+	cycle.step(false)
+	check(cycle.requested and cycle.heading == 0 and not cycle.aimed and cycle.events.any(func(e: Dictionary) -> bool: return e.type == "aim" and e.args == [0, 0]), "Aim is reissued on the next update with the new angles")
 	var sustained_shots := 0
 	for tick in range(600):
 		vm.step()

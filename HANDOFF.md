@@ -12,6 +12,8 @@ Codex investigates, plans, and reviews; Claude implements assigned changes. A CL
 
 User reiterated (September 13): the ultimate goal is a playable full port of Total Annihilation, and every verified checkpoint must be committed and pushed to GitHub.
 
+Weapon aim state: weapon_cycle.gd/combat_world.gd now follow 0x49e1a0 per slot (bit0 request set even on dropped/missing Aim, result from completion 0x481490 nonzero, no angle-change or denied re-aim, target loss clears, run-now 0 Aim/Fire), turret fire 0x49d580 with tolerance 0x49d880 (150/2000 defaults) and vlaunch 0x49db70 - native 656,272/656,272 over 368 cases / 54,720 ticks, test_weapon_aim 43/43 (NORMAL). A dropped Aim now stalls the weapon until the target is lost, as in the original. Limits: non-turret LOS callback 0x49d9c0, stockpile counts, host range test, RockUnit. See WEAPON_AIM.md.
+
 Order queue core: order_table.gd (67 entries built natively, sorted ids, static flags) and order_queue.gd port the order record 0x43a0c0, insert 0x43adc0 (clear except 0x4, idle strip, 0x1/0x2000, head/background push, 0x1000 marker insert), Shift toggle 0x43afc0 (+-0x100000 inclusive), patrol origin, factory counts, main dispatcher 0x43b7c0 return codes and background dispatcher 0x43bad0 - native 511,322/511,322 over 83,350 operations, 46 tests (NORMAL). Handlers, cursor selector 0x43f0e0 and world integration are next. See ORDER_QUEUE.md.
 
 Hover picking: hover_pick.gd ports the visible-list rebuild 0x48bae0, hover pick 0x48cd80 (rotated root-piece vertex box hit test 0x48c6a0, strict edges, int32 key, first-wins ties), minimap blip pick and blip positions 0x466dc0 - native 307,757/307,757, 44 tests (NORMAL), 5 mutations caught; audit was interrupted. Not yet wired into the viewer. See HOVER_PICK.md.
