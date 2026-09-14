@@ -1,0 +1,512 @@
+{
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "oracle": "tools/native_order_selector.py",
+  "comparator": "godot/compare_native_order_selector.gd",
+  "port": "godot/order_selector.gd",
+  "trace": "local/orders/native-order-selector.json (git-ignored)",
+  "select_cases": 16000,
+  "group_cases": 3000,
+  "group_operations": 20756,
+  "phases": {
+    "random_select": 12000,
+    "random_group": 2500,
+    "edge_select": 4000,
+    "edge_group": 500
+  },
+  "default_reply_sound": "0x0",
+  "nan_float_fields": 3502,
+  "branch_edges": {
+    "covered": 799,
+    "total": 810,
+    "uncovered_reachable": 0,
+    "per_routine": {
+      "0x438880": "2/2",
+      "0x43e470": "6/6",
+      "0x43e490": "262/264",
+      "0x43f0e0": "395/402",
+      "0x47f780": "8/8",
+      "0x489960": "6/6",
+      "0x4899b0": "18/18",
+      "0x489a90": "26/26",
+      "0x48cf30": "41/42",
+      "0x48d220": "35/36"
+    },
+    "uncovered": [
+      "0x43e490 0x43ea64 je taken -> 0x43ea7f: ally (esi) re-test; 0x43ea34 already passed",
+      "0x43e490 0x43edf4 je taken -> 0x43ee4f: hover (edi) re-test; 0x43edb8 already passed",
+      "0x43f0e0 0x43f23e jl fall -> 0x43f240: reached only from 0x43f219 fall-through, i.e. depth < sea",
+      "0x43f0e0 0x43f329 je taken -> 0x4401dc: 0x43f31b with a non-air target is reached only through 0x43f300 (hoverattack set)",
+      "0x43f0e0 0x43f592 je taken -> 0x43f6aa: pos was already dereferenced by 0x4815a0",
+      "0x43f0e0 0x43f61d je taken -> 0x43f6aa: pos was already dereferenced by 0x4815a0",
+      "0x43f0e0 0x43f91a je taken -> 0x43f959: ally (ebx) re-test; 0x43f8db already passed",
+      "0x43f0e0 0x43faae je taken -> 0x43faf5: ally (ebx) re-test; 0x43fa4f already passed",
+      "0x43f0e0 0x43fee2 je taken -> 0x43ff38: hover (edi) re-test; 0x43fe93 already passed",
+      "0x48cf30 0x48d064 ja taken -> 0x48d20c: n > 0 implies first <= last",
+      "0x48d220 0x48d3c8 je taken -> 0x48d3fe: a non-empty vector has begin != end"
+    ]
+  },
+  "coverage": {
+    "order_by_mode": {
+      "8": {
+        "0": 927,
+        "RepairUnit": 61,
+        "HelpBuild": 54,
+        "VTOL_RepairUnit": 28,
+        "VTOL_HelpBuild": 16
+      },
+      "10": {
+        "Stop": 604,
+        "0": 67
+      },
+      "12": {
+        "ReclaimUnit": 395,
+        "0": 1266,
+        "VTOL_ReclaimUnit": 175,
+        "Reclaim": 43,
+        "Resurrect": 70,
+        "VTOL_Reclaim": 53
+      },
+      "6": {
+        "0": 648,
+        "VTOL_Pickup": 11,
+        "Ground_Pickup": 3
+      },
+      "14": {
+        "0": 418,
+        "VTOL_MobileBuild": 114,
+        "MobileBuild": 123
+      },
+      "2": {
+        "0": 423,
+        "Move_Ground": 508,
+        "QMove": 272,
+        "VTOL_Move": 349,
+        "ReclaimUnit": 81,
+        "Follow_Ground": 107,
+        "HelpBuild": 15,
+        "Capture": 57,
+        "VTOL_ReclaimUnit": 72,
+        "Ground_Pickup": 5,
+        "VTOL_Follow": 87,
+        "VTOL_Landing": 11,
+        "VTOL_HelpBuild": 5,
+        "RepairUnit": 21,
+        "VTOL_RepairUnit": 9,
+        "VTOL_Pickup": 1
+      },
+      "255": {
+        "0": 140
+      },
+      "4": {
+        "0": 375,
+        "AttackSpecial": 489
+      },
+      "1": {
+        "0": 1033,
+        "VTOL_Move": 502,
+        "Move_Ground": 741,
+        "AirToGroundHover": 4,
+        "Attack_NoMove": 11,
+        "VTOL_HelpBuild": 13,
+        "Attack_Kamikaze": 36,
+        "VTOL_Follow": 46,
+        "Attack_Chase": 51,
+        "ReclaimUnit": 163,
+        "Ground_Pickup": 4,
+        "VTOL_ReclaimUnit": 101,
+        "AirStrike": 9,
+        "VTOL_Reclaim": 16,
+        "Reclaim": 27,
+        "Follow_Ground": 81,
+        "Resurrect": 76,
+        "HelpBuild": 21,
+        "RepairUnit": 16,
+        "AirToGround": 5,
+        "AirToAir": 14,
+        "VTOL_Landing": 5,
+        "VTOL_Pickup": 2,
+        "VTOL_RepairUnit": 4
+      },
+      "13": {
+        "Capture": 174,
+        "0": 497
+      },
+      "3": {
+        "Suppress": 140,
+        "Attack_Chase": 55,
+        "0": 656,
+        "AirStrike": 65,
+        "Attack_Kamikaze": 62,
+        "Attack_NoMove": 17,
+        "AirToGround": 66,
+        "AirToGroundHover": 12,
+        "AirToAir": 6
+      },
+      "9": {
+        "Patrol": 125,
+        "0": 152,
+        "QPatrol": 140,
+        "RepairPatrol": 117,
+        "VTOL_Patrol": 127,
+        "VTOL_RepairPatrol": 22
+      },
+      "5": {
+        "0": 355,
+        "VTOL_Unload": 144,
+        "Ground_Unload": 180,
+        "VTOL_Landing": 8
+      },
+      "515": {
+        "0": 81,
+        "Suppress": 21,
+        "AirStrike": 7,
+        "AirToGroundHover": 2,
+        "Attack_Kamikaze": 5,
+        "Attack_Chase": 6,
+        "AirToAir": 1,
+        "AirToGround": 4,
+        "Attack_NoMove": 3
+      },
+      "7": {
+        "0": 510,
+        "VTOL_Follow": 59,
+        "Follow_Ground": 104
+      },
+      "11": {
+        "Teleport": 563,
+        "0": 49
+      },
+      "15": {
+        "0": 126
+      },
+      "257": {
+        "0": 56,
+        "VTOL_Move": 17,
+        "Reclaim": 2,
+        "Follow_Ground": 7,
+        "Move_Ground": 24,
+        "VTOL_RepairUnit": 1,
+        "ReclaimUnit": 3,
+        "VTOL_ReclaimUnit": 2,
+        "Attack_Chase": 3,
+        "VTOL_Follow": 5,
+        "Resurrect": 2,
+        "HelpBuild": 2,
+        "Attack_NoMove": 3,
+        "AirToGroundHover": 1,
+        "RepairUnit": 2
+      },
+      "0": {
+        "0": 125
+      }
+    },
+    "cursor_by_mode": {
+      "8": {
+        "0x13": 898,
+        "0x6": 188
+      },
+      "10": {
+        "0x13": 671
+      },
+      "12": {
+        "0xb": 602,
+        "0x13": 1400
+      },
+      "6": {
+        "0x13": 646,
+        "0x8": 11,
+        "0xc": 5
+      },
+      "14": {
+        "0x10": 271,
+        "0x13": 384
+      },
+      "2": {
+        "0x13": 315,
+        "0xe": 1167,
+        "0x5": 211,
+        "0x6": 64,
+        "0x4": 60,
+        "0xc": 6,
+        "0xd": 23,
+        "0xb": 119,
+        "0xa": 57,
+        "0x8": 1
+      },
+      "255": {
+        "0x13": 140
+      },
+      "4": {
+        "0x13": 333,
+        "0x3": 398,
+        "0x1": 133
+      },
+      "1": {
+        "0x1": 142,
+        "0xe": 916,
+        "0x13": 864,
+        "0x11": 300,
+        "0xf": 154,
+        "0x12": 292,
+        "0x6": 24,
+        "0x2": 72,
+        "0x3": 23,
+        "0xb": 153,
+        "0xa": 41
+      },
+      "13": {
+        "0x4": 194,
+        "0x13": 477
+      },
+      "3": {
+        "0x1": 478,
+        "0x13": 304,
+        "0x2": 254,
+        "0x3": 43
+      },
+      "9": {
+        "0x7": 576,
+        "0x13": 107
+      },
+      "5": {
+        "0x13": 322,
+        "0xd": 365
+      },
+      "515": {
+        "0x1": 55,
+        "0x13": 46,
+        "0x2": 24,
+        "0x3": 5
+      },
+      "7": {
+        "0x13": 529,
+        "0x5": 144
+      },
+      "11": {
+        "0x9": 612
+      },
+      "15": {
+        "0x13": 126
+      },
+      "257": {
+        "0x11": 13,
+        "0xe": 35,
+        "0x13": 34,
+        "0xb": 5,
+        "0x12": 22,
+        "0xf": 2,
+        "0x1": 10,
+        "0xa": 3,
+        "0x2": 4,
+        "0x3": 2
+      },
+      "0": {
+        "0x13": 125
+      }
+    },
+    "classes": {
+      "random": 644,
+      "mobile_builder": 1471,
+      "factory": 892,
+      "teleporter": 607,
+      "air_transport": 1012,
+      "gunship": 784,
+      "static_defense": 730,
+      "kamikaze": 700,
+      "airbase": 648,
+      "ground_transport": 1065,
+      "resurrector": 846,
+      "hovercraft": 721,
+      "ground_combat": 995,
+      "commander": 1867,
+      "air_builder": 1302,
+      "fighter": 992,
+      "bomber": 724
+    },
+    "hover_kinds": {
+      "own": 3184,
+      "random": 1554,
+      "enemy": 4769,
+      "ally": 1522,
+      "none": 4971
+    },
+    "predicates_true": [
+      7161,
+      16819,
+      1033
+    ],
+    "predicates_false": [
+      67868,
+      53239,
+      69025
+    ],
+    "range_calls": 156,
+    "group_ops": {
+      "group": 9142,
+      "cursor_pos": 1309,
+      "hover": 1664,
+      "insert": 1569,
+      "select": 2200,
+      "ack": 2248,
+      "cursor": 2624
+    },
+    "group_issued_orders": 14061,
+    "formation_offsets": 3152,
+    "toggle_removals": 315,
+    "replies": 756,
+    "aggregate_results": {
+      "0x13": 1470,
+      "0xe": 220,
+      "0x1": 112,
+      "0x3": 32,
+      "0x5": 70,
+      "0x10": 63,
+      "0x7": 92,
+      "0x9": 81,
+      "0xd": 49,
+      "0x6": 22,
+      "0x4": 5,
+      "0x12": 42,
+      "0xb": 28,
+      "0x2": 24,
+      "0xf": 301,
+      "0x11": 12,
+      "0xc": 1
+    },
+    "sea_levels": {
+      "40": 3207,
+      "128": 3163,
+      "20": 3186,
+      "0": 6277,
+      "255": 3167
+    },
+    "interfaces": {
+      "0": 6003,
+      "257": 2471,
+      "2": 3543,
+      "1": 6983
+    },
+    "pos_null": 1224,
+    "dead_hover_zero": 1286,
+    "group_ops_without_recipient": 4579,
+    "group_modes": {
+      "0": 1319,
+      "7": 391,
+      "6": 358,
+      "2": 734,
+      "8": 692,
+      "1": 1043,
+      "4": 412,
+      "9": 800,
+      "3": 768,
+      "13": 362,
+      "14": 418,
+      "12": 730,
+      "5": 400,
+      "10": 346,
+      "11": 369
+    },
+    "formation_unchanged": 1334,
+    "hover_target_passed": 4725,
+    "type_high_bytes": 676,
+    "group_types": {
+      "HelpBuild": 267,
+      "VTOL_Move": 1280,
+      "Move_Ground": 1775,
+      "AttackSpecial": 158,
+      "QMove": 433,
+      "RepairPatrol": 564,
+      "QPatrol": 401,
+      "VTOL_Patrol": 632,
+      "Wait": 169,
+      "Suppress": 488,
+      "Attack_Kamikaze": 140,
+      "Patrol": 674,
+      "VTOL_RepairPatrol": 263,
+      "Ground_Unload": 253,
+      "Cloak_Off": 184,
+      "VTOL_RepairUnit": 32,
+      "Stop": 1337,
+      "Teleport": 1125,
+      "WaitForAttack": 146,
+      "AirToGround": 141,
+      "RepairUnit": 188,
+      "Follow_Ground": 591,
+      "VTOL_Follow": 355,
+      "VTOL_MobileBuild": 237,
+      "Attack_Chase": 131,
+      "ReclaimUnit": 423,
+      "Attack_NoMove": 16,
+      "Deactivate": 82,
+      "Capture": 37,
+      "SelfDestruct": 116,
+      "AirStrike": 127,
+      "Ground_Pickup": 102,
+      "VTOL_HelpBuild": 36,
+      "VTOL_Unload": 100,
+      "MobileBuild": 337,
+      "VTOL_ReclaimUnit": 95,
+      "Reclaim": 131,
+      "Standing_MoveOrder": 53,
+      "Cloak_On": 145,
+      "Standby": 135,
+      "VTOL_Landing": 42,
+      "Standing_FireOrder": 44,
+      "Paralyze": 5,
+      "VTOL_Pickup": 7,
+      "VTOL_SeekAttack": 5,
+      "AirToGroundHover": 9,
+      "AirToAir": 4,
+      "MakeSelectable": 12,
+      "BeCarried": 4,
+      "VTOL_Standby": 2,
+      "RepairUnitNoMove": 14,
+      "Standby_Mine": 3,
+      "VTOL_Reclaim": 2,
+      "Resurrect": 5,
+      "AttackUType": 1,
+      "VTOL_SeekGuard": 2,
+      "VTOL_LandIfCan": 1
+    }
+  },
+  "stubs": {
+    "0x49abb0": "unit range test (stdcall ret 0xc): per-unit recorded answer, call recorded",
+    "0x49aa80": "position range test (stdcall ret 0x10): per-unit recorded answer, call recorded (origin asserted == unit+0x6a)",
+    "0x47fad0": "unit reply priority queue (thiscall ret 0xc): recorded (unit, reply index, sound name), not executed",
+    "0x4b4f10/0x4b4f20": "operator new/delete: bump allocator, 0x56-byte orders get sequential ids; delete records order ids",
+    "0x489800": "clear weapon targets: recorded only",
+    "0x48a0f0": "aim reset: recorded only (never reached)",
+    "order handlers": "redirected to the queue oracle stub; never called by these routines"
+  },
+  "unmodified": [
+    "0x43f0e0",
+    "0x43e490",
+    "0x4899b0",
+    "0x489960",
+    "0x489a90",
+    "0x4815a0",
+    "0x438760",
+    "0x4f8a70",
+    "0x438830",
+    "0x43e470",
+    "0x48d220",
+    "0x40c9f0",
+    "0x48ddc0",
+    "0x480100",
+    "0x406c00",
+    "0x48cf30",
+    "0x4e43a0",
+    "0x4e4400",
+    "0x4e43d0",
+    "0x43afc0",
+    "0x43adc0",
+    "0x43a0c0",
+    "0x4895c0",
+    "0x43a1f0",
+    "0x438880",
+    "0x47f780",
+    "0x4c5740",
+    "0x403180/0x406bf0/0x415b20/0x43bc90 order table build"
+  ],
+  "scope": "Select cases: one unit (17 class templates with random flag flips), hover none/own/ally/enemy/random with its own definition, a transporter and cargo chains (members with and without the matching +0x86), 2-4 players with random alliance bytes and occasionally duplicated +0x146 indices, seen bitmap dims 0/1/4/8/16/0x80000000, feature grids 4..16 cells with direct, back-linked (0xfffe), reserved and out-of-count occupants, sea level 0..255, interface 0/1/2/0x101, modes 0..15 plus 0x101/0x203/0xff, null pos outside modes 1 and 12, float fields including -0.0 and 1e-7; direct predicate calls for five unit pairs. Group cases: 1-16 local units in the player range (occasionally an empty range), selection bits, hover of own/other units, 3-10 operations of group issue (mode 0 with types incl. high bytes, modes 1-14, shift, null/cursor/offset positions, p5/p6), cursor aggregation (UI mode byte equal or different), acknowledgement passes over every queued order, selection flips, hover and cursor moves, and direct 0x43adc0 inserts with idle/protected flags. Edge phases (added by the branch-coverage audit): feature lookups in every resurrect/reclaim path of both interfaces, cursors outside the map inside the seen bitmap, null positions in modes 1/2 that do not reach 0x4815a0, carried selectable hovers, NaN float fields (build, resources, D-gun cost), and 0x48d220 with only the carried selectable hover selected. Excluded: null pos into 0x4815a0 (crashes), handler bodies, the real range tests and reply queue, save/load."
+}

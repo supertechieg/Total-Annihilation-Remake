@@ -164,6 +164,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Core projection failed' }
     & $godotPath --headless --path godot --script res://test_weapon_aim.gd
     if ($LASTEXITCODE -ne 0) { throw 'Weapon aim tests failed' }
+    & $godotPath --headless --path godot --script res://test_order_selector.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Order selector tests failed' }
     & $godotPath --headless --path godot --script res://test_order_queue.gd
     if ($LASTEXITCODE -ne 0) { throw 'Order queue tests failed' }
     & $godotPath --headless --path godot --script res://test_hover_pick.gd
@@ -508,6 +510,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Native order queue failed' }
         & $godotPath --headless --path godot --script res://compare_native_order_queue.gd
         if ($LASTEXITCODE -ne 0) { throw 'Order queue native comparison failed' }
+        python tools\native_order_selector.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native order selector failed' }
+        & $godotPath --headless --path godot --script res://compare_native_order_selector.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Order selector native comparison failed' }
         python tools\native_weapon_aim.py
         if ($LASTEXITCODE -ne 0) { throw 'Native weapon aim failed' }
         & $godotPath --headless --path godot --script res://compare_native_weapon_aim.gd
