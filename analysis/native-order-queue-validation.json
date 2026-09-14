@@ -1,0 +1,711 @@
+{
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "oracle": "tools/native_order_queue.py",
+  "comparator": "godot/compare_native_order_queue.gd",
+  "trace": "local/orders/native-order-queue.json and local/orders/order-table.json (git-ignored)",
+  "order_table": {
+    "entries": 67,
+    "static_parse_matches_native_build": true,
+    "table": [
+      {
+        "id": 0,
+        "name": "Activate",
+        "handler": "0x403010",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x10060"
+      },
+      {
+        "id": 1,
+        "name": "AirStrike",
+        "handler": "0x411f50",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 2,
+        "flags": "0x600"
+      },
+      {
+        "id": 2,
+        "name": "AirToAir",
+        "handler": "0x412d40",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 1,
+        "flags": "0x200"
+      },
+      {
+        "id": 3,
+        "name": "AirToGround",
+        "handler": "0x412710",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 1,
+        "flags": "0x200"
+      },
+      {
+        "id": 4,
+        "name": "AirToGroundHover",
+        "handler": "0x413470",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 1,
+        "flags": "0x200"
+      },
+      {
+        "id": 5,
+        "name": "Attack_Chase",
+        "handler": "0x4034a0",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 1,
+        "flags": "0x280"
+      },
+      {
+        "id": 6,
+        "name": "Attack_Kamikaze",
+        "handler": "0x403260",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 1,
+        "flags": "0x600"
+      },
+      {
+        "id": 7,
+        "name": "Attack_NoMove",
+        "handler": "0x402160",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 1,
+        "flags": "0x280"
+      },
+      {
+        "id": 8,
+        "name": "AttackSpecial",
+        "handler": "0x403190",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 1,
+        "flags": "0x680"
+      },
+      {
+        "id": 9,
+        "name": "AttackUType",
+        "handler": "0x401e00",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x4"
+      },
+      {
+        "id": 10,
+        "name": "BeCarried",
+        "handler": "0x402fc0",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x24"
+      },
+      {
+        "id": 11,
+        "name": "BuildingBuild",
+        "handler": "0x402640",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x10010c"
+      },
+      {
+        "id": 12,
+        "name": "BuildWeapon",
+        "handler": "0x402b70",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0xc0140"
+      },
+      {
+        "id": 13,
+        "name": "Capture",
+        "handler": "0x404270",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 4,
+        "flags": "0x200"
+      },
+      {
+        "id": 14,
+        "name": "Cloak_Off",
+        "handler": "0x4030a0",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x10060"
+      },
+      {
+        "id": 15,
+        "name": "Cloak_On",
+        "handler": "0x403070",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x10060"
+      },
+      {
+        "id": 16,
+        "name": "Deactivate",
+        "handler": "0x403040",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x10060"
+      },
+      {
+        "id": 17,
+        "name": "Follow_Ground",
+        "handler": "0x406300",
+        "draw": "0x4394e0",
+        "draw_mask": 18,
+        "icon": 5,
+        "flags": "0x200"
+      },
+      {
+        "id": 18,
+        "name": "GetBuilt",
+        "handler": "0x402da0",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x224"
+      },
+      {
+        "id": 19,
+        "name": "Ground_Pickup",
+        "handler": "0x406780",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 12,
+        "flags": "0x200"
+      },
+      {
+        "id": 20,
+        "name": "Ground_Unload",
+        "handler": "0x406900",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 13,
+        "flags": "0x400"
+      },
+      {
+        "id": 21,
+        "name": "Guard_NoMove",
+        "handler": "0x4021f0",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x20"
+      },
+      {
+        "id": 22,
+        "name": "HelpBuild",
+        "handler": "0x403f70",
+        "draw": "0x439740",
+        "draw_mask": 24,
+        "icon": 6,
+        "flags": "0x100208"
+      },
+      {
+        "id": 23,
+        "name": "MakeSelectable",
+        "handler": "0x401cc0",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x4"
+      },
+      {
+        "id": 24,
+        "name": "MobileBuild",
+        "handler": "0x403a20",
+        "draw": "0x438c00",
+        "draw_mask": 19,
+        "icon": 0,
+        "flags": "0x100508"
+      },
+      {
+        "id": 25,
+        "name": "Move_Ground",
+        "handler": "0x4031d0",
+        "draw": "0x4394e0",
+        "draw_mask": 18,
+        "icon": 14,
+        "flags": "0x402"
+      },
+      {
+        "id": 26,
+        "name": "Paralyze",
+        "handler": "0x402d10",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x24"
+      },
+      {
+        "id": 27,
+        "name": "Park",
+        "handler": "0x4061a0",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 14,
+        "flags": "0x0"
+      },
+      {
+        "id": 28,
+        "name": "Patrol",
+        "handler": "0x4033a0",
+        "draw": "0x4394e0",
+        "draw_mask": 18,
+        "icon": 7,
+        "flags": "0x412"
+      },
+      {
+        "id": 29,
+        "name": "QMove",
+        "handler": "0x403160",
+        "draw": "0x4394e0",
+        "draw_mask": 2,
+        "icon": 14,
+        "flags": "0x400"
+      },
+      {
+        "id": 30,
+        "name": "QPatrol",
+        "handler": "0x403160",
+        "draw": "0x4394e0",
+        "draw_mask": 2,
+        "icon": 7,
+        "flags": "0x400"
+      },
+      {
+        "id": 31,
+        "name": "Reclaim",
+        "handler": "0x404ad0",
+        "draw": "0x4394e0",
+        "draw_mask": 18,
+        "icon": 11,
+        "flags": "0x100800"
+      },
+      {
+        "id": 32,
+        "name": "ReclaimUnit",
+        "handler": "0x404730",
+        "draw": "0x4394e0",
+        "draw_mask": 18,
+        "icon": 11,
+        "flags": "0x100200"
+      },
+      {
+        "id": 33,
+        "name": "RepairPatrol",
+        "handler": "0x405980",
+        "draw": "0x4394e0",
+        "draw_mask": 18,
+        "icon": 7,
+        "flags": "0x412"
+      },
+      {
+        "id": 34,
+        "name": "RepairUnit",
+        "handler": "0x405300",
+        "draw": "0x4394e0",
+        "draw_mask": 18,
+        "icon": 6,
+        "flags": "0x100200"
+      },
+      {
+        "id": 35,
+        "name": "RepairUnitNoMove",
+        "handler": "0x405740",
+        "draw": "0x439740",
+        "draw_mask": 24,
+        "icon": 6,
+        "flags": "0x200"
+      },
+      {
+        "id": 36,
+        "name": "Resurrect",
+        "handler": "0x404db0",
+        "draw": "0x4394e0",
+        "draw_mask": 18,
+        "icon": 11,
+        "flags": "0x200"
+      },
+      {
+        "id": 37,
+        "name": "SelfDestruct",
+        "handler": "0x402010",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x40040"
+      },
+      {
+        "id": 38,
+        "name": "SelfDestructFG",
+        "handler": "0x402010",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x0"
+      },
+      {
+        "id": 39,
+        "name": "SelfRepair",
+        "handler": "0x402430",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x1000204"
+      },
+      {
+        "id": 40,
+        "name": "Standby",
+        "handler": "0x405fe0",
+        "draw": "0x0",
+        "draw_mask": 16,
+        "icon": 15,
+        "flags": "0x20000"
+      },
+      {
+        "id": 41,
+        "name": "Standby_Mine",
+        "handler": "0x406090",
+        "draw": "0x0",
+        "draw_mask": 16,
+        "icon": 15,
+        "flags": "0x1020000"
+      },
+      {
+        "id": 42,
+        "name": "Standing_FireOrder",
+        "handler": "0x403100",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x10060"
+      },
+      {
+        "id": 43,
+        "name": "Standing_MoveOrder",
+        "handler": "0x4030d0",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x10060"
+      },
+      {
+        "id": 44,
+        "name": "Stop",
+        "handler": "0x401c20",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x0"
+      },
+      {
+        "id": 45,
+        "name": "Suppress",
+        "handler": "0x4038a0",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 1,
+        "flags": "0x410"
+      },
+      {
+        "id": 46,
+        "name": "Teleport",
+        "handler": "0x406aa0",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 9,
+        "flags": "0x600"
+      },
+      {
+        "id": 47,
+        "name": "VTOL_Evade",
+        "handler": "0x413bc0",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x0"
+      },
+      {
+        "id": 48,
+        "name": "VTOL_Follow",
+        "handler": "0x40fbe0",
+        "draw": "0x4394e0",
+        "draw_mask": 2,
+        "icon": 5,
+        "flags": "0x200"
+      },
+      {
+        "id": 49,
+        "name": "VTOL_GetRepaired",
+        "handler": "0x415250",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x200"
+      },
+      {
+        "id": 50,
+        "name": "VTOL_HelpBuild",
+        "handler": "0x414380",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 6,
+        "flags": "0x100208"
+      },
+      {
+        "id": 51,
+        "name": "VTOL_LandIfCan",
+        "handler": "0x40f2a0",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x400"
+      },
+      {
+        "id": 52,
+        "name": "VTOL_Landing",
+        "handler": "0x4118e0",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 14,
+        "flags": "0x600"
+      },
+      {
+        "id": 53,
+        "name": "VTOL_MobileBuild",
+        "handler": "0x413d80",
+        "draw": "0x438c00",
+        "draw_mask": 3,
+        "icon": 0,
+        "flags": "0x100508"
+      },
+      {
+        "id": 54,
+        "name": "VTOL_Move",
+        "handler": "0x40fa20",
+        "draw": "0x4394e0",
+        "draw_mask": 2,
+        "icon": 14,
+        "flags": "0x402"
+      },
+      {
+        "id": 55,
+        "name": "VTOL_Patrol",
+        "handler": "0x410e70",
+        "draw": "0x4394e0",
+        "draw_mask": 2,
+        "icon": 7,
+        "flags": "0x412"
+      },
+      {
+        "id": 56,
+        "name": "VTOL_Pickup",
+        "handler": "0x4111b0",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 8,
+        "flags": "0x200"
+      },
+      {
+        "id": 57,
+        "name": "VTOL_Reclaim",
+        "handler": "0x414770",
+        "draw": "0x4394e0",
+        "draw_mask": 2,
+        "icon": 11,
+        "flags": "0x100800"
+      },
+      {
+        "id": 58,
+        "name": "VTOL_ReclaimUnit",
+        "handler": "0x414a80",
+        "draw": "0x4394e0",
+        "draw_mask": 2,
+        "icon": 11,
+        "flags": "0x100200"
+      },
+      {
+        "id": 59,
+        "name": "VTOL_RepairPatrol",
+        "handler": "0x4152f0",
+        "draw": "0x4394e0",
+        "draw_mask": 2,
+        "icon": 7,
+        "flags": "0x412"
+      },
+      {
+        "id": 60,
+        "name": "VTOL_RepairUnit",
+        "handler": "0x414e70",
+        "draw": "0x4394e0",
+        "draw_mask": 2,
+        "icon": 6,
+        "flags": "0x100200"
+      },
+      {
+        "id": 61,
+        "name": "VTOL_SeekAttack",
+        "handler": "0x4103e0",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x600"
+      },
+      {
+        "id": 62,
+        "name": "VTOL_SeekGuard",
+        "handler": "0x410850",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x600"
+      },
+      {
+        "id": 63,
+        "name": "VTOL_Standby",
+        "handler": "0x40f7d0",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 15,
+        "flags": "0x20000"
+      },
+      {
+        "id": 64,
+        "name": "VTOL_Unload",
+        "handler": "0x411560",
+        "draw": "0x439740",
+        "draw_mask": 8,
+        "icon": 9,
+        "flags": "0x400"
+      },
+      {
+        "id": 65,
+        "name": "Wait",
+        "handler": "0x401ce0",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x4"
+      },
+      {
+        "id": 66,
+        "name": "WaitForAttack",
+        "handler": "0x401fd0",
+        "draw": "0x0",
+        "draw_mask": 0,
+        "icon": 19,
+        "flags": "0x204"
+      }
+    ]
+  },
+  "sequences": 1500,
+  "operations": 83350,
+  "operations_by_kind": {
+    "issue": 18603,
+    "dispatch": 14710,
+    "append": 1389,
+    "insert": 18376,
+    "factory": 3785,
+    "rotate": 1509,
+    "find": 1706,
+    "dispatch_bg": 8326,
+    "remove": 2206,
+    "push_front_inherit": 1368,
+    "post_order": 2632,
+    "post_unit": 2331,
+    "clear": 1861,
+    "patrol_append": 2296,
+    "count": 805,
+    "marker_insert": 1447
+  },
+  "handler_codes": {
+    "8": 1335,
+    "9": 1589,
+    "1": 2271,
+    "5": 3914,
+    "7": 894,
+    "4": 1642,
+    "3": 3035,
+    "2147483647": 264,
+    "10": 284,
+    "6": 1432,
+    "2": 2850,
+    "0": 2197,
+    "11": 310
+  },
+  "events": {
+    "destroy": 38184,
+    "clear_weapons": 12540,
+    "free": 38184,
+    "call.main": 18884,
+    "destroy_cb": 3129,
+    "rand": 3402,
+    "call.bg": 3133,
+    "stop_building": 1135,
+    "aim_reset": 300
+  },
+  "coverage": {
+    "toggle_removals": 1504,
+    "head_idle_strips": 1382,
+    "marker_mid_inserts": 9841,
+    "destroys_with_0x10000": 25644,
+    "destroys_without_0x10000": 12540,
+    "idle_orders_created": 1239,
+    "code9_timer_branch": 367,
+    "code9_remove_branch": 989,
+    "background_flag_orders_in_main": 565,
+    "wrap_sequences": 383,
+    "dead_target_orders": 7951,
+    "protected_survivors": 8897
+  },
+  "max_main_length": 25,
+  "max_bg_length": 13,
+  "stubs": {
+    "0x4b4f10": "operator new -> bump allocator, sequential order ids",
+    "0x4b4f20": "operator delete -> no-op, records freed order id",
+    "table +4 handlers": "redirected after the table dump to one scripted stub (records call; ORs mask/pending/flags, optional wake=tick+d, optional ORIGINAL 0x43a0c0+0x43acb0 push via x86 thunk, returns code)",
+    "0x43a227..0x43a25d": "StopBuilding COB call + 0x456190 skipped, recorded",
+    "0x489800": "clear weapon targets, recorded only",
+    "0x48a0f0": "aim reset, recorded only",
+    "unit+0": "movement object null -> destroy goal cancel block not taken (goal stays 0)"
+  },
+  "unmodified": [
+    "0x43a0c0",
+    "0x4895c0",
+    "0x489690",
+    "0x489650",
+    "0x43a1f0 (except StopBuilding block)",
+    "0x43adc0",
+    "0x43afc0",
+    "0x43b7c0",
+    "0x43bad0",
+    "0x439f80",
+    "0x439eb0",
+    "0x439fe0",
+    "0x43a020",
+    "0x439e30",
+    "0x439d80",
+    "0x43b0b0",
+    "0x43ac60",
+    "0x43acb0",
+    "0x43ad10",
+    "0x43ad50",
+    "0x4b6c30",
+    "0x403180/0x406bf0/0x415b20/0x43bc90 table build and sort"
+  ],
+  "scope": "One owner unit; 6 target units (id 6 dead, +0xa6 == 0); ticks from 0, mid-range, near 0x7fffffff and near 0xffffffff (unsigned wake compare, u32 wrap); controller byte 0-3, player[0] zero/non-zero, default mission types incl. a background type; positions from anchors, queued orders (toggle hits), the origin, +-0x100000 edges and int32 wrap-around; all 67 types with bias to flag-rich types. Handler stubs force code 3 after 8 calls in one operation and code 7/6 after 16 (tick-wrap livelock). Excluded: handler bodies, group issue 0x48cf30, cursor selector 0x43f0e0, save/load 0x43a420/0x43a970, goal objects, unit-death reference notification, 0x43ac60 with a non-head successor."
+}
