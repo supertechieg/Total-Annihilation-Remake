@@ -24,7 +24,9 @@ const WeaponQueries = preload("res://weapon_queries.gd")
 const PieceOrigin = preload("res://piece_origin.gd")
 const BallisticLaunch = preload("res://ballistic_launch.gd")
 var collision: RefCounted
-const SCRIPTED_UNITS = ["armtide", "armwin", "armmex", "armmakr", "armsolar", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv", "corraid"]
+# Both faction resource buildings share the healthy Create/Activate/Deactivate lifecycle validated by compare_native_solar.
+const RESOURCE_BUILDINGS := ["armsolar", "armmakr", "armmex", "armwin", "armtide", "corsolar", "cormakr", "cormex", "corwin", "cortide"]
+const SCRIPTED_UNITS = ["armtide", "armwin", "armmex", "armmakr", "armsolar", "corsolar", "cormakr", "cormex", "corwin", "cortide", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv", "corraid"]
 var mobile_units: Dictionary = {}
 var navigation_cache: Dictionary = {}
 var yard_signature := ""
@@ -73,14 +75,14 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 	if type in SCRIPTED_UNITS:
 		var vm = VM.new(catalog.load_script(type))
 		vm.read_values = {4: 100, 17: ceili(remaining * 100)}
-		if type in ["armsolar", "armmakr", "armmex", "armwin", "armtide"]:
+		if type in RESOURCE_BUILDINGS:
 			vm.writable_values.assign([1, 5, 20])
 		elif type in ["armvp", "armlab"]:
 			vm.writable_values.assign([5, 18, 19])
 			vm.readback_values.assign([18])
 			factories[id] = {"queue": [], "product": 0, "opening": false, "status": "Idle"}
 		vm.invoke("Create")
-		if remaining == 0 and type in ["armsolar", "armmakr", "armmex", "armwin", "armtide"]:
+		if remaining == 0 and type in RESOURCE_BUILDINGS:
 			vm.invoke("Activate")
 		scripts[id] = vm
 		if not str(definition.get("weapon1", "")).is_empty():
@@ -97,7 +99,7 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 	return id
 
 func set_active(id: int, active: bool) -> bool:
-	if not scripts.has(id) or units[id].type not in ["armsolar", "armmakr", "armmex", "armwin", "armtide"] or float(units[id].remaining) > 0:
+	if not scripts.has(id) or units[id].type not in RESOURCE_BUILDINGS or float(units[id].remaining) > 0:
 		return false
 	if bool(units[id].active) != active:
 		units[id].active = active
@@ -427,7 +429,7 @@ func advance_construction(target_id: int, source_id: int) -> bool:
 		if float(unit.remaining) == 0:
 			if scripts.has(target_id):
 				scripts[target_id].read_values[17] = 0
-				if unit.type in ["armsolar", "armmakr", "armmex", "armwin", "armtide"]:
+				if unit.type in RESOURCE_BUILDINGS:
 					scripts[target_id].invoke("Activate")
 			completed.append(target_id)
 			status = "Construction complete"

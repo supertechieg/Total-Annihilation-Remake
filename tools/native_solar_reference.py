@@ -26,13 +26,17 @@ class SolarReference(NativeReference):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--unit', choices=['armsolar', 'armmakr', 'armmex', 'armwin', 'armtide'], default='armsolar')
+    parser.add_argument('--unit', choices=['armsolar', 'armmakr', 'armmex', 'armwin', 'armtide',
+                                           'corsolar', 'cormakr', 'cormex', 'corwin', 'cortide'], default='armsolar')
     unit = parser.parse_args().unit
     from native_factory_reference import FactoryReference
-    reference = FactoryReference if unit != 'armsolar' else SolarReference
+    # Arm solar Create uses none of the CACHE/SHADE vtable slots; every other resource script does, so it needs FactoryReference stubs.
+    reference = SolarReference if unit == 'armsolar' else FactoryReference
     native = reference(Path('local/original/TotalA.exe').read_bytes(), Path(f'local/unit-assets/{unit}/script.cob').read_bytes())
     events = {0: 'Create', 31: 'Activate', 180: 'Deactivate', 190: 'Activate', 350: 'Deactivate', 440: 'Activate'}
     snapshots = []
+    extractor_units = ('armmex', 'cormex')
+    wind_units = ('armwin', 'corwin')
     for tick in range(601):
         if tick == 30:
             native.read_values[17] = 0
@@ -42,15 +46,19 @@ def main():
         if tick in events:
             native.invoke(events[tick], [])
             snapshots.append(dict(tick=tick, action=events[tick], state=native.snapshot()))
-        if unit == 'armmex' and tick in [1, 200, 400]:
+        if unit in extractor_units and tick in [1, 200, 400]:
             args = [{1: 4, 200: 896, 400: 452}[tick]]
             native.invoke('SetSpeed', args)
             snapshots.append(dict(tick=tick, action='SetSpeed', args=args, state=native.snapshot()))
-        if unit == 'armwin' and tick in [1, 200, 400]:
+        if unit in wind_units and tick in [1, 200, 400]:
             for name, value in [('SetDirection', {1: 0, 200: 16384, 400: 49152}[tick]), ('SetSpeed', {1: 1600, 200: 32000, 400: 0}[tick])]:
                 native.invoke(name, [value])
                 snapshots.append(dict(tick=tick, action=name, args=[value], state=native.snapshot()))
-    folder = Path({'armsolar': 'local/solar', 'armmakr': 'local/metal-maker', 'armmex': 'local/extractor', 'armwin': 'local/wind-generator', 'armtide': 'local/tidal-generator'}[unit])
+    folders = {'armsolar': 'local/solar', 'armmakr': 'local/metal-maker', 'armmex': 'local/extractor',
+               'armwin': 'local/wind-generator', 'armtide': 'local/tidal-generator',
+               'corsolar': 'local/core-solar', 'cormakr': 'local/core-metal-maker', 'cormex': 'local/core-extractor',
+               'corwin': 'local/core-wind-generator', 'cortide': 'local/core-tidal-generator'}
+    folder = Path(folders[unit])
     folder.mkdir(exist_ok=True)
     (folder / 'native-trace.json').write_text(json.dumps(dict(exe_sha256=EXE_HASH, snapshots=snapshots)), encoding='utf-8')
     print(f'NATIVE_SOLAR_REFERENCE {len(snapshots)} snapshots')

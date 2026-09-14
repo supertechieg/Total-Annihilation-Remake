@@ -22,6 +22,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Opponent extractor expansion failed' }
     & $godotPath --headless --path godot --script res://test_live_extractor.gd
     if ($LASTEXITCODE -ne 0) { throw 'Live extractor checks failed' }
+    & $godotPath --headless --path godot --quit-after 2 --script res://test_live_core_resources.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Live Core resource building checks failed' }
     & $godotPath --headless --path godot --script res://test_weapon_effects.gd
     if ($LASTEXITCODE -ne 0) { throw 'Weapon effect checks failed; prepare effects with tools/prepare_weapon_effects.py' }
     & $godotPath --headless --path godot --script res://test_weapon_audio.gd
@@ -373,6 +375,12 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original solar reference run failed' }
         & $godotPath --headless --path godot --script res://compare_native_solar.gd
         if ($LASTEXITCODE -ne 0) { throw 'Solar script differs from original interpreter' }
+        foreach ($coreResource in @('corsolar', 'cormakr', 'cormex', 'corwin', 'cortide')) {
+            python tools\native_solar_reference.py --unit $coreResource
+            if ($LASTEXITCODE -ne 0) { throw "Original $coreResource reference failed" }
+            & $godotPath --headless --path godot --script res://compare_native_solar.gd -- "--$coreResource"
+            if ($LASTEXITCODE -ne 0) { throw "$coreResource script differs from original interpreter" }
+        }
         python tools\native_cob_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original interpreter reference run failed' }
         & $godotPath --headless --path godot --script res://compare_native_cob.gd
