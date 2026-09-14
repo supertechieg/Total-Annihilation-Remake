@@ -16,10 +16,11 @@ func _initialize() -> void:
 	var heights := PackedByteArray()
 	heights.resize(64 * 64)
 	heights.fill(0)
-	for type: String in ["armvp", "armlab"]:
-		var world = World.new(catalog, Navigation.new(64, 64, heights), Vector2(512, 512))
+	var products := {"armvp": "armflash", "armlab": "armpw", "corvp": "corraid", "corlab": "corak"}
+	for type: String in products:
+		var world = World.new(catalog, Navigation.new(64, 64, heights), Vector2(512, 512), "corcom" if type.begins_with("cor") else "armcom")
 		var id: int = world.add_unit(type, Vector2(640, 512), 1.0)
-		var product_type := "armflash" if type == "armvp" else "armpw"
+		var product_type: String = products[type]
 		check(not world.queue_unit(id, product_type), type + " rejects orders before completion")
 		world.units[id].remaining = 0.0
 		world.units[id].health = int(catalog.definition(type).maxdamage)
@@ -54,6 +55,8 @@ func _initialize() -> void:
 				break
 		var next_product: int = world.factories[id].product
 		check(next_product != product and next_product > 0, type + " begins next item only after pad clears")
+		# Commander income settles before allocation and can pay a small request, so isolate the factory.
+		world.remove_unit(world.builder_id)
 		for tick in range(60):
 			world.energy = 0
 			world.metal = 0
@@ -64,9 +67,9 @@ func _initialize() -> void:
 		world.queue_unit(id, product_type)
 		world.clear_factory_queue(id)
 		check(world.factories[id].queue.is_empty() and world.factories[id].product == next_product, type + " clear pending queue retains current product")
-		world.energy = 1000.0
-		world.metal = 1000.0
 		for tick in range(1200):
+			world.energy = 1000.0
+			world.metal = 1000.0
 			world.step()
 		check(world.units[next_product].remaining == 0.0, type + " resumes after resource recovery")
 		for tick in range(300):
@@ -77,5 +80,8 @@ func _initialize() -> void:
 		for tick in range(200):
 			world.step()
 		check(world.factories[id].product == 0 and world.factories[id].queue.size() == 1, type + " capacity stalls without losing queue")
+	var core = World.new(catalog, Navigation.new(64, 64, heights), Vector2(512, 512), "corcom")
+	check(core.placement_error("corllt", Vector2(512, 592)) == "Not yet verified for Core", "unverified Core menu entry is not placeable")
+	check(World.supported("corlab") and not World.supported("corllt") and World.supported("armllt"), "Core gate covers only unverified Core types")
 	print("FACTORY_WORLD %d / %d checks pass" % [checks - failures, checks])
 	quit(0 if failures == 0 else 1)

@@ -1,4 +1,4 @@
-"""Healthy script playback for all original level-one Arm ground factory products."""
+"""Healthy script playback for all original level-one Arm and Core ground factory products."""
 import json
 from pathlib import Path
 from native_factory_reference import FactoryReference
@@ -8,7 +8,7 @@ from native_cob_reference import EXE_HASH
 def main():
     root = Path('local/unit-assets')
     index = json.loads((root / 'index.json').read_text())
-    units = index['build_menus']['armlab'] + index['build_menus']['armvp']
+    units = [unit for factory in ['armlab', 'armvp', 'corlab', 'corvp'] for unit in index['build_menus'][factory]]
     folder = Path('local/mobile-scripts')
     folder.mkdir(exist_ok=True)
     executable = Path('local/original/TotalA.exe').read_bytes()

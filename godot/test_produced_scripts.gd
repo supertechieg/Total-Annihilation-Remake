@@ -16,9 +16,9 @@ func _initialize() -> void:
 	var heights := PackedByteArray()
 	heights.resize(64 * 64)
 	heights.fill(0)
-	for factory_type: String in ["armvp", "armlab"]:
+	for factory_type: String in World.GROUND_FACTORIES:
 		for type: String in catalog.build_options(factory_type):
-			var world = World.new(catalog, Navigation.new(64, 64, heights), Vector2(512, 512))
+			var world = World.new(catalog, Navigation.new(64, 64, heights), Vector2(512, 512), "corcom" if factory_type.begins_with("cor") else "armcom")
 			var factory: int = world.add_unit(factory_type, Vector2(640, 512), 0.0)
 			world.queue_unit(factory, type)
 			for tick in range(5000):

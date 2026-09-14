@@ -7,7 +7,7 @@ func _initialize() -> void:
 	var total := 0
 	var differences: Array = []
 	var executable_hash := ""
-	for unit: String in ["armvp", "armlab", "spin0", "spin1", "spin2", "spin3", "spin4", "spin5"]:
+	for unit: String in ["armvp", "armlab", "corvp", "corlab", "spin0", "spin1", "spin2", "spin3", "spin4", "spin5"]:
 		var trace: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(folder.path_join("factory/%s-trace.json" % unit)))
 		if trace.has("exe_sha256"):
 			executable_hash = trace.exe_sha256
@@ -36,7 +36,7 @@ func _initialize() -> void:
 				if differences.size() < 3:
 					differences.append({"unit": unit, "tick": item.tick, "action": item.action, "fault": vm.fault, "actual": actual, "expected": item.state})
 	var report := {"snapshots": total, "mismatches": failures, "exe_sha256": executable_hash,
-		"scope": "Original Arm vehicle plant and Kbot lab healthy script playback with immediate clear-yard acknowledgements, plus six synthetic spin cases; not world production timing", "differences": differences}
+		"scope": "Original Arm and Core vehicle plant and Kbot lab healthy script playback with immediate clear-yard acknowledgements, plus six synthetic spin cases; not world production timing, combat or Core aircraft/naval/advanced factory", "differences": differences}
 	FileAccess.open(folder.path_join("factory/native-comparison.json"), FileAccess.WRITE).store_string(JSON.stringify(report, "  "))
 	print("NATIVE_FACTORY_COMPARISON %d / %d snapshots match" % [total - failures, total])
 	quit(0 if failures == 0 else 1)

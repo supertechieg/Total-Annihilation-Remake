@@ -26,7 +26,10 @@ const BallisticLaunch = preload("res://ballistic_launch.gd")
 var collision: RefCounted
 # Both faction resource buildings share the healthy Create/Activate/Deactivate lifecycle validated by compare_native_solar.
 const RESOURCE_BUILDINGS := ["armsolar", "armmakr", "armmex", "armwin", "armtide", "corsolar", "cormakr", "cormex", "corwin", "cortide"]
-const SCRIPTED_UNITS = ["armtide", "armwin", "armmex", "armmakr", "armsolar", "corsolar", "cormakr", "cormex", "corwin", "cortide", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv", "corraid"]
+# Ground factories and their level-one products are validated by compare_native_factory and compare_native_units.
+const GROUND_FACTORIES := ["armvp", "armlab", "corvp", "corlab"]
+const SCRIPTED_UNITS = ["armtide", "armwin", "armmex", "armmakr", "armsolar", "corsolar", "cormakr", "cormex", "corwin", "cortide", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv",
+	"corvp", "corlab", "corck", "corak", "corstorm", "corthud", "corcrash", "corcv", "corfav", "corgator", "corraid", "cormist", "corlevlr", "cormlv"]
 var mobile_units: Dictionary = {}
 var navigation_cache: Dictionary = {}
 var yard_signature := ""
@@ -51,6 +54,10 @@ var status := "Idle"
 var ticks := 0
 var builder_ready := true
 var builder_jobs: Dictionary = {}
+
+# Core coverage is limited to natively verified scripts; unverified Core menu entries stay visible but unbuildable.
+static func supported(type: String) -> bool:
+	return not type.begins_with("cor") or type in SCRIPTED_UNITS
 
 func can_build(source_id: int) -> bool:
 	if not units.has(source_id) or float(units[source_id].remaining) > 0:
@@ -77,7 +84,7 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 		vm.read_values = {4: 100, 17: ceili(remaining * 100)}
 		if type in RESOURCE_BUILDINGS:
 			vm.writable_values.assign([1, 5, 20])
-		elif type in ["armvp", "armlab"]:
+		elif type in GROUND_FACTORIES:
 			vm.writable_values.assign([5, 18, 19])
 			vm.readback_values.assign([18])
 			factories[id] = {"queue": [], "product": 0, "opening": false, "status": "Idle"}
@@ -131,6 +138,9 @@ func queue_unit(factory_id: int, type: String) -> bool:
 		return false
 	if type not in catalog.build_options(units[factory_id].type) or int(catalog.definition(type).get("buildtime", "0")) <= 0:
 		status = "Factory cannot build that unit"
+		return false
+	if not supported(type):
+		status = "Not yet verified for Core"
 		return false
 	factories[factory_id].queue.append(type)
 	factories[factory_id].status = "Queued " + catalog.definition(type).get("name", type)
@@ -270,6 +280,8 @@ func placement_error(type: String, point: Vector2, source_id := 0) -> String:
 		return "Unit limit reached"
 	if type not in catalog.build_options(units[source_id].type):
 		return "Builder cannot build that unit"
+	if not supported(type):
+		return "Not yet verified for Core"
 	var bounds := footprint(type, point)
 	if bounds.position.x < 0 or bounds.position.y < 0 or bounds.end.x >= navigation.width * 16 or bounds.end.y >= navigation.height * 16:
 		return "Outside map"

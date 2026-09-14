@@ -8,10 +8,14 @@ The viewer selects completed factories to expose production controls, displays p
 
 ## Verified behavior
 
-- The existing native factory/rotation suite has 2,124 matching interpreter snapshots; see native-factory-validation.json. This establishes script execution with supplied healthy/clear-yard inputs, not production lifecycle timing.
-- 36 factory host checks cover both factory types, rejection of unfinished factories and foreign menu units, opening readiness, completion/health, queried build position, stopped units blocking the pad, movement out of the yard, shortages/recovery, clearing pending orders, idle closing, and capacity stalls.
+- The native factory/rotation suite has 3,642 matching interpreter snapshots, including 759 each for corvp and corlab; see native-factory-validation.json. This establishes script execution with supplied healthy/clear-yard inputs, not production lifecycle timing.
+- 74 factory host checks cover all four ground factory types (Arm and Core Vehicle Plant and Kbot Lab), rejection of unfinished factories and foreign menu units, opening readiness, completion/health, queried build position, stopped units blocking the pad, movement out of the yard, shortages/recovery, clearing pending orders, idle closing, and capacity stalls.
 - The real Comet Catcher viewer integration builds a Vehicle Plant with the Commander, queues two Flash tanks through the production controls, waits for both to exit, selects one and moves it to a new destination. The normal verification suite passes, and a rendered capture was inspected.
-- A further 73 checks exercise scripted production and exit for all twelve products, and a second real-map scenario produces and moves two Peewees from a Kbot Lab. Healthy product-script native playback matches 3,661 snapshots.
+- A further 144 checks exercise scripted production and exit for all twenty-four Arm and Core products, and a second real-map scenario produces and moves two Peewees from a Kbot Lab. Healthy product-script native playback matches 7,320 snapshots.
+- `--core-factory-demo` boots the viewer as Core, confirms unverified Core menu entries are disabled and unplaceable, then builds corvp and corlab with the Core Commander and produces one Raider and one A.K., each exiting and accepting a selected move. The demo refills stock to storage before each factory because the starting stock cannot fund both factories and products; it exercises scripts and production, not early-game income. A rendered capture was inspected.
+- The factory host test isolates the factory by removing the Commander before its unpaid-debt window: Commander income settles before allocation and could legitimately pay a small request depending on settlement phase.
+
+Core gating: `ConstructionWorld.supported` admits a Core type only if it is in the natively verified `SCRIPTED_UNITS` list. Placement and factory queuing reject other Core types, and the viewer lists them as "(unverified)" disabled entries. Arm menus are unchanged. Opponent behavior is unchanged.
 
 Run `.\tools\verify.ps1` for host/integration checks; add `-Native` to regenerate original interpreter comparisons. A visual demo uses Godot `--path godot -- --factory-demo --capture ABSOLUTE_PNG_PATH`.
 
@@ -25,4 +29,4 @@ Exit heading is provisionally 32768 toward the open end of these unrotated yards
 
 Navigation grids cache by unit type with its footprint/slope/water limits; building/yard changes rebuild their overlays. This is not a large-army performance claim. Each animated/render-rotated instance also retains a viewport. Exact renderer axes, scale, depth order, shading, construction effects and native pad/world projection remain unverified.
 
-Next: remaining unit scripts, mobile-builder controls, Core factory coverage, native yard/lifecycle fidelity, weapons, projectiles and damage. The entire-game goal remains active.
+Next: remaining unit scripts, Core mobile-builder menus beyond verified entries, Core aircraft/naval/advanced factories, native yard/lifecycle fidelity, weapons, projectiles and damage. The entire-game goal remains active.

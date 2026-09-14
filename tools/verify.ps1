@@ -114,6 +114,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Viewer checks failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --kbot-demo
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Kbot production and movement failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --core-factory-demo
+    if ($LASTEXITCODE -ne 0) { throw 'Real-map Core factory production failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --builder-demo
     if ($LASTEXITCODE -ne 0) { throw 'Real-map mobile builder construction failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat

@@ -46,7 +46,7 @@ def main():
     folder.mkdir(exist_ok=True)
     events = {0: 'Create', 31: 'Activate', 160: 'StartBuilding', 230: 'StopBuilding',
               240: 'Deactivate', 260: 'Activate', 280: 'StartBuilding', 360: 'StopBuilding', 370: 'Deactivate'}
-    for unit in ['armvp', 'armlab']:
+    for unit in ['armvp', 'armlab', 'corvp', 'corlab']:
         native = FactoryReference(Path('local/original/TotalA.exe').read_bytes(), Path(f'local/unit-assets/{unit}/script.cob').read_bytes())
         snapshots = []
         for tick in range(751):

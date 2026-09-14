@@ -75,6 +75,8 @@ func resolve_faction() -> String:
 	if tree != null and tree.has_meta("faction"):
 		return str(tree.get_meta("faction"))
 	var args := OS.get_cmdline_user_args()
+	if "--core-factory-demo" in args:
+		return "core"
 	var index := args.find("--faction")
 	if index >= 0 and index + 1 < args.size():
 		var value := String(args[index + 1]).to_lower()
@@ -206,6 +208,10 @@ func start_world_movement() -> void:
 		if not run_factory_demo("armlab", "armpw"):
 			push_error("Kbot demo failed")
 			get_tree().quit(1)
+	if "--core-factory-demo" in OS.get_cmdline_user_args():
+		if not run_core_factory_demo():
+			push_error("Core factory demo failed")
+			get_tree().quit(1)
 	if "--builder-demo" in OS.get_cmdline_user_args():
 		if not run_builder_demo():
 			push_error("Mobile builder demo failed")
@@ -331,10 +337,10 @@ func run_combat_demo(verify: bool) -> bool:
 		print("COMBAT_VERIFY_OK factory-produced Flash attacked and destroyed practice target")
 	return true
 
-func run_factory_demo(factory_type := "armvp", product_type := "armflash", product_count := 2) -> bool:
+func run_factory_demo(factory_type := "armvp", product_type := "armflash", product_count := 2, side := -1.0) -> bool:
 	select_unit(0)
 	var offset := float(unit_catalog.movement(factory_type).get("footprintx", "8")) * 8 + 48
-	var point := unit_position + Vector2(-offset, 0)
+	var point := unit_position + Vector2(side * offset, 0)
 	if not place_structure(factory_type, point):
 		return false
 	var id: int = economy.task_id
@@ -370,6 +376,27 @@ func run_factory_demo(factory_type := "armvp", product_type := "armflash", produ
 		return false
 	select_unit(id)
 	print("FACTORY_VERIFY_OK built=%s produced=%d %s; exit and selected movement passed" % [factory_type, product_count, product_type])
+	return true
+
+func run_core_factory_demo() -> bool:
+	if faction != "core":
+		return false
+	# Unverified Core entries remain listed but must not be placeable.
+	select_unit(0)
+	for index in range(build_picker.item_count):
+		var type: String = build_picker.get_item_metadata(index)
+		if build_picker.is_item_disabled(index) == ConstructionWorld.supported(type):
+			return false
+	if place_structure("corllt", unit_position + Vector2(0, 96)):
+		return false
+	for order: Array in [["corvp", "corraid", -1.0], ["corlab", "corak", 1.0]]:
+		# Starting stock cannot fund both factories and products; refill so the demo exercises scripts, not income.
+		economy.energy = economy.energy_storage
+		economy.metal = economy.metal_storage
+		if not run_factory_demo(order[0], order[1], 1, order[2]):
+			printerr("Core factory demo stopped at ", order[0], ": ", economy.status)
+			return false
+	print("CORE_FACTORY_VERIFY_OK Core Commander built corvp and corlab (stock refilled before each); each produced one unit; unverified menu entries gated")
 	return true
 
 func run_builder_demo() -> bool:
@@ -525,16 +552,23 @@ func select_unit(id: int) -> void:
 	build_picker.disabled = not builder
 	place_button.disabled = not builder
 	if builder:
-		for type: String in unit_catalog.build_options(economy.units[source_id].type):
-			build_picker.add_item(unit_catalog.definition(type).get("name", type))
-			build_picker.set_item_metadata(build_picker.item_count - 1, type)
+		fill_build_picker(build_picker, economy.units[source_id].type)
 	factory_controls.visible = economy != null and economy.factories.has(id)
 	if factory_controls.visible:
 		factory_picker.clear()
-		for type: String in unit_catalog.build_options(economy.units[id].type):
-			factory_picker.add_item(unit_catalog.definition(type).get("name", type))
-			factory_picker.set_item_metadata(factory_picker.item_count - 1, type)
+		fill_build_picker(factory_picker, economy.units[id].type)
 	update_world()
+
+func fill_build_picker(picker: OptionButton, source_type: String) -> void:
+	var first_enabled := -1
+	for type: String in unit_catalog.build_options(source_type):
+		var verified: bool = ConstructionWorld.supported(type)
+		picker.add_item(unit_catalog.definition(type).get("name", type) + ("" if verified else " (unverified)"))
+		picker.set_item_metadata(picker.item_count - 1, type)
+		picker.set_item_disabled(picker.item_count - 1, not verified)
+		if verified and first_enabled < 0:
+			first_enabled = picker.item_count - 1
+	picker.select(first_enabled)
 
 func queue_factory_unit() -> void:
 	if economy.factories.has(selected_unit) and factory_picker.selected >= 0:
@@ -843,9 +877,7 @@ func build_interface() -> void:
 	selection_label = label("Selected: " + commander_name, 13)
 	column.add_child(selection_label)
 	build_picker = OptionButton.new()
-	for type: String in unit_catalog.build_options(commander_type):
-		build_picker.add_item(unit_catalog.definition(type).get("name", type))
-		build_picker.set_item_metadata(build_picker.item_count - 1, type)
+	fill_build_picker(build_picker, commander_type)
 	column.add_child(build_picker)
 	place_button = button("Place selected structure", choose_build)
 	column.add_child(place_button)
