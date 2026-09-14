@@ -217,13 +217,14 @@ func step() -> void:
 					"ballistic": true, "timer": timer, "burnblow": burn,
 					"deadline": Launch.deadline(tick, timer, burn, raw, raw_point(center(target)), launch.trig.velocity_component(pitch, speed, 16384)),
 					"area": int(cycle.definition.get("areaofeffect", "0")), "edge": float(cycle.definition.get("edgeeffectiveness", "0")),
+					"collision_flags": world.collision.collision_flags(cycle.definition),
 					"explosion": str(cycle.definition.get("explosiongaf", "")) + "/" + str(cycle.definition.get("explosionart", "")), "soundhit": str(cycle.definition.get("soundhit", "")), "damage": cycle.definition.get("damage", {})})
 				shots_fired += 1
 				continue
 			var direct := DirectLaunch.solve(raw_point(start), raw_point(center(target)), int(shot.velocity_raw_per_tick), int(cycle.runtime.start_velocity_raw_per_tick), int(cycle.runtime.acceleration_raw_per_tick_squared))
 			var velocity_raw: Array = direct.velocity
 			var projectile := {"source": source, "owner": int(world.units[source].get("team", 0)), "position": start, "previous": start,
-				"position_raw": raw_point(start), "velocity_raw": velocity_raw,
+				"position_raw": raw_point(start), "velocity_raw": velocity_raw, "collision_flags": world.collision.collision_flags(cycle.definition),
 				"explosion": str(cycle.definition.get("explosiongaf", "")) + "/" + str(cycle.definition.get("explosionart", "")), "soundhit": str(cycle.definition.get("soundhit", "")), "distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"})}
 			if int(cycle.definition.get("selfprop", "0")) != 0:
 				projectile.merge({"rocket": true, "guided": int(cycle.definition.get("guidance", "0")) != 0,
@@ -297,7 +298,7 @@ func step() -> void:
 		projectile.position = end
 		projectile.position_raw = next_raw
 		projectile.distance += travel
-		if end.y < world.navigation.height_at(Vector2(end.x, end.z)):
+		if world.collision.terrain_impact(world, projectile, int(projectile.get("collision_flags", 0))):
 			add_effect(end, str(projectile.get("explosion", "")))
 			request_sound(str(projectile.get("soundhit", "")), end)
 			continue
@@ -359,7 +360,7 @@ func step_rocket(projectile: Dictionary) -> bool:
 	if world.collision.projectile_cell(next.position) < 0:
 		return false
 	var target: int = world.collision.target_at(world, next.position, int(projectile.owner))
-	if target != 0 or projectile.position.y < world.navigation.height_at(Vector2(projectile.position.x, projectile.position.z)):
+	if target != 0 or world.collision.terrain_impact(world, projectile, int(projectile.get("collision_flags", 0))):
 		blast(projectile)
 		return false
 	return true
@@ -393,7 +394,7 @@ func step_beam(projectile: Dictionary) -> bool:
 			cycles.erase(target)
 			launch_offsets.erase(target)
 		return false
-	if projectile.position.y < world.navigation.height_at(Vector2(projectile.position.x, projectile.position.z)):
+	if world.collision.terrain_impact(world, projectile, int(projectile.get("collision_flags", 0))):
 		add_effect(projectile.position, str(projectile.get("explosion", "")))
 		request_sound(str(projectile.get("soundhit", "")), projectile.position)
 		return false
@@ -413,7 +414,7 @@ func step_shell(projectile: Dictionary) -> bool:
 	if world.collision.projectile_cell(next.position) < 0:
 		return false
 	var target: int = world.collision.target_at(world, next.position, int(projectile.owner))
-	if target != 0 or projectile.position.y < world.navigation.height_at(Vector2(projectile.position.x, projectile.position.z)):
+	if target != 0 or world.collision.terrain_impact(world, projectile, int(projectile.get("collision_flags", 0))):
 		blast(projectile)
 		return false
 	return true

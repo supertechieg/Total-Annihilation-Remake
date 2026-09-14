@@ -2,8 +2,33 @@ extends RefCounted
 const Grid = preload("res://collision_grid.gd")
 const Bounds = preload("res://unit_bounds.gd")
 const Projectile = preload("res://projectile_collision.gd")
+const Heights = preload("res://terrain_heights.gd")
 var grid: RefCounted
 var records: Dictionary = {}
+var terrain: Dictionary = {}
+
+## Weapon flag bits consulted by 0x49b090's terrain branch, from the loader's TDF mapping.
+static func collision_flags(definition: Dictionary) -> int:
+	return (Projectile.UNITS_ONLY if int(definition.get("unitsonly", "0")) & 1 else 0) \
+		| (Projectile.GROUND_BOUNCE if int(definition.get("groundbounce", "0")) & 1 else 0) \
+		| (Projectile.WATER_WEAPON if int(definition.get("waterweapon", "0")) & 1 else 0)
+
+## Native terrain/feature/water test at the projectile endpoint. Updates velocity and feature cache in place.
+## Map features are not yet supplied (Comet Catcher's are all height 0) and the map lava flag is taken as clear.
+func terrain_impact(world: RefCounted, projectile: Dictionary, flags: int) -> bool:
+	var cell := projectile_cell(projectile.position_raw)
+	if cell < 0:
+		return false
+	if terrain.is_empty():
+		terrain = Heights.prepare(world.navigation.heights, world.navigation.width, world.navigation.height)
+	var contact := Projectile.terrain_contact({"flags": flags, "position": projectile.position_raw,
+		"cell": {"low": int(terrain.low[cell]), "high": int(terrain.high[cell]), "code": 0xffff},
+		"anchor_code": 0xffff, "feature_count": 0, "feature_heights": [], "sea": world.navigation.sea_level, "lava": 0,
+		"velocity_y": int(projectile.velocity_raw[1]), "cache": projectile.get("terrain_cache", [-32768, -32768])})
+	projectile.terrain_cache = contact.cache
+	if int(contact.velocity_y) != int(projectile.velocity_raw[1]):
+		projectile.velocity_raw[1] = int(contact.velocity_y)
+	return bool(contact.impact)
 
 func projectile_cell(position_raw: Array) -> int:
 	return Projectile.cell_index(position_raw, grid.width, grid.depth)

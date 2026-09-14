@@ -109,7 +109,7 @@ func _initialize() -> void:
 				break
 		var damaged: bool = not arena.units.has(target) or arena.units[target].health < health
 		if elevation == 24:
-			# Host interpolated terrain can occlude low muzzles at the plateau edge where the native cell-byte test may not; see BEAM_WEAPONS.md.
+			# Under the native lowest-corner test, lower muzzles (Weasel, Instigator) clip the plateau's first cell; see BEAM_WEAPONS.md.
 			checks.append(damaged or (firing.shots_fired > 0 and terrain_blocked))
 			print("BEAM_ELEVATED_24 %s damaged=%s terrain_blocked=%s" % [laser_type, damaged, terrain_blocked])
 		else:

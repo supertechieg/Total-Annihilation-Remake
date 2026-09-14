@@ -19,7 +19,7 @@ Arm Jeffy (`armfav`), Core Weasel (`corfav`), Core Instigator (`corgator`) and C
 
 ## Limits
 
-- **Terrain contact is still the shared host approximation.** At the 24-unit plateau test, Weasel, Instigator and A.K. beams end on the plateau edge: at x≈605 the beam is at height 22.98 while interpolated host terrain already reads 24. The original's `0x49b090` compares integer height with the endpoint cell's height byte, where cell 37 is still 0, so it would probably let those beams continue onto the plateau. The test records this case rather than asserting a hit. Native terrain/feature collision remains separate work for all weapons.
+- **Terrain contact now uses the native rule** (see PROJECTILE_COLLISION.md). At the 24-unit plateau test, A.K. and Jeffy beams now reach the target. Weasel and Instigator beams end in the plateau's first cell (integer height 23 against a lowest corner of 24), which the original test also ends given the same aim. The earlier cut-off at x≈605 was the host's nearest-sample rounding, now removed. The test records the 24-unit case rather than asserting a hit for every unit.
 - Rendering is a development red line from tail to head. Original laser palette colors (`color`/`color2`), glow and lighting are not reproduced. A rendered duel capture was inspected, but no beam was in flight on the captured frames because beams are short-lived; beam state is asserted by the host test instead.
 - Newly launched beams move on their launch tick, matching the existing direct-round host order. Native order between weapon firing and projectile update within a frame is not yet compared.
 - No energy-per-shot cost (these lasers have none), damage-state script callbacks, or AI changes.
