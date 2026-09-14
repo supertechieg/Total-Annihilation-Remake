@@ -12,6 +12,9 @@ func output(callback: String, initial: int) -> int:
 	if not vm.functions.has(callback):
 		return initial
 	var invocation: int = vm.invoke(callback, [initial])
+	if invocation < 0 and vm.fault.is_empty():
+		# All slots busy: native 0x4b0c40 leaves the caller's initial value untouched.
+		return initial
 	if not vm.fault.is_empty() or not vm.completions.has(invocation):
 		fault = "Weapon piece query did not finish synchronously: " + callback
 		return -1

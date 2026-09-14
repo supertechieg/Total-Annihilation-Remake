@@ -64,6 +64,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Unit visual checks failed' }
     & $godotPath --headless --path godot --script res://test_cob_vm.gd
     if ($LASTEXITCODE -ne 0) { throw 'COB runtime checks failed' }
+    & $godotPath --headless --path godot --script res://test_cob_rand.gd
+    if ($LASTEXITCODE -ne 0) { throw 'COB RAND/SFX/overflow tests failed' }
+    & $godotPath --headless --path godot --script res://test_cob_health_feed.gd
+    if ($LASTEXITCODE -ne 0) { throw 'COB health feed tests failed' }
     & $godotPath --headless --path godot --script res://test_ground_motion.gd
     if ($LASTEXITCODE -ne 0) { throw 'Ground motion checks failed' }
     & $godotPath --headless --path godot --script res://test_navigation.gd
@@ -494,6 +498,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Native feature damage failed' }
         & $godotPath --headless --path godot --script res://compare_native_feature_damage.gd
         if ($LASTEXITCODE -ne 0) { throw 'Feature damage native comparison failed' }
+        powershell -ExecutionPolicy Bypass -File tools\verify_cob_parity.ps1
+        if ($LASTEXITCODE -ne 0) { throw 'COB VM parity (overflow, RAND, SFX, health, damaged traces) failed' }
         python tools\native_beam_motion.py
         if ($LASTEXITCODE -ne 0) { throw 'Original beam motion reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_beam_motion.gd

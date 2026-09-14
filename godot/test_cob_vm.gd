@@ -88,7 +88,7 @@ func test_limits_and_unknowns() -> void:
 	for _i in range(8):
 		vm.invoke("sleep", [], false)
 	check(vm.active_threads() == 8, "Eight simultaneous slots available")
-	check(vm.invoke("sleep", [], false) == -1 and not vm.fault.is_empty(), "Ninth slot fails explicitly")
+	check(vm.invoke("sleep", [], false) == -1 and vm.fault.is_empty() and vm.dropped_calls == 1, "Ninth start is dropped like native 0x4b0b00")
 	vm = VM.new(program([[["UNSUPPORTED", []]]], ["bad"]))
 	vm.invoke("bad")
 	check(vm.fault.contains("Unsupported opcode"), "Unsupported instructions are not silently ignored")

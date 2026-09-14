@@ -1,11 +1,14 @@
 extends RefCounted
-## COB v4 subset sufficient for ARMCOM.COB. No scene or rendering dependencies.
-## See analysis/COB_VM.md for executable evidence and remaining fidelity limits.
+## COB v4 interpreter for original unit scripts (ARMCOM.COB onward). No scene or rendering dependencies.
+## See analysis/COB_VM.md and analysis/COB_VM_PARITY.md for executable evidence and remaining fidelity limits.
 
 const TICK_RATE := 30
 const SLOT_COUNT := 8
 const STACK_SIZE := 32
 const BUDGET := 10000
+## Bounded host copy of EMIT_SFX callbacks; sfx_count keeps the unbounded total.
+const SFX_EVENT_LIMIT := 4096
+const GameRandom = preload("res://wind_state.gd")
 var program: Dictionary
 var instructions: Dictionary = {}
 var functions: Dictionary = {}
@@ -24,6 +27,16 @@ var completions: Dictionary = {}
 var events: Array = []
 ## EXPLODE callbacks in call order as [piece, flags].
 var explosions: Array = []
+## Shared Park-Miller game RNG (0x4b6c30 on seed 0x51fc88) used by RAND. The live world injects
+## world.game_random; tests inject their own seeded instance. A private seed-1 instance is created on demand.
+var rng: RefCounted = null
+## EMIT_SFX callbacks (engine vtable+0x30, piece, type) as [tick, piece, type], oldest dropped past the limit.
+var sfx_events: Array = []
+var sfx_count := 0
+## Optional renderer hook called as sfx_callback.call(piece, type).
+var sfx_callback := Callable()
+## Script starts dropped because all eight slots were busy (native 0x4b08c0 returns -1, callers ignore it).
+var dropped_calls := 0
 var fault := ""
 var ticks := 0
 var next_id := 1
@@ -50,6 +63,13 @@ static func i32(value: int) -> int:
 	var bits := value & 0xffffffff
 	return bits - 0x100000000 if bits >= 0x80000000 else bits
 
+## GET_VALUE 4 (HEALTH), engine callback 0x480770 case 0x4807ca: movsx word unit+0x108 (health) * 100,
+## unsigned-divided by the definition's dword maxdamage (+0x1fa). Not clamped; negative health wraps.
+static func health_read(health: int, maxdamage: int) -> int:
+	var signed_health := ((health & 0xffff) ^ 0x8000) - 0x8000
+	@warning_ignore("integer_division")
+	return i32(((signed_health * 100) & 0xffffffff) / maxi(1, maxdamage & 0xffffffff))
+
 static func trunc_div(a: int, b: int) -> int:
 	@warning_ignore("integer_division")
 	return absi(a) / absi(b) * (-1 if (a < 0) != (b < 0) else 1)
@@ -71,13 +91,9 @@ func allocate(function_index: int, args: Array, mask: int) -> int:
 	if function_index < 0 or function_index >= program.functions.size() or args.size() > STACK_SIZE:
 		fail("Invalid script invocation")
 		return -1
-	var slot := -1
-	for i in range(SLOT_COUNT):
-		if slots[i] == null:
-			slot = i
-			break
+	var slot := free_slot()
 	if slot < 0:
-		fail("COB thread capacity exceeded (8 slots)")
+		drop(function_index, args)
 		return -1
 	var stack: Array = []
 	stack.resize(STACK_SIZE)
@@ -93,6 +109,23 @@ func allocate(function_index: int, args: Array, mask: int) -> int:
 	record("start", {"slot": slot, "id": slots[slot].id, "function": info.name, "args": args})
 	return slot
 
+func free_slot() -> int:
+	for i in range(SLOT_COUNT):
+		if slots[i] == null:
+			return i
+	return -1
+
+## Native 0x4b0b00/0x4b0940 and START/CALL_SCRIPT silently skip a start when no slot is free.
+func drop(function_index: int, args: Array) -> void:
+	dropped_calls += 1
+	record("drop", {"function": program.functions[function_index].name, "args": args.duplicate()})
+
+func random_source() -> RefCounted:
+	if rng == null:
+		rng = GameRandom.new()
+	return rng
+
+## Returns the invocation id, or -1 when the call did not start (unknown callback, fault, or all slots busy).
 func invoke(function_name: String, args: Array = [], immediate := true) -> int:
 	if not fault.is_empty():
 		return -1
@@ -283,12 +316,18 @@ func run_slot(slot: int) -> void:
 				thread.state = "sleep"
 			"START_SCRIPT", "CALL_SCRIPT":
 				var count := int(args[1])
-				var parameters: Array = []
-				parameters.resize(count)
-				for i in range(count - 1, -1, -1):
-					parameters[i] = pop(thread)
-				var child := allocate(int(args[0]), parameters, int(thread.mask))
+				var child := -1
+				if free_slot() < 0:
+					# Native 0x4b18c2/0x4b192f: a failed allocation leaves the arguments on the caller's stack.
+					drop(int(args[0]), [])
+				else:
+					var parameters: Array = []
+					parameters.resize(count)
+					for i in range(count - 1, -1, -1):
+						parameters[i] = pop(thread)
+					child = allocate(int(args[0]), parameters, int(thread.mask))
 				if op == "CALL_SCRIPT":
+					# A dropped CALL_SCRIPT still blocks with wait slot -1; only a signal releases it.
 					thread.state = "call"
 					thread.wait_slot = child
 			"RETURN":
@@ -316,6 +355,21 @@ func run_slot(slot: int) -> void:
 				else:
 					values[key] = value
 					record("value", {"key": key, "value": value})
+			"RAND":
+				# Native 0x4b15bd: pops high then low; low + 0x4b6c30(high - low + 1). Bounds below 2 do not draw.
+				var high := pop(thread)
+				var low := pop(thread)
+				push(thread, i32(low + int(random_source().bounded_random(i32(high - low + 1)))))
+			"EMIT_SFX":
+				# Native 0x4b12bd: engine callback vtable+0x30 with (piece, type); rendering is host-owned.
+				var kind := pop(thread)
+				var sfx_piece := int(args[0])
+				sfx_events.append([ticks, sfx_piece, kind])
+				sfx_count += 1
+				if sfx_events.size() > SFX_EVENT_LIMIT:
+					sfx_events.pop_front()
+				if sfx_callback.is_valid():
+					sfx_callback.call(sfx_piece, kind)
 			_:
 				fail("Unsupported opcode %s at %d" % [op, pc])
 	fail("COB execution exceeded instruction budget without yielding")

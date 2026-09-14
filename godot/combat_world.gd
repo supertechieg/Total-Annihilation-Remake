@@ -655,7 +655,8 @@ func apply_damage(id: int, damage: int, source_raw = null, damage_type := 1, att
 	notifications.append({"id": id, "tick": tick, "hit": arguments, "percent": percent})
 	# Queued without running, as 0x4b0a70 is called with runNow=0; a unit with all eight threads busy drops them.
 	for call: Array in [["HitByWeapon", arguments], ["TakeDamage", [percent]]]:
-		if vm.functions.has(call[0]) and vm.active_threads() < vm.SLOT_COUNT:
+		if vm.functions.has(call[0]):
+			# invoke() returns -1 and counts the drop when all eight slots are busy.
 			vm.invoke(call[0], call[1], false)
 
 ## Self-destruct background orders (handler 0x402010): id -> {counter, expired, wake, runs}.

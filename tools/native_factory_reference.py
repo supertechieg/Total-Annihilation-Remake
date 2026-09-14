@@ -1,4 +1,9 @@
-"""Original factory interpreter playback; synthetic healthy and clear-yard host."""
+"""Original factory interpreter playback; synthetic healthy and clear-yard host.
+
+--damaged writes <unit>-trace-damaged.json: the healthy factory lifecycle over 600 ticks with the shared RNG
+seeded through 0x4b6ca0 and the health read stepping 100 -> 50 -> 20 (SmokeUnit RAND/EMIT_SFX).
+"""
+import argparse
 import json
 from pathlib import Path
 from native_solar_reference import SolarReference
@@ -41,25 +46,42 @@ class FactoryReference(SolarReference):
         return result
 
 
+DAMAGED_SEED_INPUT = 0x1234
+HEALTH_SCHEDULE = {0: 100, 200: 50, 400: 20}
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--damaged', action='store_true')
+    damaged = parser.parse_args().damaged
     folder = Path('local/factory')
     folder.mkdir(exist_ok=True)
     events = {0: 'Create', 31: 'Activate', 160: 'StartBuilding', 230: 'StopBuilding',
               240: 'Deactivate', 260: 'Activate', 280: 'StartBuilding', 360: 'StopBuilding', 370: 'Deactivate'}
     for unit in ['armvp', 'armlab', 'corvp', 'corlab']:
         native = FactoryReference(Path('local/original/TotalA.exe').read_bytes(), Path(f'local/unit-assets/{unit}/script.cob').read_bytes())
+        if damaged:
+            native.seed(DAMAGED_SEED_INPUT)
+        seed_start = native.rng_seed()
         snapshots = []
-        for tick in range(751):
+        for tick in range(601 if damaged else 751):
             if tick == 30:
                 native.read_values[17] = 0
+            if damaged and tick in HEALTH_SCHEDULE:
+                native.read_values[4] = HEALTH_SCHEDULE[tick]
             if tick:
                 native.step()
                 snapshots.append(dict(tick=tick, action='step', state=native.snapshot()))
             if tick in events:
                 native.invoke(events[tick], [])
                 snapshots.append(dict(tick=tick, action=events[tick], state=native.snapshot()))
-        (folder / f'{unit}-trace.json').write_text(json.dumps(dict(exe_sha256=EXE_HASH, unit=unit, snapshots=snapshots)), encoding='utf-8')
-        print(f'NATIVE_FACTORY_REFERENCE {unit}: {len(snapshots)} snapshots')
+        name = f'{unit}-trace-damaged.json' if damaged else f'{unit}-trace.json'
+        (folder / name).write_text(json.dumps(dict(exe_sha256=EXE_HASH, unit=unit, snapshots=snapshots, seed_start=seed_start,
+                                                   seed_end=native.rng_seed(), sfx=native.sfx, dropped=native.dropped,
+                                                   health={str(k): v for k, v in HEALTH_SCHEDULE.items()} if damaged else {})), encoding='utf-8')
+        print(f'NATIVE_FACTORY_REFERENCE {unit}{" damaged" if damaged else ""}: {len(snapshots)} snapshots, {len(native.sfx)} sfx, seed {seed_start:#x} -> {native.rng_seed():#x}')
+    if damaged:
+        return
     # Exercise acceleration and integer rounding not covered by the factories' zero-acceleration spins.
     spin_cases = [(0, 5461, 0), (300, 6000, 600), (-300, -6000, -600),
                   (31, 991, 61), (29, 5461, 29), (300, -6000, 600)]

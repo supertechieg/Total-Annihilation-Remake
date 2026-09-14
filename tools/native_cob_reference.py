@@ -24,6 +24,13 @@ SCRIPT = 0x1100000
 STATES = 0x1200000
 STATICS = 0x1300000
 STACK_TOP = 0x13ff000
+# Shared game RNG seed used by COB RAND (0x4b15bd -> Park-Miller 0x4b6c30); game seeding 0x4b6ca0.
+RNG_SEED = 0x51fc88
+
+
+def seed_word(value):
+    """Seed stored by original 0x4b6ca0: (value ^ 0x66e29572) | 1."""
+    return ((value ^ 0x66e29572) | 1) & 0xffffffff
 
 SCENARIO = {
     0: [('Create', [])],
@@ -66,8 +73,13 @@ class NativeReference:
         self.pieces = [dict(name=name, position=[0, 0, 0], rotation=[0, 0, 0], visible=True) for name in self.program['pieces']]
         self.values = {}
         self.callback_counts = {}
-        # Callback argument counts: set/get transform, visibility, and SET_VALUE.
-        self.argc = {0: 3, 1: 3, 2: 2, 5: 2, 6: 2, 16: 2}
+        # EMIT_SFX callbacks (vtable+0x30) as [tick, piece, type]; tick counts step() calls.
+        self.sfx = []
+        self.tick = 0
+        # Host starts the original invoke helper rejected because all eight slots were busy.
+        self.dropped = []
+        # Callback argument counts: set/get transform, visibility, EMIT_SFX, and SET_VALUE.
+        self.argc = {0: 3, 1: 3, 2: 2, 5: 2, 6: 2, 12: 2, 16: 2}
         for index, count in self.argc.items():
             address = CALLBACKS + index * 0x20
             self.write(VTABLE + index * 4, address)
@@ -95,6 +107,8 @@ class NativeReference:
         elif index in (5, 6):
             value = self.pieces[args[0]]['position' if index == 5 else 'rotation'][args[1]]
             mu.reg_write(UC_X86_REG_EAX, value & 0xffffffff)
+        elif index == 12:
+            self.sfx.append([self.tick, args[0], args[1]])
         elif index == 16:
             self.values[str(args[0])] = args[1]
 
@@ -110,14 +124,33 @@ class NativeReference:
             raise RuntimeError('Native interpreter failed to return within execution limit')
         return self.mu.reg_read(UC_X86_REG_EAX)
 
+    def seed(self, value):
+        """Seed the shared RNG through the original 0x4b6ca0 formula."""
+        self.write(RNG_SEED, seed_word(value))
+
+    def write_seed(self, word):
+        self.write(RNG_SEED, word)
+
+    def rng_seed(self):
+        return self.read(RNG_SEED)
+
     def invoke(self, name, args):
-        index = next(i for i, f in enumerate(self.program['functions']) if f['name'] == name)
+        """Start a callback; returns False when the script lacks it or no slot is free (native drops it)."""
+        index = next((i for i, f in enumerate(self.program['functions']) if f['name'] == name), -1)
+        if index < 0:
+            return False
         # Original host invocation helper: callback=null, run immediately, initial SP=-1.
         result = self.call(0x4b0b00, [index, 0, 1, 0, *(args + [0] * (4 - len(args)))])
         if result != 1:
-            raise RuntimeError('Original host callback failed to allocate a slot')
+            self.dropped.append([self.tick, name])
+            return False
+        return True
+
+    def free_slot(self):
+        return next((i for i in range(8) if self.read(CONTEXT + 0x1c + i * 0xa4) == 0), None)
 
     def step(self):
+        self.tick += 1
         self.call(0x4b0d60, [1])
 
     def snapshot(self):
@@ -141,8 +174,12 @@ def main():
     parser.add_argument('--exe', type=Path, default=Path('local/original/TotalA.exe'))
     parser.add_argument('--cob', type=Path, default=Path('local/viewer-assets/armcom.cob'))
     parser.add_argument('--output', type=Path, default=Path('local/scripts/native-trace.json'))
+    parser.add_argument('--seed', type=lambda text: int(text, 0), help='seed the shared RNG through 0x4b6ca0')
     args = parser.parse_args()
     reference = NativeReference(args.exe.read_bytes(), args.cob.read_bytes())
+    if args.seed is not None:
+        reference.seed(args.seed)
+    seed_start = reference.rng_seed()
     snapshots = []
     for tick in range(451):
         if tick:
@@ -153,7 +190,8 @@ def main():
             snapshots.append(dict(label=f'{tick}:{name}:{index}', state=reference.snapshot()))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(dict(exe_sha256=EXE_HASH, cob_sha256=reference.program['sha256'],
-                         scenario=SCENARIO, snapshots=snapshots), indent=2), encoding='utf-8')
+                         scenario=SCENARIO, snapshots=snapshots, seed_start=seed_start, seed_end=reference.rng_seed(),
+                         sfx=reference.sfx), indent=2), encoding='utf-8')
     print(json.dumps(dict(snapshots=len(snapshots), callbacks=reference.callback_counts, output=str(args.output)), indent=2))
 
 

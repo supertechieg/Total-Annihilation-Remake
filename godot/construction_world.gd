@@ -99,7 +99,9 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0, scri
 	# Only these healthy scripts currently have native lifecycle comparisons.
 	if type in SCRIPTED_UNITS or (scripted_commander and type in COMMANDERS):
 		var vm = VM.new(catalog.load_script(type))
-		vm.read_values = {4: 100, 17: ceili(remaining * 100)}
+		# COB RAND draws from the shared game RNG; GET_VALUE 4 reads the unit's live health (callback 0x4807ca).
+		vm.rng = game_random
+		vm.read_values = {4: VM.health_read(int(units[id].health), int(definition.get("maxdamage", "1"))), 17: ceili(remaining * 100)}
 		if type in RESOURCE_BUILDINGS:
 			vm.writable_values.assign([1, 5, 20])
 		elif type in GROUND_FACTORIES:
@@ -167,6 +169,7 @@ func capture_launch_offset(id: int) -> void:
 ## targeting and orders can use them; the world does not step external entries itself.
 func attach_external(id: int, vm: RefCounted, mobile: RefCounted) -> void:
 	scripts[id] = vm
+	vm.rng = game_random
 	mobile_units[id] = mobile
 	external_units[id] = true
 	capture_launch_offset(id)
@@ -248,10 +251,14 @@ func clear_factory_queue(factory_id: int) -> void:
 
 func factory_build_position(id: int) -> Vector2:
 	var vm = scripts[id]
+	var dropped_before: int = vm.dropped_calls
 	var query: int = vm.invoke("QueryBuildInfo", [0])
-	if not vm.completions.has(query):
+	var index := 0
+	if vm.completions.has(query):
+		index = int(vm.completions[query].locals[0])
+	elif query != -1 or vm.dropped_calls == dropped_before:
 		return Vector2(INF, INF)
-	var index := int(vm.completions[query].locals[0])
+	# A query dropped because all eight slots are busy keeps its initial value (0x4b0c40), so the pad is piece 0.
 	if index < 0 or index >= vm.pieces.size():
 		return Vector2(INF, INF)
 	var name: String = vm.pieces[index].name
@@ -582,9 +589,10 @@ func step() -> void:
 	if ticks % 30 == 0:
 		sample_health_percent()
 	for id: int in scripts:
+		# Fed once per tick before scripts run; external (viewer-stepped) scripts read the same unit health.
+		scripts[id].read_values[4] = VM.health_read(int(units[id].health), int(catalog.definition(units[id].type).get("maxdamage", "1")))
 		if external_units.has(id):
 			continue
-		# Construction health is not combat damage. Damaged smoke awaits its opcodes.
 		scripts[id].read_values[17] = ceili(float(units[id].remaining) * 100)
 		scripts[id].step()
 	refresh_navigation()

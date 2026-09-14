@@ -27,9 +27,8 @@ func _init(script: RefCounted, weapon: Dictionary, weapon_slot := "Primary") -> 
 	queries = Queries.new(vm, slot)
 	definition = weapon.definition
 	runtime = weapon.runtime
-	for callback: String in ["Aim" + slot, "Query" + slot, "Fire" + slot]:
-		if not vm.functions.has(callback):
-			fault = "Missing %s weapon callback: %s" % [slot.to_lower(), callback]
+	# Undefined callbacks are skipped like the original name lookups (0x4b0940/0x4b0a70 -> 0x4b0b00 return 0):
+	# no Aim reports "not aimed" (never fires), no Query keeps muzzle piece 0, and no Fire still launches.
 	# Only the primary host sets the script's reload hint (original 0x49e070 sends one value for all weapons).
 	if slot == "Primary" and vm.functions.has("SetMaxReloadTime"):
 		vm.invoke("SetMaxReloadTime", [int(int(runtime.reload_ticks) * 1000 / 30)])
@@ -45,7 +44,8 @@ func aim(target_heading: int, target_pitch: int) -> void:
 
 func request_aim() -> void:
 	aimed = false
-	aim_id = vm.invoke("Aim" + slot, [heading, pitch])
+	# A missing or dropped Aim start reports 0 through the engine callback (0x4b0b11), leaving aimed false.
+	aim_id = vm.invoke("Aim" + slot, [heading, pitch]) if vm.functions.has("Aim" + slot) else -1
 
 func stop() -> void:
 	requested = false
@@ -78,11 +78,15 @@ func step(can_fire := true, resolve_muzzle := Callable(), reload_delay := -1, wo
 		next_shot = tick
 	if tick < next_shot:
 		return
-	var query: int = vm.invoke("Query" + slot, [0])
-	if not vm.completions.has(query):
-		fault = slot + " muzzle query did not finish synchronously"
-		return
-	var piece := int(vm.completions[query].locals[0])
+	# Native 0x43e240 keeps its initial local 0 when QueryPrimary is undefined or cannot get a slot.
+	var piece := 0
+	if vm.functions.has("Query" + slot):
+		var query: int = vm.invoke("Query" + slot, [0])
+		if query >= 0:
+			if not vm.completions.has(query):
+				fault = slot + " muzzle query did not finish synchronously"
+				return
+			piece = int(vm.completions[query].locals[0])
 	if piece < 0 or piece >= vm.pieces.size():
 		fault = slot + " muzzle query returned an invalid piece"
 		return
@@ -91,7 +95,9 @@ func step(can_fire := true, resolve_muzzle := Callable(), reload_delay := -1, wo
 		"velocity_raw_per_tick": int(runtime.velocity_raw_per_tick), "burst": int(definition.get("burst", "0"))}
 	if resolve_muzzle.is_valid():
 		shot.position = resolve_muzzle.call(str(shot.piece_name))
-	vm.invoke("Fire" + slot)
+	# Native launchers (0x49cb94/0x49cd4f/0x49cf73) start Fire by name after creating the projectile and ignore the result.
+	if vm.functions.has("Fire" + slot):
+		vm.invoke("Fire" + slot)
 	if not vm.fault.is_empty():
 		fault = vm.fault
 		return
