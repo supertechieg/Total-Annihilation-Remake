@@ -1,0 +1,139 @@
+{
+  "assign_cases": 600.0,
+  "assign_categories": {
+    "air-builder": 8.0,
+    "already-grouped": 8.0,
+    "commander": 8.0,
+    "flag20-clear": 8.0,
+    "flyer": 8.0,
+    "land-builder": 8.0,
+    "land-unarmed": 8.0,
+    "negative-depth-armed": 8.0,
+    "random": 496.0,
+    "sea-builder": 8.0,
+    "ship-positive": 8.0,
+    "ship-zero-depth": 8.0,
+    "structure-armed": 8.0,
+    "structure-unarmed": 8.0
+  },
+  "assigned_units": 9627.0,
+  "comparator": "godot/compare_native_ai_groups.gd",
+  "creation_cases": 400.0,
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "host_comparison": {
+    "buckets": {
+      "assign.calls": {
+        "checks": 600,
+        "matched": 600
+      },
+      "assign.flags110": {
+        "checks": 9627,
+        "matched": 9627
+      },
+      "assign.group": {
+        "checks": 9627,
+        "matched": 9627
+      },
+      "assign.group_vector": {
+        "checks": 6000,
+        "matched": 6000
+      },
+      "construct.fields": {
+        "checks": 32,
+        "matched": 32
+      },
+      "construct.links": {
+        "checks": 320,
+        "matched": 320
+      },
+      "construct.params": {
+        "checks": 160,
+        "matched": 160
+      },
+      "construct.slot": {
+        "checks": 320,
+        "matched": 320
+      },
+      "creation.flags110": {
+        "checks": 400,
+        "matched": 400
+      },
+      "sequence.final_flags110": {
+        "checks": 32,
+        "matched": 32
+      },
+      "sequence.final_group_vectors": {
+        "checks": 32,
+        "matched": 32
+      },
+      "sequence.final_groups": {
+        "checks": 32,
+        "matched": 32
+      },
+      "tick.countdown": {
+        "checks": 27961,
+        "matched": 27961
+      },
+      "tick.events": {
+        "checks": 27961,
+        "matched": 27961
+      },
+      "tick.rng_after": {
+        "checks": 27961,
+        "matched": 27961
+      },
+      "tick.rng_before": {
+        "checks": 27961,
+        "matched": 27961
+      },
+      "tick.wakes": {
+        "checks": 27961,
+        "matched": 27961
+      }
+    },
+    "checks": 166987,
+    "matched": 166987,
+    "mismatches": [],
+    "module": "godot/ai_brain.gd"
+  },
+  "oracle": "tools/native_ai_groups.py",
+  "scope": "Synthetic player unit ranges (first..last inclusive, empty ranges, sub-ranges), random flags110 incl. bits 18-21, def+0x241 builder/canfly, def+0x245 cancapture, signed word def+0x1c0 minwaterdepth, group dword values incl. -1/0x100; brain tick over 32 tick sequences with player [p]/type toggles, countdown values 30/1/0/negative, tick starts near 0x7fffffff and 0xfffffd00 (unsigned wake compare), and external RNG perturbations. Unit creation word: 400 runs of the whole 0x485a40 initialiser with random prior flags110, def+0x241, bmcode def+0x22f, def+0x22e, owner side vs game+0x2a43 and random remaining definition bytes; weapon records zeroed. Excluded: caller loop 0x464f80 (player filters are disassembly-verified only), think bodies after the wake store, weapon scheduler, knowledge refresh 0x40b2c0, vector growth/allocation path of 0x480250.",
+  "sequences": 32.0,
+  "set_group_calls_by_group": {
+    "1": 507.0,
+    "3": 272.0,
+    "4": 981.0,
+    "5": 500.0,
+    "7": 532.0,
+    "8": 508.0
+  },
+  "stubs": {
+    "0x4089a0": "weapon scheduler (thiscall ret 4) -> records allow_commandfire argument",
+    "0x4b4f10": "operator new -> bump allocator (brain/handler objects only; group vectors pre-reserved with capacity 128)",
+    "0x4b4f20": "operator delete -> no-op (not reached)",
+    "think bodies": "original prologue executed up to the instruction after the wake store (0x4086e8, 0x407801, 0x407a10, 0x408127, 0x407b13, 0x407ebb), then forced return with ebx/esi/edi/ebp/esp restored; 0x407380 (group 5) runs unmodified"
+  },
+  "think_calls": {
+    "0x407380": 12775.0,
+    "0x4077e0": 432.0,
+    "0x4079f0": 216.0,
+    "0x407ae0": 82.0,
+    "0x407e90": 153.0,
+    "0x408100": 198.0,
+    "0x4086d0": 448.0
+  },
+  "ticks": 27961.0,
+  "ticks_with_rng_draws": 198.0,
+  "trace": "local/ai/native-ai-groups.json (git-ignored)",
+  "unmodified": [
+    "0x408830 assign_groups",
+    "0x480250 set group (swap-remove / append)",
+    "0x406c10/0x406c40 vector helpers",
+    "0x408cb0 brain constructor",
+    "0x407350/0x407d40 handler constructors",
+    "0x4e43a0 ftol",
+    "0x408c40 brain tick",
+    "0x4b6c30 RNG",
+    "0x485a40 unit initialiser (with 0x48a160, 0x489800, 0x401070, 0x480250)"
+  ]
+}

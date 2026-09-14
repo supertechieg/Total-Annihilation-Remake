@@ -158,6 +158,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Arm projection failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --map sherwood --faction core --verify-projection
     if ($LASTEXITCODE -ne 0) { throw 'Core projection failed' }
+    & $godotPath --headless --path godot --script res://test_ai_brain.gd
+    if ($LASTEXITCODE -ne 0) { throw 'AI brain tests failed' }
     & $godotPath --headless --path godot --script res://test_minimap.gd
     if ($LASTEXITCODE -ne 0) { throw 'Minimap checks failed' }
     & $godotPath --headless --path godot --script res://test_feature_animation.gd
@@ -476,6 +478,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Native screen to world failed' }
         & $godotPath --headless --path godot --script res://compare_native_screen_to_world.gd
         if ($LASTEXITCODE -ne 0) { throw 'Screen to world native comparison failed' }
+        python tools\native_ai_groups.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native AI groups failed' }
+        & $godotPath --headless --path godot --script res://compare_native_ai_groups.gd
+        if ($LASTEXITCODE -ne 0) { throw 'AI groups native comparison failed' }
         python tools\native_hit_notify.py
         if ($LASTEXITCODE -ne 0) { throw 'Native hit notification failed' }
         & $godotPath --headless --path godot --script res://compare_native_hit_notify.gd

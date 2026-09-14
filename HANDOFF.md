@@ -12,6 +12,8 @@ Codex investigates, plans, and reviews; Claude implements assigned changes. A CL
 
 User reiterated (September 13): the ultimate goal is a playable full port of Total Annihilation, and every verified checkpoint must be committed and pushed to GitHub.
 
+AI brain (skirmish AI CP1+CP7): ai_brain.gd ports brain construction 0x408cb0, tick 0x408c40 (countdown, unsigned wake test, weapon scheduler flag), think wake cadence incl. rand(900)/rand(150), group assignment 0x408830, set-group 0x480250 and the unit creation word 0x485a40; shared RNG is wind_state.gd bounded_random (0x4b6c30). Native 166,987/166,987 (600 assign cases, 27,961 ticks, 400 creation cases); test_ai_brain 44/44 in NORMAL, oracle in -Native. Resolved U4: default minwaterdepth is -10000. Think bodies, knowledge refresh and world integration are next. See AI_BRAIN.md.
+
 Cursor projection: cursor_projection.gd ports 0x484b50 screen-to-world over terrain height (native 14,400/14,400, 7/8 mutants caught, survivor equivalent); viewer terrain orders use the ground under the cursor while unit picks use drawn positions. Full recovered cursor/hover/camera spec (0x48cd80 model-bbox hover, 0x48d220/0x43e490 cursor ids, build ghost 0x4197d0, edge scroll/follow) in CURSOR_PROJECTION.md for later UI checkpoints.
 
 LOS stamping and queries: visibility_world.gd ports unit create/update/death, circular and true count stamps, mapped bits, 20-slot temp LOS and rebuild (native O3 63,680/63,680 over 600 fuzzed sequences incl. reproduced 0x481fd1 faults); visibility_queries.gd ports 0x465ac0/0x408090/0x4658e0 (native O5 114,000/114,000, full instruction coverage). Both in -Native. Not yet wired into the worlds: next C5 world hook, C7 radar/jam/cloak, C8 targeting gates, C9 fog. See LOS_STAMP_QUERIES.md.
