@@ -9,6 +9,7 @@ const FeatureAnimation = preload("res://feature_animation.gd")
 var unit_catalog: RefCounted
 var unit_visuals: RefCounted
 const Navigation = preload("res://terrain_navigation.gd")
+const CursorProjection = preload("res://cursor_projection.gd")
 const MobileUnit = preload("res://mobile_unit.gd")
 const ConstructionWorld = preload("res://construction_world.gd")
 const Combat = preload("res://combat_world.gd")
@@ -556,6 +557,13 @@ func select_group(ids: Array) -> int:
 
 ## Original object projection (box select 0x48c390 uses the same): screen y = world z - (integer height >> 1).
 ## Terrain tiles are drawn unshifted; units, wrecks, projectiles and effects are lifted by half their height.
+## Terrain point under a view position (0x484b50): the inverse of the height lift over the map's surface, clamped to the map.
+func ground_point(view_point: Vector2) -> Vector2:
+	if navigation == null:
+		return view_point
+	var world_raw: Array = CursorProjection.screen_to_world(navigation.heights, navigation.width, navigation.height, navigation.width * 16, navigation.height * 16, navigation.sea_level, int(floor(view_point.x)), int(floor(view_point.y)))
+	return Vector2(float(world_raw[0]), float(world_raw[2])) / 65536.0
+
 static func lift(point: Vector2, height: float) -> Vector2:
 	return Vector2(point.x, point.y - float(int(floor(height)) >> 1))
 
@@ -656,7 +664,22 @@ func run_projection_demo() -> bool:
 	if not lift(Vector2(10, 100), 7.9) == Vector2(10, 97) or not lift(Vector2(0, 0), 255) == Vector2(0, -127):
 		printerr("Projection demo: height shift is not an integer >> 1")
 		return false
-	print("PROJECTION_VERIFY_OK unit at height %d drawn %d px up; click and box select use the drawn position" % [height, height >> 1])
+	# Terrain clicks invert the lift: clicking where the ground under the unit is drawn gives back that ground point.
+	var ground := ground_point(expected)
+	if absf(ground.x - best.x) > 1.0 or absf(ground.y - best.y) > 16.0:
+		printerr("Projection demo: ground under drawn point ", expected, " is ", ground, " expected near ", best)
+		return false
+	var flat := Vector2(-1, -1)
+	for index in range(navigation.heights.size()):
+		@warning_ignore("integer_division")
+		var cell := Vector2i(index % navigation.width, index / navigation.width)
+		if cell.x > 2 and cell.y > 12 and cell.x < navigation.width - 3 and cell.y < navigation.height - 3 and maxi(int(navigation.heights[index]), navigation.sea_level) == 0:
+			flat = Vector2(cell) * 16.0
+			break
+	if flat.x >= 0 and ground_point(flat) != flat:
+		printerr("Projection demo: flat ground moved from ", flat, " to ", ground_point(flat))
+		return false
+	print("PROJECTION_VERIFY_OK unit at height %d drawn %d px up; click and box select use the drawn position; terrain click there resolves to ground %s" % [height, height >> 1, ground.round()])
 	return true
 
 func run_squad_demo() -> bool:
@@ -1002,10 +1025,10 @@ func choose_dgun() -> void:
 	placement_type = DGUN_MODE
 	status_label.text = "  D-gun: click an enemy unit (400 energy per shot)"
 
-func dgun_at(point: Vector2) -> bool:
+func dgun_at(point: Vector2, pick := Vector2.INF) -> bool:
 	for id: int in economy.units.keys():
 		var unit: Dictionary = economy.units[id]
-		if int(unit.get("team", 0)) != 0 and unit_under(id, point, 8.0):
+		if int(unit.get("team", 0)) != 0 and unit_under(id, point if pick == Vector2.INF else pick, 8.0):
 			var accepted: bool = combat.command_fire(economy.builder_id, id)
 			status_label.text = "  " + combat.status
 			return accepted
@@ -1966,6 +1989,8 @@ func map_input(event: InputEvent) -> void:
 				set_meta("press_position", event.position)
 			elif event.position.distance_to(get_meta("press_position", event.position)) < 5:
 				var pos: Vector2 = (event.position - world.position) / map_zoom
+				# Units are picked where they are drawn; terrain orders use the ground point under the cursor.
+				var ground := ground_point(pos)
 				var group_handled := false
 				if placement_type.is_empty() and not selected_group.is_empty():
 					group_handled = true
@@ -1980,17 +2005,17 @@ func map_input(event: InputEvent) -> void:
 						selected_group.clear()
 						combat_overlay.selected = []
 					else:
-						group_move(pos)
+						group_move(ground)
 				if group_handled:
 					pass
 				elif placement_type == GROUND_ATTACK_MODE:
 					placement_type = ""
-					attack_ground_at(pos)
+					attack_ground_at(ground)
 				elif placement_type == DGUN_MODE:
 					placement_type = ""
-					dgun_at(pos)
+					dgun_at(ground, pos)
 				elif not placement_type.is_empty():
-					place_structure(placement_type, pos)
+					place_structure(placement_type, ground)
 				else:
 					var resumed := false
 					var ids: Array = structure_sprites.keys()
@@ -2019,9 +2044,9 @@ func map_input(event: InputEvent) -> void:
 							resumed = true
 							break
 					if not resumed:
-						resumed = reclaim_at(pos)
+						resumed = reclaim_at(ground)
 					if not resumed:
-						issue_move(pos)
+						issue_move(ground)
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			stop_order()
 		if event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:

@@ -12,6 +12,8 @@ Codex investigates, plans, and reviews; Claude implements assigned changes. A CL
 
 User reiterated (September 13): the ultimate goal is a playable full port of Total Annihilation, and every verified checkpoint must be committed and pushed to GitHub.
 
+Cursor projection: cursor_projection.gd ports 0x484b50 screen-to-world over terrain height (native 14,400/14,400, 7/8 mutants caught, survivor equivalent); viewer terrain orders use the ground under the cursor while unit picks use drawn positions. Full recovered cursor/hover/camera spec (0x48cd80 model-bbox hover, 0x48d220/0x43e490 cursor ids, build ghost 0x4197d0, edge scroll/follow) in CURSOR_PROJECTION.md for later UI checkpoints.
+
 LOS stamping and queries: visibility_world.gd ports unit create/update/death, circular and true count stamps, mapped bits, 20-slot temp LOS and rebuild (native O3 63,680/63,680 over 600 fuzzed sequences incl. reproduced 0x481fd1 faults); visibility_queries.gd ports 0x465ac0/0x408090/0x4658e0 (native O5 114,000/114,000, full instruction coverage). Both in -Native. Not yet wired into the worlds: next C5 world hook, C7 radar/jam/cloak, C8 targeting gates, C9 fog. See LOS_STAMP_QUERIES.md.
 
 Height projection: units, Commander, wrecks, rings, health bars, projectiles and effects are drawn at z - (height >> 1), the projection box select 0x48c390 uses; click and box picks test the drawn position. Terrain clicks are still flat (inverse cursor projection under research). --verify-projection (Comet Catcher Arm, Sherwood Core) in NORMAL. See PLAYER_CONTROLS.md.

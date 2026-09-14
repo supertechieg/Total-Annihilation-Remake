@@ -472,6 +472,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Native visibility query failed' }
         & $godotPath --headless --path godot --script res://compare_native_visibility_query.gd
         if ($LASTEXITCODE -ne 0) { throw 'Visibility query native comparison failed' }
+        python tools\native_screen_to_world.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native screen to world failed' }
+        & $godotPath --headless --path godot --script res://compare_native_screen_to_world.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Screen to world native comparison failed' }
         python tools\native_hit_notify.py
         if ($LASTEXITCODE -ne 0) { throw 'Native hit notification failed' }
         & $godotPath --headless --path godot --script res://compare_native_hit_notify.gd
