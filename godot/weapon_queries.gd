@@ -1,10 +1,12 @@
 extends RefCounted
-## Synchronous primary piece queries with the original AimFrom fallback.
+## Synchronous weapon piece queries with the original AimFrom fallback (0x43e240/0x43e2e0).
 var vm: RefCounted
 var fault := ""
+var slot := "Primary"
 
-func _init(script: RefCounted) -> void:
+func _init(script: RefCounted, weapon_slot := "Primary") -> void:
 	vm = script
+	slot = weapon_slot
 
 func output(callback: String, initial: int) -> int:
 	if not vm.functions.has(callback):
@@ -19,9 +21,9 @@ func output(callback: String, initial: int) -> int:
 	return result
 
 func piece_name(aim_from := false) -> String:
-	var piece := output("AimFromPrimary", -1) if aim_from else -1
+	var piece := output("AimFrom" + slot, -1) if aim_from else -1
 	if piece == -1 and fault.is_empty():
-		piece = output("QueryPrimary", 0)
+		piece = output("Query" + slot, 0)
 	if not fault.is_empty():
 		return ""
 	if piece < 0 or piece >= vm.pieces.size():

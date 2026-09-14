@@ -39,6 +39,9 @@ var cycles: Dictionary = {}
 var launch_offsets: Dictionary = {}
 var guards: Dictionary = {}
 var guard_pursuit: Dictionary = {}
+## Command-fire (D-gun) orders use weapon slot 3 with their own script cycle.
+var command_orders: Dictionary = {}
+var command_cycles: Dictionary = {}
 var projectiles: Array = []
 var effects: Array = []
 const EffectAssets = preload("res://weapon_effects.gd")
@@ -53,11 +56,76 @@ func _init(source: RefCounted) -> void:
 	burst_random = world.game_random
 
 func stop(id: int, stop_movement := true) -> void:
-	if stop_movement and orders.has(id) and orders[id].get("chasing", false) and world.mobile_units.has(id):
-		world.mobile_units[id].stop()
+	for active: Dictionary in [orders, command_orders]:
+		if stop_movement and active.has(id) and active[id].get("chasing", false) and world.mobile_units.has(id):
+			world.mobile_units[id].stop()
 	orders.erase(id)
+	command_orders.erase(id)
 	if cycles.has(id):
 		cycles[id].stop()
+	if command_cycles.has(id):
+		command_cycles[id].stop()
+
+func end_order(id: int, command: bool) -> void:
+	if not command:
+		stop(id)
+		return
+	if command_orders.has(id) and command_orders[id].get("chasing", false) and world.mobile_units.has(id):
+		world.mobile_units[id].stop()
+	command_orders.erase(id)
+	if command_cycles.has(id):
+		command_cycles[id].stop()
+
+## Command fire with the unit's weapon3 (Commander D-gun) at an enemy unit; pursues into range and fires once.
+func command_fire(source: int, target: int) -> bool:
+	if not world.units.has(source) or not world.units.has(target) or source == target:
+		return false
+	var fields: Dictionary = world.catalog.definition(world.units[source].type)
+	var weapon: Dictionary = world.catalog.weapon(str(fields.get("weapon3", "")))
+	if weapon.is_empty() or int(weapon.definition.get("commandfire", "0")) & 1 == 0 or not world.scripts.has(source):
+		status = "Unit has no command-fire weapon"
+		return false
+	if world.units[source].get("team", 0) == world.units[target].get("team", 0):
+		status = "Select an enemy target"
+		return false
+	if not command_cycles.has(source):
+		command_cycles[source] = Cycle.new(world.scripts[source], weapon, "Tertiary")
+	if not command_cycles[source].fault.is_empty():
+		status = command_cycles[source].fault
+		return false
+	if not launch_offsets.has(source):
+		launch_offsets[source] = int(world.units[source].get("weapon_launch_offset", 0))
+	# The primary attack yields movement control to the command order.
+	if orders.has(source):
+		stop(source, false)
+	command_orders[source] = {"target": target, "heading": -999999, "pitch": -999999, "pursue": true, "chasing": false, "next_path": 0}
+	status = "Command fire ordered"
+	return true
+
+func shot_affordable(source: int, definition: Dictionary) -> bool:
+	var energy := float(definition.get("energypershot", "0"))
+	var metal := float(definition.get("metalpershot", "0"))
+	if energy <= 0 and metal <= 0:
+		return true
+	var account: Dictionary = world.resources(int(world.units[source].get("team", 0)))
+	return energy <= float(account.energy) and metal <= float(account.metal)
+
+## 0x4012a0: subtract per-shot cost from stock immediately and add it to the unit's requested totals.
+func pay_shot(source: int, definition: Dictionary) -> void:
+	var energy := float(definition.get("energypershot", "0"))
+	var metal := float(definition.get("metalpershot", "0"))
+	if energy <= 0 and metal <= 0:
+		return
+	var team := int(world.units[source].get("team", 0))
+	var account: Dictionary = world.resources(team)
+	if energy > float(account.energy) or metal > float(account.metal):
+		return
+	account.energy = float(account.energy) - energy
+	world.units[source].energy_ledger.requested = float(world.units[source].energy_ledger.requested) + energy
+	if metal <= float(account.metal):
+		account.metal = float(account.metal) - metal
+		world.units[source].metal_ledger.requested = float(world.units[source].metal_ledger.requested) + metal
+	world.store_resources(team, account)
 
 ## Automatic target acquisition. Pursuing guards search their sight radius and chase; holding guards only
 ## engage within weapon range and never stop or move the unit (used for the player-controlled Commander).
@@ -209,19 +277,29 @@ func step() -> void:
 	for effect: Dictionary in effects:
 		effect.life -= 1
 	effects = effects.filter(func(effect: Dictionary) -> bool: return effect.life > 0)
+	var entries: Array = []
 	for source: int in orders.keys():
-		if not world.units.has(source) or not world.units.has(orders[source].target):
-			stop(source)
+		entries.append([source, false])
+	for source: int in command_orders.keys():
+		entries.append([source, true])
+	for entry: Array in entries:
+		var source: int = entry[0]
+		var command: bool = entry[1]
+		var active: Dictionary = command_orders if command else orders
+		if not active.has(source):
 			continue
-		var order: Dictionary = orders[source]
+		if not world.units.has(source) or not world.units.has(active[source].target):
+			end_order(source, command)
+			continue
+		var order: Dictionary = active[source]
 		var target := int(order.target)
 		var origin: Vector2 = world.units[source].position
 		var destination: Vector2 = world.units[target].position
-		var cycle = cycles[source]
+		var cycle = command_cycles[source] if command else cycles[source]
 		var aim_piece: String = cycle.queries.piece_name(true)
 		if aim_piece.is_empty():
 			status = cycle.queries.fault
-			stop(source)
+			end_order(source, command)
 			continue
 		var aim_origin := muzzle(source, aim_piece)
 		var target_point := center(target)
@@ -247,13 +325,21 @@ func step() -> void:
 			order.pitch = pitch
 		var unit: Dictionary = world.units[source]
 		var reload_delay := Reload.ticks(int(cycle.runtime.reload_ticks), int(unit.health), int(world.catalog.definition(unit.type).maxdamage), int(unit.get("experience", 0)))
-		cycle.step(within_range and world.mobile_units[source].speed == 0, func(piece: String) -> Vector3: return muzzle(source, piece), reload_delay, tick)
+		# 0x49e1a0 fires a non-stockpile weapon only when the owner's stock covers its per-shot energy and metal.
+		var affordable := shot_affordable(source, cycle.definition)
+		cycle.step(within_range and world.mobile_units[source].speed == 0 and affordable, func(piece: String) -> Vector3: return muzzle(source, piece), reload_delay, tick)
 		if not cycle.fault.is_empty():
 			status = cycle.fault
-			stop(source)
+			end_order(source, command)
 			continue
-		for shot: Dictionary in cycle.shots:
+		var emitted: Array = cycle.shots.duplicate()
+		if command and not emitted.is_empty():
+			# A command-fire order completes after its shot; stopping the cycle clears its shot list, so use the copy.
+			command_orders.erase(source)
+			command_cycles[source].stop()
+		for shot: Dictionary in emitted:
 			var start: Vector3 = shot.position
+			pay_shot(source, cycle.definition)
 			request_sound(str(cycle.definition.get("soundstart", "")), start)
 			var world_heading := (heading + int(world.mobile_units[source].heading)) & 0xffff
 			var shot_pitch := pitch & 0xffff
@@ -296,7 +382,9 @@ func step() -> void:
 			if int(cycle.definition.get("beamweapon", "0")) != 0:
 				# Direct launch 0x49c9c0 starts the tail at the muzzle and stamps the launch tick for the duration delay.
 				projectile.merge({"beam": true, "tail_raw": raw_point(start), "tail": start, "launch": tick, "released": false,
-					"duration": int(cycle.runtime.duration_ticks),
+					"duration": int(cycle.runtime.duration_ticks), "target_id": target,
+					"area": int(cycle.definition.get("areaofeffect", "0")), "edge": float(cycle.definition.get("edgeeffectiveness", "0")),
+					"noexplode": int(cycle.definition.get("noexplode", "0")) & 1 != 0,
 					"deadline": DirectDeadline.deadline(tick, int(shot.velocity_raw_per_tick), int(cycle.definition.range), int(float(cycle.definition.get("weapontimer", "0")) * 30.0), int(cycle.definition.get("noautorange", "0")) != 0)})
 				projectiles.append(projectile)
 				shots_fired += 1
@@ -436,26 +524,34 @@ func step_beam(projectile: Dictionary) -> bool:
 	projectile.released = next.released
 	if world.collision.projectile_cell(next.head) < 0:
 		return false
-	# Beams share the direct round's endpoint collision and unit damage; they have no splash radius.
+	# Impact dispatch 0x499eb0: a unit hit with area of effect below 17 deals direct damage, otherwise splash;
+	# terrain impacts splash. noexplode (flag 0x400000) keeps the projectile alive after impact.
+	var keep: bool = projectile.get("noexplode", false)
 	var target: int = world.collision.target_at(world, next.head, int(projectile.owner))
 	if target != 0:
-		var damage := Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0)
-		world.units[target].health = maxi(0, int(world.units[target].health) - damage)
-		hits += 1
-		add_effect(projectile.position, str(projectile.get("explosion", "")))
-		request_sound(str(projectile.get("soundhit", "")), projectile.position)
-		if int(world.units[target].health) == 0:
-			destroyed.append(target)
-			world.remove_unit(target)
-			stop(target)
-			cycles.erase(target)
-			launch_offsets.erase(target)
-		return false
+		if int(projectile.get("area", 0)) < 17:
+			var damage := Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0)
+			world.units[target].health = maxi(0, int(world.units[target].health) - damage)
+			hits += 1
+			add_effect(projectile.position, str(projectile.get("explosion", "")))
+			request_sound(str(projectile.get("soundhit", "")), projectile.position)
+			if int(world.units[target].health) == 0:
+				destroy_unit(target)
+		else:
+			blast(projectile)
+		return keep
 	if world.collision.terrain_impact(world, projectile, int(projectile.get("collision_flags", 0))):
-		add_effect(projectile.position, str(projectile.get("explosion", "")))
-		request_sound(str(projectile.get("soundhit", "")), projectile.position)
-		return false
+		blast(projectile)
+		return keep
 	return true
+
+func destroy_unit(id: int) -> void:
+	destroyed.append(id)
+	world.remove_unit(id)
+	stop(id)
+	cycles.erase(id)
+	command_cycles.erase(id)
+	launch_offsets.erase(id)
 
 func step_shell(projectile: Dictionary) -> bool:
 	var expired := Motion.expiration(tick, int(projectile.deadline), int(projectile.timer), projectile.burnblow)
@@ -491,7 +587,7 @@ func blast(projectile: Dictionary) -> void:
 	@warning_ignore("integer_division")
 	var radius: int = int(projectile.area) / 2
 	for id: int in world.collision.records.keys():
-		if id == int(projectile.source):
+		if id == int(projectile.source) or not world.collision.records.has(id) or not world.units.has(id):
 			continue
 		var record: Dictionary = world.collision.records[id]
 		var multiplier := Splash.multiplier(projectile.position_raw, record.position_raw, record.bounds.lower, record.bounds.upper, radius, float(projectile.edge))
@@ -501,8 +597,4 @@ func blast(projectile: Dictionary) -> void:
 		world.units[id].health = maxi(0, int(world.units[id].health) - damage)
 		hits += 1
 		if int(world.units[id].health) == 0:
-			destroyed.append(id)
-			world.remove_unit(id)
-			stop(id)
-			cycles.erase(id)
-			launch_offsets.erase(id)
+			destroy_unit(id)

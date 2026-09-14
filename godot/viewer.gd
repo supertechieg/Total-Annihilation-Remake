@@ -16,7 +16,8 @@ const WeaponAudio = preload("res://weapon_audio.gd")
 var weapon_audio: Node
 const Opponent = preload("res://opponent.gd")
 const ScenarioResult = preload("res://scenario_result.gd")
-const CORE_DUEL_UNITS := ["corthud", "corlevlr", "corstorm", "cormist", "corcrash", "corfav", "corgator", "corak"]
+const DGUN_MODE := "__dgun__"
+const CORE_DUEL_UNITS :=["corthud", "corlevlr", "corstorm", "cormist", "corcrash", "corfav", "corgator", "corak"]
 var scenario_result: RefCounted
 var opponent: RefCounted
 var combat: RefCounted
@@ -187,6 +188,10 @@ func start_world_movement() -> void:
 	combat_overlay.z_index = 10
 	world.add_child(combat_overlay)
 	map_center = unit_position
+	if "--verify-dgun" in OS.get_cmdline_user_args():
+		if not run_dgun_demo():
+			push_error("D-gun scenario failed")
+			get_tree().quit(1)
 	if "--verify-commander-combat" in OS.get_cmdline_user_args():
 		if not run_commander_combat():
 			push_error("Commander combat scenario failed")
@@ -415,6 +420,51 @@ func run_factory_demo(factory_type := "armvp", product_type := "armflash", produ
 		return false
 	select_unit(id)
 	print("FACTORY_VERIFY_OK built=%s produced=%d %s; exit and selected movement passed" % [factory_type, product_count, product_type])
+	return true
+
+func choose_dgun() -> void:
+	if economy == null or not economy.units.has(economy.builder_id):
+		return
+	placement_type = DGUN_MODE
+	status_label.text = "  D-gun: click an enemy unit (400 energy per shot)"
+
+func dgun_at(point: Vector2) -> bool:
+	for id: int in economy.units.keys():
+		var unit: Dictionary = economy.units[id]
+		if int(unit.get("team", 0)) != 0 and economy.footprint(unit.type, unit.position).grow(8).has_point(point):
+			var accepted: bool = combat.command_fire(economy.builder_id, id)
+			status_label.text = "  " + combat.status
+			return accepted
+	status_label.text = "  D-gun needs an enemy unit target"
+	return false
+
+func run_dgun_demo() -> bool:
+	# Three enemies in a row; one D-gun shot aimed at the nearest must destroy all of them.
+	var enemy_type := "armflash" if faction == "core" else "corraid"
+	var enemies: Array = []
+	for distance in [110, 150, 190]:
+		var point: Vector2 = navigation.nearest_open(unit_position + Vector2(0, distance))
+		if point.x < 0:
+			return false
+		var id: int = economy.add_unit(enemy_type, point, 0.0, 1)
+		add_structure_sprite(id)
+		enemies.append(id)
+	combat.guards.erase(economy.builder_id)
+	var energy_before: float = economy.energy
+	if not dgun_at(economy.units[enemies[0]].position):
+		return false
+	var shots: int = combat.shots_fired
+	for tick in range(600):
+		step_script()
+		if combat.shots_fired > shots and combat.projectiles.is_empty():
+			break
+	var survivors := 0
+	for id: int in enemies:
+		survivors += int(economy.units.has(id))
+	if survivors != 0 or combat.shots_fired != shots + 1 or not script_vm.fault.is_empty():
+		printerr("D-gun demo: survivors=%d shots=%d fault=%s energy %.1f -> %.1f" % [survivors, combat.shots_fired - shots, script_vm.fault, energy_before, economy.energy])
+		return false
+	print("DGUN_VERIFY_OK %s D-gun destroyed %d %s in one shot; energy %.0f -> %.0f" % [commander_type, enemies.size(), enemy_type, energy_before, economy.energy])
 	return true
 
 func run_commander_combat() -> bool:
@@ -966,6 +1016,7 @@ func build_interface() -> void:
 	column.add_child(button("Start opponent", start_opponent))
 	column.add_child(label("Click terrain to move · Right-click / S to stop", 11))
 	column.add_child(button("Stop movement  [S]", stop_order))
+	column.add_child(button("D-gun target  [D]", choose_dgun))
 	walk_button = button("Play walk cycle  [Space]", toggle_walk)
 	column.add_child(walk_button)
 	var weapons := HBoxContainer.new()
@@ -1046,7 +1097,10 @@ func map_input(event: InputEvent) -> void:
 				set_meta("press_position", event.position)
 			elif event.position.distance_to(get_meta("press_position", event.position)) < 5:
 				var pos: Vector2 = (event.position - world.position) / map_zoom
-				if not placement_type.is_empty():
+				if placement_type == DGUN_MODE:
+					placement_type = ""
+					dgun_at(pos)
+				elif not placement_type.is_empty():
 					place_structure(placement_type, pos)
 				else:
 					var resumed := false
@@ -1111,6 +1165,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		clear_target()
 	elif event.keycode == KEY_B:
 		toggle_build()
+	elif event.keycode == KEY_D:
+		choose_dgun()
 
 func _process(delta: float) -> void:
 	frames += 1

@@ -116,6 +116,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Arm Commander real-map combat failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-commander-combat --faction core
     if ($LASTEXITCODE -ne 0) { throw 'Core Commander real-map combat failed' }
+    & $godotPath --headless --path godot --script res://test_dgun.gd
+    if ($LASTEXITCODE -ne 0) { throw 'D-gun checks failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun
+    if ($LASTEXITCODE -ne 0) { throw 'Arm Commander real-map D-gun failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun --faction core
+    if ($LASTEXITCODE -ne 0) { throw 'Core Commander real-map D-gun failed' }
     & $godotPath --headless --path godot --script res://test_guard_combat.gd
     if ($LASTEXITCODE -ne 0) { throw 'Guard combat checks failed' }
     & $godotPath --headless --path godot --script res://test_attack_orders.gd

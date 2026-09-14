@@ -19,15 +19,19 @@ var heading := 0
 var pitch := 0
 var denied := false
 
-func _init(script: RefCounted, weapon: Dictionary) -> void:
+var slot := "Primary"
+
+func _init(script: RefCounted, weapon: Dictionary, weapon_slot := "Primary") -> void:
 	vm = script
-	queries = Queries.new(vm)
+	slot = weapon_slot
+	queries = Queries.new(vm, slot)
 	definition = weapon.definition
 	runtime = weapon.runtime
-	for callback: String in ["AimPrimary", "QueryPrimary", "FirePrimary"]:
+	for callback: String in ["Aim" + slot, "Query" + slot, "Fire" + slot]:
 		if not vm.functions.has(callback):
-			fault = "Missing primary weapon callback: " + callback
-	if vm.functions.has("SetMaxReloadTime"):
+			fault = "Missing %s weapon callback: %s" % [slot.to_lower(), callback]
+	# Only the primary host sets the script's reload hint (original 0x49e070 sends one value for all weapons).
+	if slot == "Primary" and vm.functions.has("SetMaxReloadTime"):
 		vm.invoke("SetMaxReloadTime", [int(int(runtime.reload_ticks) * 1000 / 30)])
 
 func aim(target_heading: int, target_pitch: int) -> void:
@@ -41,7 +45,7 @@ func aim(target_heading: int, target_pitch: int) -> void:
 
 func request_aim() -> void:
 	aimed = false
-	aim_id = vm.invoke("AimPrimary", [heading, pitch])
+	aim_id = vm.invoke("Aim" + slot, [heading, pitch])
 
 func stop() -> void:
 	requested = false
@@ -74,20 +78,20 @@ func step(can_fire := true, resolve_muzzle := Callable(), reload_delay := -1, wo
 		next_shot = tick
 	if tick < next_shot:
 		return
-	var query: int = vm.invoke("QueryPrimary", [0])
+	var query: int = vm.invoke("Query" + slot, [0])
 	if not vm.completions.has(query):
-		fault = "Primary muzzle query did not finish synchronously"
+		fault = slot + " muzzle query did not finish synchronously"
 		return
 	var piece := int(vm.completions[query].locals[0])
 	if piece < 0 or piece >= vm.pieces.size():
-		fault = "Primary muzzle query returned an invalid piece"
+		fault = slot + " muzzle query returned an invalid piece"
 		return
 	# Native launch consumes the queried position before FirePrimary can alter pose.
 	var shot := {"tick": tick, "piece": piece, "piece_name": vm.pieces[piece].name,
 		"velocity_raw_per_tick": int(runtime.velocity_raw_per_tick), "burst": int(definition.get("burst", "0"))}
 	if resolve_muzzle.is_valid():
 		shot.position = resolve_muzzle.call(str(shot.piece_name))
-	vm.invoke("FirePrimary")
+	vm.invoke("Fire" + slot)
 	if not vm.fault.is_empty():
 		fault = vm.fault
 		return

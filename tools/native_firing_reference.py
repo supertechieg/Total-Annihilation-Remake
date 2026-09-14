@@ -25,6 +25,11 @@ def main():
         # of the still-unreconstructed ballistic projectile host.
         events[100] = [('HitByWeapon', [1024, -2048])]
         events[210] = [('HitByWeapon', [-2048, 1024])]
+    if unit in ('armcom', 'corcom'):
+        # Commander D-gun (weapon 3) script callbacks after the primary laser sequence.
+        events[200] = [('AimTertiary', [-4096, 512])]
+        for tick in (230, 233):
+            events[tick] = [('QueryTertiary', [0]), ('FireTertiary', [])]
     functions = {item['name'] for item in native.program['functions']}
     snapshots = []
     queries = []
@@ -39,7 +44,7 @@ def main():
             slot = next(i for i in range(8) if native.read(CONTEXT + 0x1c + i * 0xa4) == 0)
             native.invoke(action, args)
             item = dict(tick=tick, action=action, args=args, state=native.snapshot())
-            if action == 'QueryPrimary':
+            if action in ('QueryPrimary', 'QueryTertiary'):
                 if native.read(CONTEXT + 0x1c + slot * 0xa4) != 0:
                     raise AssertionError('Query did not return synchronously')
                 item['query_piece'] = signed(native.read(CONTEXT + 0x1c + slot * 0xa4 + 0x24))

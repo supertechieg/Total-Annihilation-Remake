@@ -38,9 +38,17 @@
     {
       "piece": 1.0,
       "tick": 166.0
+    },
+    {
+      "piece": 2.0,
+      "tick": 230.0
+    },
+    {
+      "piece": 2.0,
+      "tick": 233.0
     }
   ],
   "scope": "Healthy ground-unit recoil, muzzle visibility, query locals, overlapping firing and optional HitByWeapon callbacks at supplied times; excludes original host cadence/projectiles",
-  "snapshots": 322,
+  "snapshots": 327,
   "unit": "corcom"
 }
