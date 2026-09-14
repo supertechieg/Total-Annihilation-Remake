@@ -29,6 +29,9 @@ var selection_label: Label
 var resource_label: Label
 var placement_type := ""
 var structure_sprites: Dictionary = {}
+## Wreck and other modelled feature sprites keyed by anchor cell.
+var feature_sprites: Dictionary = {}
+var feature_sprite_revision := -1
 var structure_views: Dictionary = {}
 var structure_models: Dictionary = {}
 var selected_unit := 0
@@ -174,6 +177,9 @@ func start_world_movement() -> void:
 		push_error("Prepare the map metal bundle with tools/prepare_map_metal.py")
 		get_tree().quit(1)
 		return
+	var metal_metadata = JSON.parse_string(FileAccess.get_file_as_string(assets.path_join("metal.json")))
+	if metal_metadata is Dictionary:
+		economy.load_map_features(metal_metadata.get("placements", []))
 	combat = Combat.new(economy)
 	# The viewer steps the Commander's script and movement; combat and targeting use them through the world.
 	economy.attach_external(economy.builder_id, script_vm, mobile)
@@ -190,6 +196,10 @@ func start_world_movement() -> void:
 	combat_overlay.z_index = 10
 	world.add_child(combat_overlay)
 	map_center = unit_position
+	if "--verify-wreckage" in OS.get_cmdline_user_args():
+		if not run_wreckage_demo():
+			push_error("Wreckage scenario failed")
+			get_tree().quit(1)
 	if "--verify-group-orders" in OS.get_cmdline_user_args():
 		if not run_group_orders():
 			push_error("Group order scenario failed")
@@ -538,6 +548,35 @@ func run_group_orders() -> bool:
 	print("GROUP_VERIFY_OK box-selected %d %s, formation move and group attack destroyed %s" % [squad.size(), type, enemy_type])
 	return true
 
+func run_wreckage_demo() -> bool:
+	# Commander lasers kill an adjacent enemy; its wreck must appear as a feature, render and block navigation.
+	var map_features: int = economy.features.instances.size()
+	var enemy_type := "armflash" if faction == "core" else "corraid"
+	var point: Vector2 = navigation.nearest_open(unit_position + Vector2(150, 0))
+	var enemy: int = economy.add_unit(enemy_type, point, 0.0, 1)
+	add_structure_sprite(enemy)
+	var deaths_before: int = combat.deaths.size()
+	var started := Time.get_ticks_msec()
+	for tick in range(1500):
+		step_script()
+		if not economy.units.has(enemy):
+			break
+	if economy.units.has(enemy) or combat.deaths.size() == deaths_before:
+		printerr("Wreckage demo: enemy not destroyed")
+		return false
+	var death: Dictionary = combat.deaths[deaths_before]
+	for tick in range(5):
+		step_script()
+	var anchor := int(death.anchor)
+	var wreck_ok: bool = int(death.corpsetype) == 0 or (anchor >= 0 and economy.features.instances.has(anchor))
+	var rendered: bool = int(death.corpsetype) == 0 or feature_sprites.has(anchor)
+	if not wreck_ok or not rendered:
+		printerr("Wreckage demo: corpsetype=%d anchor=%d instance=%s sprite=%s" % [int(death.corpsetype), anchor, economy.features.instances.has(anchor), feature_sprites.has(anchor)])
+		return false
+	print("WRECKAGE_VERIFY_OK %s died with severity %d, corpse type %d -> %s at cell %d; map features %d; %.1f s" % [enemy_type, int(death.severity), int(death.corpsetype),
+		economy.features.instances[anchor].name if anchor >= 0 else "none", anchor, map_features, float(Time.get_ticks_msec() - started) / 1000.0])
+	return true
+
 func choose_dgun() -> void:
 	if economy == null or not economy.units.has(economy.builder_id):
 		return
@@ -740,6 +779,29 @@ func place_structure(type: String, point: Vector2) -> bool:
 		toggle_build()
 	return true
 
+func sync_feature_sprites() -> void:
+	if economy == null or economy.features.revision == feature_sprite_revision:
+		return
+	feature_sprite_revision = economy.features.revision
+	for anchor: int in feature_sprites.keys():
+		if not economy.features.instances.has(anchor):
+			feature_sprites[anchor].queue_free()
+			feature_sprites.erase(anchor)
+	for anchor: int in economy.features.instances:
+		if feature_sprites.has(anchor):
+			continue
+		var instance: Dictionary = economy.features.instances[anchor]
+		if unit_catalog.load_feature_model(instance.name).is_empty():
+			continue
+		var key: String = "feature:" + str(instance.name)
+		var sprite := Sprite2D.new()
+		sprite.texture = structure_texture(key, -anchor - 1)
+		sprite.position = Vector2(float(instance.position_raw[0]), float(instance.position_raw[2])) / 65536.0
+		sprite.scale = Vector2.ONE * (0.28 * 192.0 / 55.0)
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		world.add_child(sprite)
+		feature_sprites[anchor] = sprite
+
 func add_structure_sprite(id: int) -> void:
 	var unit: Dictionary = economy.units[id]
 	var type: String = unit.type
@@ -752,7 +814,7 @@ func add_structure_sprite(id: int) -> void:
 	structure_sprites[id] = sprite
 
 func structure_texture(type: String, id: int) -> Texture2D:
-	var individual: bool = economy.scripts.has(id) or economy.units[id].has("produced_by")
+	var individual: bool = economy.units.has(id) and (economy.scripts.has(id) or economy.units[id].has("produced_by"))
 	var key := str(id) if individual else type
 	if structure_views.has(key):
 		return structure_views[key].get_texture()
@@ -966,6 +1028,7 @@ func step_script() -> void:
 		combat.step()
 		check_scenario_result()
 		combat_overlay.queue_redraw()
+		sync_feature_sprites()
 		for id: int in structure_sprites.keys():
 			if not economy.units.has(id):
 				structure_sprites[id].queue_free()

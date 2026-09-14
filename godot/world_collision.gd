@@ -21,9 +21,11 @@ func terrain_impact(world: RefCounted, projectile: Dictionary, flags: int) -> bo
 		return false
 	if terrain.is_empty():
 		terrain = Heights.prepare(world.navigation.heights, world.navigation.width, world.navigation.height)
+	var feature_fields: Dictionary = world.features.contact_fields(cell) if "features" in world and world.features != null else {"code": 0xffff, "anchor_code": 0xffff, "feature_count": 0, "feature_heights": []}
 	var contact := Projectile.terrain_contact({"flags": flags, "position": projectile.position_raw,
-		"cell": {"low": int(terrain.low[cell]), "high": int(terrain.high[cell]), "code": 0xffff},
-		"anchor_code": 0xffff, "feature_count": 0, "feature_heights": [], "sea": world.navigation.sea_level, "lava": 0,
+		"cell": {"low": int(terrain.low[cell]), "high": int(terrain.high[cell]), "code": int(feature_fields.code)},
+		"anchor_code": int(feature_fields.anchor_code), "feature_count": int(feature_fields.feature_count), "feature_heights": feature_fields.feature_heights,
+		"sea": world.navigation.sea_level, "lava": 0,
 		"velocity_y": int(projectile.velocity_raw[1]), "cache": projectile.get("terrain_cache", [-32768, -32768])})
 	projectile.terrain_cache = contact.cache
 	if int(contact.velocity_y) != int(projectile.velocity_raw[1]):

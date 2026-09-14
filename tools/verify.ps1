@@ -120,6 +120,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'D-gun checks failed' }
     & $godotPath --headless --path godot --script res://test_unit_death.gd
     if ($LASTEXITCODE -ne 0) { throw 'Unit death checks failed' }
+    & $godotPath --headless --path godot --script res://test_wreckage.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Wreckage checks failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-wreckage
+    if ($LASTEXITCODE -ne 0) { throw 'Arm real-map wreckage failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-wreckage --faction core
+    if ($LASTEXITCODE -ne 0) { throw 'Core real-map wreckage failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun
     if ($LASTEXITCODE -ne 0) { throw 'Arm Commander real-map D-gun failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun --faction core

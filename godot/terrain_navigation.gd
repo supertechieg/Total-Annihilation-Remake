@@ -16,13 +16,24 @@ var features := PackedByteArray()
 var sea_level := 0
 var last_expanded := 0
 var failure := ""
+var limits := {}
 
 func _init(w: int, h: int, data: PackedByteArray, sea := 0, slope := 20, depth := 35, footprint := Vector2i(2, 2), minimum_depth := -10000, water_slope := -1, feature_blocking := PackedByteArray()) -> void:
 	width = w
 	height = h
 	heights = data
 	sea_level = sea
+	limits = {"slope": slope, "depth": depth, "footprint": footprint, "minimum_depth": minimum_depth, "water_slope": water_slope}
+	rebuild(feature_blocking)
+
+## Recompute passability for a new feature-blocking grid (map features plus placed wrecks).
+func rebuild(feature_blocking: PackedByteArray) -> void:
 	features = feature_blocking
+	var slope: int = limits.slope
+	var depth: int = limits.depth
+	var footprint: Vector2i = limits.footprint
+	var minimum_depth: int = limits.minimum_depth
+	var water_slope: int = limits.water_slope
 	assert(width > 0 and height > 0 and heights.size() == width * height)
 	assert(features.is_empty() or features.size() == width * height)
 	blocked.resize(width * height)

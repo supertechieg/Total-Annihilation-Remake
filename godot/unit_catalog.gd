@@ -33,6 +33,26 @@ func weapon(name: String) -> Dictionary:
 		return {}
 	return item
 
+## Feature definition runtime fields (loader layout) or {} when unknown.
+func feature(name: String) -> Dictionary:
+	return index.get("features", {}).get(name.to_lower(), {}).get("runtime", {})
+
+var feature_models: Dictionary = {}
+
+func load_feature_model(name: String) -> Dictionary:
+	name = name.to_lower()
+	if feature_models.has(name):
+		return feature_models[name]
+	var entry: Dictionary = index.get("features", {}).get(name, {})
+	if entry.get("model") == null:
+		return {}
+	var value = JSON.parse_string(FileAccess.get_file_as_string(root.path_join(str(entry.model))))
+	if not value is Dictionary or not value.has("model"):
+		fault = "Invalid feature model: " + name
+		return {}
+	feature_models[name] = value
+	return value
+
 func build_options(unit_id: String) -> Array:
 	return index.get("build_menus", {}).get(unit_id.to_lower(), [])
 

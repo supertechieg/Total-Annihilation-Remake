@@ -583,9 +583,11 @@ func kill_unit(id: int) -> void:
 	if not complete:
 		corpse = 0
 	var position_raw: Array = world.collision.records[id].position_raw.duplicate() if world.collision.records.has(id) else [roundi(unit.position.x * 65536.0), 0, roundi(unit.position.y * 65536.0)]
+	var rect: Rect2i = world.collision.records[id].rect if world.collision.records.has(id) else Rect2i(Vector2i(int(unit.position.x) >> 4, int(unit.position.y) >> 4), Vector2i.ONE)
 	var team := int(unit.get("team", 0))
-	deaths.append({"id": id, "type": unit.type, "severity": severity, "corpsetype": corpse, "corpse": str(fields.get("corpse", "")),
-		"position": unit.position, "position_raw": position_raw, "team": team, "debris": debris, "tick": tick})
+	var record := {"id": id, "type": unit.type, "severity": severity, "corpsetype": corpse, "corpse": str(fields.get("corpse", "")),
+		"position": unit.position, "position_raw": position_raw, "team": team, "debris": debris, "tick": tick, "anchor": -1}
+	deaths.append(record)
 	destroy_unit(id)
 	var explosion: Dictionary = world.catalog.weapon(str(fields.get("explodeas", ""))) if complete and severity > 0 else {}
 	if not explosion.is_empty():
@@ -594,6 +596,11 @@ func kill_unit(id: int) -> void:
 			"area": int(definition.get("areaofeffect", "0")), "edge": float(definition.get("edgeeffectiveness", "0")),
 			"explosion": str(definition.get("explosiongaf", "")) + "/" + str(definition.get("explosionart", "")),
 			"soundhit": str(definition.get("soundhit", "")), "damage": definition.get("damage", {})})
+	# 0x486360 after the explosion: the corpse (or its featuredead heap) anchors at the unit's collision rectangle cell.
+	if corpse > 0 and "features" in world and world.features != null:
+		record.anchor = world.features.place_corpse(str(fields.get("corpse", "")), corpse, rect.position.x, rect.position.y, position_raw, team)
+		if int(record.anchor) >= 0:
+			world.refresh_feature_blocking()
 
 ## Killed severity: ((-health * 100) as unsigned / maxdamage + previous health percent) / 2, clamped to 1..100.
 static func death_severity(health: int, maxdamage: int, previous_percent: int) -> int:

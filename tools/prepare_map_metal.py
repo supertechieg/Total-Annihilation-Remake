@@ -62,7 +62,7 @@ def main():
         if occupied & footprint:
             raise FormatError('Overlapping feature placement requires original placement resolution: ' + name)
         occupied.update(footprint)
-        placements.append(dict(x=x, z=z, width=w, height=h, metal=int(fields.get('metal', '0')),
+        placements.append(dict(name=name, x=x, z=z, width=w, height=h, metal=int(fields.get('metal', '0')),
                                indestructible=bool(int(fields.get('indestructible', '0')) & 1),
                                blocking=bool(blocking_flag(fields))))
         counts[name] += 1

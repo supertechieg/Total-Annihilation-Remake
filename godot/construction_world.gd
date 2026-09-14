@@ -20,6 +20,7 @@ const Navigation = preload("res://terrain_navigation.gd")
 const BuildingNavigation = preload("res://building_navigation.gd")
 const Mobile = preload("res://mobile_unit.gd")
 const WorldCollision = preload("res://world_collision.gd")
+const FeatureWorld = preload("res://feature_world.gd")
 const WeaponQueries = preload("res://weapon_queries.gd")
 const PieceOrigin = preload("res://piece_origin.gd")
 const BallisticLaunch = preload("res://ballistic_launch.gd")
@@ -34,6 +35,9 @@ const SCRIPTED_UNITS = ["armtide", "armwin", "armmex", "armmakr", "armsolar", "c
 	"corestor", "cormstor", "cordrag", "cormine1", "cormine2", "cormine3", "cormine4", "cormine5", "cormine6"]
 var mobile_units: Dictionary = {}
 var external_units: Dictionary = {}
+var features: RefCounted
+var map_feature_blocking := PackedByteArray()
+var blocking_revision := -1
 var navigation_cache: Dictionary = {}
 var yard_signature := ""
 var scripts: Dictionary = {}
@@ -71,6 +75,8 @@ func _init(source: RefCounted, terrain: RefCounted, commander_position: Vector2,
 	catalog = source
 	navigation = terrain
 	collision = WorldCollision.new(terrain.width, terrain.height)
+	features = FeatureWorld.new(terrain.width, terrain.height, source)
+	map_feature_blocking = terrain.features.duplicate()
 	navigation_cache[commander] = {"nav": terrain, "terrain": terrain.blocked.duplicate(), "footprint": Vector2i(2, 2)}
 	builder_id = add_unit(commander, commander_position, 0.0)
 
@@ -101,6 +107,31 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 	refresh_extractor(id)
 	collision.sync_unit(self, id)
 	return id
+
+## Map features from the prepared placements (names, anchors). Their blocking is already in the base navigation grid.
+func load_map_features(placements: Array) -> int:
+	var placed := 0
+	for placement: Dictionary in placements:
+		if placement.has("name") and features.place(str(placement.name), int(placement.x), int(placement.z), null, 10) >= 0:
+			placed += 1
+	blocking_revision = features.revision
+	return placed
+
+## Rebuild every cached navigation grid when a blocking wreck appears or disappears.
+func refresh_feature_blocking() -> void:
+	if blocking_revision == features.revision:
+		return
+	blocking_revision = features.revision
+	var grid: PackedByteArray = features.blocking_grid(map_feature_blocking)
+	var rebuilt: Array = []
+	for entry: Dictionary in navigation_cache.values():
+		if not rebuilt.has(entry.nav):
+			entry.nav.rebuild(grid)
+			rebuilt.append(entry.nav)
+		entry.terrain = entry.nav.blocked.duplicate()
+	if not rebuilt.has(navigation):
+		navigation.rebuild(grid)
+	refresh_navigation(true)
 
 ## Weapon initialization 0x49e070: muzzle/AimFrom Z separation at creation pose and default heading 32768.
 func capture_launch_offset(id: int) -> void:

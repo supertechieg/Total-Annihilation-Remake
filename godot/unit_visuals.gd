@@ -34,7 +34,7 @@ func material_for(face: Dictionary) -> StandardMaterial3D:
 func prepare(unit_id: String) -> void:
 	if meshes.has(unit_id):
 		return
-	var unit: Dictionary = catalog.load_unit(unit_id)
+	var unit: Dictionary = source_for(unit_id)
 	assert(unit.get("model") != null, "Unit needs an original model: " + unit_id)
 	var pieces: Array = []
 	for piece: Dictionary in unit.model.pieces:
@@ -61,10 +61,16 @@ func prepare(unit_id: String) -> void:
 		pieces.append(mesh)
 	meshes[unit_id] = pieces
 
+## Unit ids load unit models; "feature:<name>" loads a feature's object model (wrecks, heaps).
+func source_for(key: String) -> Dictionary:
+	if key.begins_with("feature:"):
+		return catalog.load_feature_model(key.substr(8))
+	return catalog.load_unit(key)
+
 func instantiate(unit_id: String) -> Node3D:
 	unit_id = unit_id.to_lower()
 	prepare(unit_id)
-	var unit: Dictionary = catalog.load_unit(unit_id)
+	var unit: Dictionary = source_for(unit_id)
 	var root := Node3D.new()
 	root.name = unit_id
 	var nodes: Array[Node3D] = []

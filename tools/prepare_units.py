@@ -61,6 +61,50 @@ def build_menus(content, units):
     return menus, additions, missing
 
 
+def feature_runtime(fields):
+    """Loader 0x42245x fields: footprint shorts, height/metal/energy low bits, damage short and the +0xfe flag word."""
+    def integer(key, default=0):
+        try:
+            return int(str(fields.get(key, default)).strip().split()[0])
+        except (ValueError, IndexError):
+            return default
+    return dict(footprintx=integer('footprintx') & 0xffff, footprintz=integer('footprintz') & 0xffff,
+                height=integer('height') & 0xff, metal=integer('metal') & 0xffff, energy=integer('energy') & 0xffff,
+                damage=integer('damage') & 0xffff, blocking=bool(integer('blocking') & 1), reclaimable=bool(integer('reclaimable') & 1),
+                autoreclaimable=bool(integer('autoreclaimable', 1) & 1), indestructible=bool(integer('indestructible') & 1),
+                flamable=bool(integer('flamable') & 1), geothermal=bool(integer('geothermal') & 1),
+                featuredead=str(fields.get('featuredead', '')).lower(), object=str(fields.get('object', '')).lower())
+
+
+def prepare_features(content, output, required_textures, issues):
+    features = {}
+    folder = output / 'features'
+    folder.mkdir(exist_ok=True)
+    models = {}
+    for path in sorted(content.paths):
+        if not path.startswith('features/') or not path.endswith('.tdf'):
+            continue
+        for name, fields in parse(content.read(path)).items():
+            name = name.lower()
+            if not isinstance(fields, dict) or name in features:
+                continue
+            runtime = feature_runtime(fields)
+            entry = dict(source=path, runtime=runtime, model=None)
+            model_path = f"objects3d/{runtime['object']}.3do" if runtime['object'] else ''
+            if model_path and model_path in content.paths:
+                if runtime['object'] not in models:
+                    pieces, textures = model_3do(content.read(model_path))
+                    filename = f"features/{hashlib.sha256(runtime['object'].encode()).hexdigest()[:20]}.json"
+                    (output / filename).write_text(json.dumps(dict(id=runtime['object'], model=dict(pieces=pieces, textures=sorted(textures), source=model_path))), encoding='utf-8')
+                    required_textures.update(textures)
+                    models[runtime['object']] = filename
+                entry['model'] = models[runtime['object']]
+            elif model_path:
+                issues.append(dict(feature=name, missing_model=model_path))
+            features[name] = entry
+    return features
+
+
 def prepare(root, output):
     root = root.resolve(strict=True)
     output = output.resolve()
@@ -108,6 +152,7 @@ def prepare(root, output):
         movement_fields = movement_classes.get(fields.get('movementclass', '').lower(), fields)
         units[unit_id] = dict(name=unit['name'], path=f'{unit_id}/unit.json', definition=fields,
                              movement=movement_definition(movement_fields))
+    features = prepare_features(content, output, required_textures, issues)
     palette_bytes = content.read('palettes/palette.pal')
     if len(palette_bytes) != 1024:
         raise FormatError('Unexpected palette length')
@@ -137,8 +182,8 @@ def prepare(root, output):
                 if name in weapons:
                     issues.append(dict(duplicate_weapon=name, previous=weapons[name]['source'], source=path))
                 weapons[name] = dict(source=path, definition=fields, runtime=weapon_runtime(fields))
-    index = dict(movement_runtime_version=1, weapon_runtime_version=5, profile=PROFILE, profile_status='provisional archive precedence', units=units,
-                 build_menus=menus, menu_additions=additions, weapons=weapons, textures=textures,
+    index = dict(movement_runtime_version=1, weapon_runtime_version=5, feature_runtime_version=1, profile=PROFILE, profile_status='provisional archive precedence', units=units,
+                 build_menus=menus, menu_additions=additions, weapons=weapons, features=features, textures=textures,
                  palette=[palette[i:i + 3] for i in range(0, 768, 3)], issues=issues,
                  missing_textures=missing_textures, missing_menu_units=missing_menu_units)
     (output / 'index.json').write_text(json.dumps(index, indent=2), encoding='utf-8')
