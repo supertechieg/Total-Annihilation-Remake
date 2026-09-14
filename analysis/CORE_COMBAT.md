@@ -2,7 +2,7 @@
 
 The Core Thud (`corthud`), Leveler (`corlevlr`), Storm (`corstorm`), Slasher (`cormist`) and Crasher (`corcrash`) now fight with the existing cannon, rocket and guided-missile hosts, alongside the Raider that was already supported. Their weapons match Arm counterparts in class: Thud's plasma cannon is the Hammer's class (speed 210, minbarrelangle -35), Leveler's is a ballistic light cannon (speed 280, AoE 84), Storm fires self-propelled unguided rockets like Rocko, and Slasher/Crasher fire guided tracking missiles like Samson/Jethro. Combat reads everything from each unit's `weapon1` definition; no Core-specific combat logic was added.
 
-The three Core laser units (Instigator `corgator`, Weasel `corfav`, A.K. `corak`) and Arm's Jeffy (`armfav`) fire beam lasers (`beamweapon=1`). No beam weapon host exists yet, so none of them are combat-enabled. That is separate work for both factions.
+The three Core laser units (Instigator `corgator`, Weasel `corfav`, A.K. `corak`) and Arm's Jeffy (`armfav`) fire beam lasers (`beamweapon=1`). They are now combat-enabled through the native-compared beam host; see BEAM_WEAPONS.md. With them, every armed Core level-one ground unit from the Vehicle Plant and Kbot Lab can fight.
 
 ## Evidence
 

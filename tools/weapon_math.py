@@ -36,11 +36,11 @@ def scaled_weapon_value(text, kind):
     value = float(prefix.group(1) if prefix else text)
     if not math.isfinite(value):
         raise ValueError('Non-finite weapon scalar')
-    if kind not in ('velocity', 'start_velocity', 'acceleration', 'reload', 'burst_rate', 'turn_rate'):
+    if kind not in ('velocity', 'start_velocity', 'acceleration', 'reload', 'burst_rate', 'turn_rate', 'duration'):
         raise ValueError(f'Unknown weapon scalar: {kind}')
     multiplier = 1.0 / 30.0 if kind == 'turn_rate' else 65536.0 / 900.0 if kind == 'acceleration' else 65536.0 / 30.0 if kind in ('velocity', 'start_velocity') else 30.0
     result = extended_product_integer(value, multiplier)
-    if kind in ('reload', 'burst_rate', 'turn_rate'):
+    if kind in ('reload', 'burst_rate', 'turn_rate', 'duration'):
         return result & 0xffff
     result &= 0xffffffff
     return result - 0x100000000 if result >= 0x80000000 else result
@@ -54,5 +54,7 @@ def weapon_runtime(definition):
         'turn_raw_per_tick': scaled_weapon_value(definition.get('turnrate', '0'), 'turn_rate'),
         'reload_ticks': scaled_weapon_value(definition.get('reloadtime', '0'), 'reload'),
         'burst_interval_ticks': scaled_weapon_value(definition.get('burstrate', '0'), 'burst_rate'),
+        # Beam tail delay; the original loader stores the x87 product as a word at weapon+0xf0.
+        'duration_ticks': scaled_weapon_value(definition.get('duration', '0'), 'duration'),
         'minimum_barrel_angle': minimum_barrel_angle(definition.get('minbarrelangle', '-11.25')),
     }

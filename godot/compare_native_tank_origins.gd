@@ -28,7 +28,7 @@ func _initialize() -> void:
 				mismatches += 1
 				break
 	var report := {"exe_sha256": trace.exe_sha256, "cases": trace.cases.size(), "mismatches": mismatches,
-		"scope": "Flash/Raider/Stumpy/Hammer/Peewee/Rocko/Warrior/Samson/Jethro plus Core Thud/Leveler/Storm/Slasher/Crasher muzzle and AimFromPrimary queries with native firing poses and four headings; original axis conversion/setters/traversal; synthetic name ordering; excludes full loader and renderer"}
+		"scope": "Flash/Raider/Stumpy/Hammer/Peewee/Rocko/Warrior/Samson/Jethro plus Core Thud/Leveler/Storm/Slasher/Crasher and laser Jeffy/Weasel/Instigator/A.K. muzzle and AimFromPrimary queries with native firing poses and four headings; original axis conversion/setters/traversal; synthetic name ordering; excludes full loader and renderer"}
 	FileAccess.open(folder.path_join("native-tank-comparison.json"), FileAccess.WRITE).store_string(JSON.stringify(report, "  "))
 	print("NATIVE_TANK_ORIGIN_COMPARISON %d / %d cases match" % [trace.cases.size() - mismatches, trace.cases.size()])
 	quit(0 if mismatches == 0 else 1)

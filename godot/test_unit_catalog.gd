@@ -40,6 +40,10 @@ func _initialize() -> void:
 	var emg: Dictionary = catalog.weapon("EMG")
 	if emg.is_empty() or int(emg.runtime.velocity_raw_per_tick) != 655359 or int(emg.runtime.reload_ticks) != 12 or int(emg.runtime.burst_interval_ticks) != 3 or float(emg.runtime.minimum_barrel_angle) != -0.19634954631328583:
 		errors.append("EMG runtime conversion missing or incorrect")
+	checks += 1
+	var laser: Dictionary = catalog.weapon("CORE_LASER")
+	if laser.is_empty() or int(laser.runtime.duration_ticks) != 0 or int(laser.definition.get("beamweapon", "0")) != 1:
+		errors.append("Core laser beam duration missing or incorrect")
 	var report := {"checks": checks, "units": catalog.index.units.size(), "errors": errors,
 		"scope": "Bundle references and model/script piece names; does not execute all unit scripts or validate simulation"}
 	FileAccess.open(catalog.root.path_join("validation.json"), FileAccess.WRITE).store_string(JSON.stringify(report, "  "))

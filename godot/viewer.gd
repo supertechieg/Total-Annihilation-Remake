@@ -16,7 +16,7 @@ const WeaponAudio = preload("res://weapon_audio.gd")
 var weapon_audio: Node
 const Opponent = preload("res://opponent.gd")
 const ScenarioResult = preload("res://scenario_result.gd")
-const CORE_DUEL_UNITS := ["corthud", "corlevlr", "corstorm", "cormist", "corcrash"]
+const CORE_DUEL_UNITS := ["corthud", "corlevlr", "corstorm", "cormist", "corcrash", "corfav", "corgator", "corak"]
 var scenario_result: RefCounted
 var opponent: RefCounted
 var combat: RefCounted
@@ -81,12 +81,19 @@ func resolve_faction() -> String:
 	for core_unit in CORE_DUEL_UNITS:
 		if "--verify-" + core_unit in args:
 			return "core"
+	if duel_unit().begins_with("cor"):
+		return "core"
 	var index := args.find("--faction")
 	if index >= 0 and index + 1 < args.size():
 		var value := String(args[index + 1]).to_lower()
 		if value == "core" or value == "arm":
 			return value
 	return "arm"
+
+static func duel_unit() -> String:
+	var args := OS.get_cmdline_user_args()
+	var index := args.find("--duel-unit")
+	return String(args[index + 1]).to_lower() if index >= 0 and index + 1 < args.size() else "armflash"
 
 func switch_faction(target: String) -> void:
 	if target == faction:
@@ -225,7 +232,7 @@ func start_world_movement() -> void:
 			push_error("Combat demo failed")
 			get_tree().quit(1)
 	if "--duel-demo" in OS.get_cmdline_user_args() or "--verify-duel" in OS.get_cmdline_user_args():
-		if not run_duel_demo("--verify-duel" in OS.get_cmdline_user_args()):
+		if not run_duel_demo("--verify-duel" in OS.get_cmdline_user_args(), duel_unit()):
 			push_error("Tank duel failed")
 			get_tree().quit(1)
 	if "--verify-stumpy" in OS.get_cmdline_user_args():
@@ -237,6 +244,10 @@ func start_world_movement() -> void:
 			if not run_duel_demo(true, missile_unit):
 				push_error("Missile duel failed: " + missile_unit)
 				get_tree().quit(1)
+	if "--verify-armfav" in OS.get_cmdline_user_args():
+		if not run_duel_demo(true, "armfav"):
+			push_error("Jeffy laser duel failed")
+			get_tree().quit(1)
 	for core_unit in CORE_DUEL_UNITS:
 		if "--verify-" + core_unit in OS.get_cmdline_user_args():
 			# Thud shells pass ~4 units over a Raider at 128; see CORE_COMBAT.md. Its duel uses a longer standoff.

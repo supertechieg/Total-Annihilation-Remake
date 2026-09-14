@@ -13,6 +13,11 @@ func _draw() -> void:
 			draw_line(point + Vector2(-16, -24), point + Vector2(-16 + 32 * float(unit.health) / maximum, -24), Color("ff6060"), 3)
 	for projectile: Dictionary in combat.projectiles:
 		var point: Vector3 = projectile.position
+		if projectile.get("beam", false):
+			# Development beam line from native tail to head; original palette colors/rendering are not reproduced.
+			var tail: Vector3 = projectile.tail
+			draw_line(Vector2(tail.x, tail.z), Vector2(point.x, point.z), Color("ff5050"), 2.5)
+			continue
 		var previous: Vector3 = projectile.previous
 		draw_line(Vector2(previous.x, previous.z), Vector2(point.x, point.z), Color("fff0a0"), 2)
 	for effect: Dictionary in combat.effects:

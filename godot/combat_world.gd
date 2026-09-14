@@ -20,11 +20,14 @@ const GuidedMotion = preload("res://guided_motion.gd")
 const MissileTarget = preload("res://missile_target.gd")
 const RocketMotion = preload("res://rocket_motion.gd")
 const DirectLaunch = preload("res://direct_launch.gd")
+const BeamMotion = preload("res://beam_motion.gd")
 var burst_random := GameRandom.new()
 var bursts: Array = []
 const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham", "armpw", "armrock", "armwar", "armsam", "armjeth",
-	# Core counterparts use the same cannon, rocket and guided-missile hosts; beam lasers are not supported yet.
-	"corthud", "corlevlr", "corstorm", "cormist", "corcrash"]
+	# Core counterparts use the same cannon, rocket and guided-missile hosts.
+	"corthud", "corlevlr", "corstorm", "cormist", "corcrash",
+	# Beam lasers (weapon flag 0x8) use the native-compared tail update in beam_motion.gd.
+	"armfav", "corfav", "corgator", "corak"]
 var launch := Launch.new()
 var gravity := 8155
 var tick := 0
@@ -232,7 +235,14 @@ func step() -> void:
 				projectiles.append(projectile)
 				shots_fired += 1
 				continue
-			if int(shot.burst) > 0:
+			if int(cycle.definition.get("beamweapon", "0")) != 0:
+				# Direct launch 0x49c9c0 starts the tail at the muzzle and stamps the launch tick for the duration delay.
+				projectile.merge({"beam": true, "tail_raw": raw_point(start), "tail": start, "launch": tick, "released": false,
+					"duration": int(cycle.runtime.duration_ticks),
+					"deadline": DirectDeadline.deadline(tick, int(shot.velocity_raw_per_tick), int(cycle.definition.range), int(float(cycle.definition.get("weapontimer", "0")) * 30.0), int(cycle.definition.get("noautorange", "0")) != 0)})
+				projectiles.append(projectile)
+				shots_fired += 1
+			elif int(shot.burst) > 0:
 				bursts.append({"source": source, "piece_name": shot.piece_name, "projectile": projectile,
 					"interval": int(cycle.runtime.burst_interval_ticks), "timer": int(float(cycle.definition.get("weapontimer", "0")) * 30),
 					"speed": int(shot.velocity_raw_per_tick), "distance": int(direct.distance), "spray": int(cycle.definition.get("sprayangle", "0")),
@@ -249,6 +259,10 @@ func step() -> void:
 			continue
 		if projectile.get("ballistic", false):
 			if step_shell(projectile):
+				survivors.append(projectile)
+			continue
+		if projectile.get("beam", false):
+			if step_beam(projectile):
 				survivors.append(projectile)
 			continue
 		var start: Vector3 = projectile.position
@@ -347,6 +361,41 @@ func step_rocket(projectile: Dictionary) -> bool:
 	var target: int = world.collision.target_at(world, next.position, int(projectile.owner))
 	if target != 0 or projectile.position.y < world.navigation.height_at(Vector2(projectile.position.x, projectile.position.z)):
 		blast(projectile)
+		return false
+	return true
+
+func step_beam(projectile: Dictionary) -> bool:
+	var next := BeamMotion.advance({"head": projectile.position_raw, "tail": projectile.tail_raw, "velocity": projectile.velocity_raw,
+		"released": projectile.released, "launch": projectile.launch, "duration": projectile.duration,
+		"deadline": projectile.deadline, "tick": tick, "beam": true})
+	if next.removed:
+		return false
+	projectile.previous = projectile.position
+	projectile.position_raw = next.head
+	projectile.position = render_point(next.head)
+	projectile.tail_raw = next.tail
+	projectile.tail = render_point(next.tail)
+	projectile.released = next.released
+	if world.collision.projectile_cell(next.head) < 0:
+		return false
+	# Beams share the direct round's endpoint collision and unit damage; they have no splash radius.
+	var target: int = world.collision.target_at(world, next.head, int(projectile.owner))
+	if target != 0:
+		var damage := Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0)
+		world.units[target].health = maxi(0, int(world.units[target].health) - damage)
+		hits += 1
+		add_effect(projectile.position, str(projectile.get("explosion", "")))
+		request_sound(str(projectile.get("soundhit", "")), projectile.position)
+		if int(world.units[target].health) == 0:
+			destroyed.append(target)
+			world.remove_unit(target)
+			stop(target)
+			cycles.erase(target)
+			launch_offsets.erase(target)
+		return false
+	if projectile.position.y < world.navigation.height_at(Vector2(projectile.position.x, projectile.position.z)):
+		add_effect(projectile.position, str(projectile.get("explosion", "")))
+		request_sound(str(projectile.get("soundhit", "")), projectile.position)
 		return false
 	return true
 

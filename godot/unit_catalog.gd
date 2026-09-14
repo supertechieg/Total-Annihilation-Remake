@@ -28,7 +28,7 @@ func weapon(name: String) -> Dictionary:
 	var item: Dictionary = index.get("weapons", {}).get(name.to_lower(), {})
 	if item.is_empty():
 		fault = "Unknown weapon: " + name
-	elif not item.has("runtime") or not item.runtime.has("minimum_barrel_angle") or not item.runtime.has("start_velocity_raw_per_tick") or not item.runtime.has("acceleration_raw_per_tick_squared") or not item.runtime.has("turn_raw_per_tick"):
+	elif not item.has("runtime") or not item.runtime.has("minimum_barrel_angle") or not item.runtime.has("start_velocity_raw_per_tick") or not item.runtime.has("acceleration_raw_per_tick_squared") or not item.runtime.has("turn_raw_per_tick") or not item.runtime.has("duration_ticks"):
 		fault = "Prepare current weapon values with python tools/prepare_units.py"
 		return {}
 	return item

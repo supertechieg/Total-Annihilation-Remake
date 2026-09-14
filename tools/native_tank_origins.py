@@ -14,7 +14,7 @@ MODEL, GEOMETRY, OUTPUT = 0x100a000, 0x100c000, 0x100b000
 
 def main():
     cases = []
-    for unit in ['armflash', 'corraid', 'armstump', 'armham', 'armpw', 'armrock', 'armwar', 'armsam', 'armjeth', 'corthud', 'corlevlr', 'corstorm', 'cormist', 'corcrash']:
+    for unit in ['armflash', 'corraid', 'armstump', 'armham', 'armpw', 'armrock', 'armwar', 'armsam', 'armjeth', 'corthud', 'corlevlr', 'corstorm', 'cormist', 'corcrash', 'armfav', 'corfav', 'corgator', 'corak']:
         root = Path('local/unit-assets') / unit
         model = json.loads((root / 'unit.json').read_text())['model']
         program = json.loads((root / 'script.json').read_text())

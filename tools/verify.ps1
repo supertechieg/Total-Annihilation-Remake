@@ -144,7 +144,13 @@ try {
     }
     & $godotPath --headless --path godot --script res://test_cannon_combat.gd -- --corlevlr
     if ($LASTEXITCODE -ne 0) { throw 'Leveler cannon combat failed' }
-    foreach ($coreUnit in @('corthud', 'corlevlr', 'corstorm', 'cormist', 'corcrash')) {
+    foreach ($laserUnit in @('armfav', 'corfav', 'corgator', 'corak')) {
+        & $godotPath --headless --path godot --script res://test_beam_combat.gd -- "--$laserUnit"
+        if ($LASTEXITCODE -ne 0) { throw "$laserUnit beam combat failed" }
+    }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-armfav
+    if ($LASTEXITCODE -ne 0) { throw 'Jeffy laser factory duel failed' }
+    foreach ($coreUnit in @('corthud', 'corlevlr', 'corstorm', 'cormist', 'corcrash', 'corfav', 'corgator', 'corak')) {
         & $godotPath --headless --path godot --quit-after 2 -- "--verify-$coreUnit"
         if ($LASTEXITCODE -ne 0) { throw "$coreUnit Core factory duel failed" }
     }
@@ -356,7 +362,11 @@ try {
         & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --corraid
         if ($LASTEXITCODE -ne 0) { throw 'Raider firing script differs from original interpreter' }
         # Core roster firing traces must exist before the tank origin/target oracles below.
-        foreach ($coreUnit in @('corthud', 'corlevlr', 'corstorm', 'cormist', 'corcrash')) {
+        python tools\native_beam_motion.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original beam motion reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_beam_motion.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Beam motion differs from original executable' }
+        foreach ($coreUnit in @('corthud', 'corlevlr', 'corstorm', 'cormist', 'corcrash', 'armfav', 'corfav', 'corgator', 'corak')) {
             python tools\native_firing_reference.py --unit $coreUnit
             if ($LASTEXITCODE -ne 0) { throw "Original $coreUnit firing reference failed" }
             & $godotPath --headless --path godot --script res://compare_native_firing.gd -- "--$coreUnit"

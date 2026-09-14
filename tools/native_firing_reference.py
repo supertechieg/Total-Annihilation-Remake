@@ -10,7 +10,8 @@ from cob import signed
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--unit', choices=['armflash', 'corraid', 'armstump', 'armham', 'armpw', 'armrock', 'armwar', 'armsam', 'armjeth',
-                                           'corthud', 'corlevlr', 'corstorm', 'cormist', 'corcrash'], default='armflash')
+                                           'corthud', 'corlevlr', 'corstorm', 'cormist', 'corcrash',
+                                           'armfav', 'corfav', 'corgator', 'corak'], default='armflash')
     unit = parser.parse_args().unit
     native = FactoryReference(Path('local/original/TotalA.exe').read_bytes(), Path(f'local/unit-assets/{unit}/script.cob').read_bytes())
     native.read_values[17] = 0
@@ -19,7 +20,7 @@ def main():
               180: [('AimPrimary', [4096, 0])]}
     for tick in [50, 53, 56, 80, 83, 86, 160, 163, 166]:
         events[tick] = [('QueryPrimary', [0]), ('FirePrimary', [])]
-    if unit in ('corraid', 'armstump', 'corlevlr', 'cormist'):
+    if unit in ('corraid', 'armstump', 'corlevlr', 'cormist', 'armfav', 'corfav', 'corgator'):
         # Exercise cannon recoil recovery and hit-induced rocking independently
         # of the still-unreconstructed ballistic projectile host.
         events[100] = [('HitByWeapon', [1024, -2048])]
