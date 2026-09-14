@@ -3,21 +3,10 @@ const VM = preload("res://cob_vm.gd")
 
 func _initialize() -> void:
 	var folder := ProjectSettings.globalize_path("res://../local/")
-	var unit := "corraid" if "--corraid" in OS.get_cmdline_user_args() else "armflash"
-	if "--armstump" in OS.get_cmdline_user_args():
-		unit = "armstump"
-	if "--armham" in OS.get_cmdline_user_args():
-		unit = "armham"
-	if "--armpw" in OS.get_cmdline_user_args():
-		unit = "armpw"
-	if "--armrock" in OS.get_cmdline_user_args():
-		unit = "armrock"
-	if "--armwar" in OS.get_cmdline_user_args():
-		unit = "armwar"
-	if "--armsam" in OS.get_cmdline_user_args():
-		unit = "armsam"
-	if "--armjeth" in OS.get_cmdline_user_args():
-		unit = "armjeth"
+	var unit := "armflash"
+	for candidate: String in ["corraid", "armstump", "armham", "armpw", "armrock", "armwar", "armsam", "armjeth", "corthud", "corlevlr", "corstorm", "cormist", "corcrash"]:
+		if "--" + candidate in OS.get_cmdline_user_args():
+			unit = candidate
 	var trace_folder := "firing/" + unit if unit != "armflash" else "firing"
 	var trace: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(folder.path_join(trace_folder + "/native-trace.json")))
 	var program: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(folder.path_join("unit-assets/" + unit + "/script.json")))

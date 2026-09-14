@@ -142,6 +142,12 @@ try {
         & $godotPath --headless --path godot --quit-after 2 -- "--verify-$missileUnit"
         if ($LASTEXITCODE -ne 0) { throw "$missileUnit factory duel failed" }
     }
+    & $godotPath --headless --path godot --script res://test_cannon_combat.gd -- --corlevlr
+    if ($LASTEXITCODE -ne 0) { throw 'Leveler cannon combat failed' }
+    foreach ($coreUnit in @('corthud', 'corlevlr', 'corstorm', 'cormist', 'corcrash')) {
+        & $godotPath --headless --path godot --quit-after 2 -- "--verify-$coreUnit"
+        if ($LASTEXITCODE -ne 0) { throw "$coreUnit Core factory duel failed" }
+    }
     if ($Native) {
         python tools\native_map_tidal.py
         if ($LASTEXITCODE -ne 0) { throw 'Original tidal environment differs' }
@@ -349,6 +355,13 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original Raider firing reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --corraid
         if ($LASTEXITCODE -ne 0) { throw 'Raider firing script differs from original interpreter' }
+        # Core roster firing traces must exist before the tank origin/target oracles below.
+        foreach ($coreUnit in @('corthud', 'corlevlr', 'corstorm', 'cormist', 'corcrash')) {
+            python tools\native_firing_reference.py --unit $coreUnit
+            if ($LASTEXITCODE -ne 0) { throw "Original $coreUnit firing reference failed" }
+            & $godotPath --headless --path godot --script res://compare_native_firing.gd -- "--$coreUnit"
+            if ($LASTEXITCODE -ne 0) { throw "$coreUnit firing differs from original interpreter" }
+        }
         python tools\native_firing_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original Flash firing reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_firing.gd

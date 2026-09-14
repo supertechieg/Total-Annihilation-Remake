@@ -9,7 +9,8 @@ from cob import signed
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--unit', choices=['armflash', 'corraid', 'armstump', 'armham', 'armpw', 'armrock', 'armwar', 'armsam', 'armjeth'], default='armflash')
+    parser.add_argument('--unit', choices=['armflash', 'corraid', 'armstump', 'armham', 'armpw', 'armrock', 'armwar', 'armsam', 'armjeth',
+                                           'corthud', 'corlevlr', 'corstorm', 'cormist', 'corcrash'], default='armflash')
     unit = parser.parse_args().unit
     native = FactoryReference(Path('local/original/TotalA.exe').read_bytes(), Path(f'local/unit-assets/{unit}/script.cob').read_bytes())
     native.read_values[17] = 0
@@ -18,11 +19,12 @@ def main():
               180: [('AimPrimary', [4096, 0])]}
     for tick in [50, 53, 56, 80, 83, 86, 160, 163, 166]:
         events[tick] = [('QueryPrimary', [0]), ('FirePrimary', [])]
-    if unit in ('corraid', 'armstump'):
+    if unit in ('corraid', 'armstump', 'corlevlr', 'cormist'):
         # Exercise cannon recoil recovery and hit-induced rocking independently
         # of the still-unreconstructed ballistic projectile host.
         events[100] = [('HitByWeapon', [1024, -2048])]
         events[210] = [('HitByWeapon', [-2048, 1024])]
+    functions = {item['name'] for item in native.program['functions']}
     snapshots = []
     queries = []
     for tick in range(301):
@@ -30,6 +32,9 @@ def main():
             native.step()
             snapshots.append(dict(tick=tick, action='step', args=[], state=native.snapshot()))
         for action, args in events.get(tick, []):
+            # The engine skips callbacks a script does not define (corthud/corstorm lack SetMaxReloadTime).
+            if action not in functions:
+                continue
             slot = next(i for i in range(8) if native.read(CONTEXT + 0x1c + i * 0xa4) == 0)
             native.invoke(action, args)
             item = dict(tick=tick, action=action, args=args, state=native.snapshot())

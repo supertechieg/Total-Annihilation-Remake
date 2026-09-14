@@ -16,6 +16,7 @@ const WeaponAudio = preload("res://weapon_audio.gd")
 var weapon_audio: Node
 const Opponent = preload("res://opponent.gd")
 const ScenarioResult = preload("res://scenario_result.gd")
+const CORE_DUEL_UNITS := ["corthud", "corlevlr", "corstorm", "cormist", "corcrash"]
 var scenario_result: RefCounted
 var opponent: RefCounted
 var combat: RefCounted
@@ -77,6 +78,9 @@ func resolve_faction() -> String:
 	var args := OS.get_cmdline_user_args()
 	if "--core-factory-demo" in args or "--core-builder-demo" in args:
 		return "core"
+	for core_unit in CORE_DUEL_UNITS:
+		if "--verify-" + core_unit in args:
+			return "core"
 	var index := args.find("--faction")
 	if index >= 0 and index + 1 < args.size():
 		var value := String(args[index + 1]).to_lower()
@@ -233,6 +237,12 @@ func start_world_movement() -> void:
 			if not run_duel_demo(true, missile_unit):
 				push_error("Missile duel failed: " + missile_unit)
 				get_tree().quit(1)
+	for core_unit in CORE_DUEL_UNITS:
+		if "--verify-" + core_unit in OS.get_cmdline_user_args():
+			# Thud shells pass ~4 units over a Raider at 128; see CORE_COMBAT.md. Its duel uses a longer standoff.
+			if not run_duel_demo(true, core_unit, 192.0 if core_unit == "corthud" else 128.0):
+				push_error("Core duel failed: " + core_unit)
+				get_tree().quit(1)
 	if "--verify-warrior" in OS.get_cmdline_user_args():
 		if not run_duel_demo(true, "armwar"):
 			push_error("Warrior duel failed")
@@ -250,8 +260,12 @@ func start_world_movement() -> void:
 			push_error("Hammer duel failed")
 			get_tree().quit(1)
 
-func run_duel_demo(verify: bool, player_type := "armflash") -> bool:
-	if not run_factory_demo("armlab" if player_type in ["armham", "armpw", "armrock", "armwar", "armjeth"] else "armvp", player_type, 1):
+func run_duel_demo(verify: bool, player_type := "armflash", standoff := 128.0) -> bool:
+	var factory_type := ""
+	for candidate: String in ConstructionWorld.GROUND_FACTORIES:
+		if player_type in unit_catalog.build_options(candidate) and candidate.begins_with(player_type.substr(0, 3)):
+			factory_type = candidate
+	if factory_type.is_empty() or not run_factory_demo(factory_type, player_type, 1):
 		return false
 	var source := 0
 	for unit: Dictionary in economy.units.values():
@@ -259,8 +273,9 @@ func run_duel_demo(verify: bool, player_type := "armflash") -> bool:
 			source = unit.id
 			break
 	select_unit(source)
-	var target := add_practice_target()
+	var target := add_practice_target(standoff)
 	if target == 0 or not combat.attack(source, target) or not combat.attack(target, source):
+		printerr("Duel setup failed: target=", target, " ", combat.status, " ", status_label.text)
 		return false
 	var source_health: int = economy.units[source].health
 	var target_health: int = economy.units[target].health
@@ -270,23 +285,29 @@ func run_duel_demo(verify: bool, player_type := "armflash") -> bool:
 			break
 	if verify:
 		if economy.units.has(source) and economy.units.has(target):
+			printerr("Duel unresolved: shots=%d hits=%d source_health=%d/%d target_health=%d/%d status=%s faults=%s" % [combat.shots_fired, combat.hits,
+				int(economy.units[source].health), source_health, int(economy.units[target].health), target_health, combat.status,
+				str(combat.cycles.values().map(func(cycle) -> String: return cycle.fault))])
 			return false
 		if economy.units.has(source) and int(economy.units[source].health) >= source_health:
+			printerr("Duel one-sided: %s survived undamaged; shots=%d hits=%d" % [player_type, combat.shots_fired, combat.hits])
 			return false
 		if economy.units.has(target) and int(economy.units[target].health) >= target_health:
+			printerr("Duel one-sided: target survived undamaged by %s; shots=%d hits=%d status=%s" % [player_type, combat.shots_fired, combat.hits, combat.status])
 			return false
 		for cycle in combat.cycles.values():
 			if not cycle.fault.is_empty():
+				printerr("Duel weapon fault: ", cycle.fault)
 				return false
 		print("DUEL_VERIFY_OK factory-produced %s and armed Raider exchanged damage; one tank destroyed" % player_type)
 	return true
 
-func add_practice_target() -> int:
-	if selected_unit == 0 or not economy.units.has(selected_unit) or economy.units[selected_unit].type not in ["armflash", "armstump", "armham", "armpw", "armrock", "armwar", "armsam", "armjeth"]:
-		status_label.text = "  Select a Flash, Stumpy, Hammer, Peewee, Rocko, Warrior, Samson or Jethro to add a practice target"
+func add_practice_target(distance := 128.0) -> int:
+	if selected_unit == 0 or not economy.units.has(selected_unit) or economy.units[selected_unit].type not in Combat.SUPPORTED_UNITS:
+		status_label.text = "  Select an armed unit with supported weapons to add a practice target"
 		return 0
-	for offset: Vector2 in [Vector2(128, 0), Vector2(-128, 0), Vector2(0, 128), Vector2(0, -128)]:
-		var point: Vector2 = (economy.units[selected_unit].position + offset).snapped(Vector2(16, 16))
+	for direction: Vector2 in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
+		var point: Vector2 = (economy.units[selected_unit].position + direction * distance).snapped(Vector2(16, 16))
 		if not navigation.passable(navigation.cell_at(point)):
 			continue
 		var clear := true

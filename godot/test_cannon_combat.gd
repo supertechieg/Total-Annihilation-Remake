@@ -5,7 +5,10 @@ const World = preload("res://construction_world.gd")
 const Combat = preload("res://combat_world.gd")
 
 func _initialize() -> void:
-	var cannon_type := "armwar" if "--armwar" in OS.get_cmdline_user_args() else "corraid"
+	var cannon_type := "corraid"
+	for candidate: String in ["armwar", "corthud", "corlevlr"]:
+		if "--" + candidate in OS.get_cmdline_user_args():
+			cannon_type = candidate
 	var catalog = Catalog.new(ProjectSettings.globalize_path("res://../local/unit-assets/"))
 	var heights := PackedByteArray()
 	heights.resize(64 * 64)

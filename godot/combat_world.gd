@@ -22,7 +22,9 @@ const RocketMotion = preload("res://rocket_motion.gd")
 const DirectLaunch = preload("res://direct_launch.gd")
 var burst_random := GameRandom.new()
 var bursts: Array = []
-const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham", "armpw", "armrock", "armwar", "armsam", "armjeth"]
+const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham", "armpw", "armrock", "armwar", "armsam", "armjeth",
+	# Core counterparts use the same cannon, rocket and guided-missile hosts; beam lasers are not supported yet.
+	"corthud", "corlevlr", "corstorm", "cormist", "corcrash"]
 var launch := Launch.new()
 var gravity := 8155
 var tick := 0
@@ -92,7 +94,7 @@ func attack(source: int, target: int, pursue := false) -> bool:
 	if not world.units.has(source) or not world.units.has(target) or source == target:
 		return false
 	if world.units[source].type not in SUPPORTED_UNITS or float(world.units[source].remaining) > 0:
-		status = "Combat currently supports completed Flash, Stumpy, Raider, Hammer, Peewee, Rocko, Warrior, Samson and Jethro units"
+		status = "Combat currently supports completed Flash, Stumpy, Raider, Hammer, Peewee, Rocko, Warrior, Samson, Jethro, Thud, Leveler, Storm, Slasher and Crasher units"
 		return false
 	if world.units[source].get("team", 0) == world.units[target].get("team", 0):
 		status = "Select an enemy target"
