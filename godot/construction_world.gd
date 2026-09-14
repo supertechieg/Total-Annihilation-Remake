@@ -113,7 +113,10 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 	return id
 
 ## Map features from the prepared placements (names, anchors). Their blocking is already in the base navigation grid.
-func load_map_features(placements: Array) -> int:
+func load_map_features(placements: Array, voids: Array = []) -> int:
+	# Loader pass 1 (0x483aca): void attribute cells hold code 0xfffc before any feature is placed.
+	for cell in voids:
+		features.codes[int(cell)] = FeatureWorld.VOID
 	var placed := 0
 	for placement: Dictionary in placements:
 		if placement.has("name") and features.place(str(placement.name), int(placement.x), int(placement.z), null, 10) >= 0:

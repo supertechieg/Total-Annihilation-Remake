@@ -138,6 +138,14 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Arm real-map feature damage failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-feature-damage --faction core
     if ($LASTEXITCODE -ne 0) { throw 'Core real-map feature damage failed' }
+    python tools\test_map_feature_loader.py
+    if ($LASTEXITCODE -ne 0) { throw 'Map feature loader tests failed' }
+    & $godotPath --headless --path godot --script res://test_maps.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Skirmish map load checks failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --map sherwood --verify-commander-combat
+    if ($LASTEXITCODE -ne 0) { throw 'Sherwood viewer run failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --map the-cold-place --faction core --verify-commander-combat
+    if ($LASTEXITCODE -ne 0) { throw 'The Cold Place Core viewer run failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun
     if ($LASTEXITCODE -ne 0) { throw 'Arm Commander real-map D-gun failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun --faction core
@@ -408,6 +416,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original Killed script reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_killed.gd
         if ($LASTEXITCODE -ne 0) { throw 'Killed scripts differ from original interpreter' }
+        python tools\native_map_features.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native map feature loading failed' }
+        python tools\compare_native_map_features.py
+        if ($LASTEXITCODE -ne 0) { throw 'Map feature loader native comparison failed' }
         python tools\native_feature_damage.py
         if ($LASTEXITCODE -ne 0) { throw 'Native feature damage failed' }
         & $godotPath --headless --path godot --script res://compare_native_feature_damage.gd

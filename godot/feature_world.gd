@@ -4,6 +4,7 @@ extends RefCounted
 const FeatureDamage = preload("res://feature_damage.gd")
 const NONE := 0xffff
 const CONTINUATION := 0xfffe
+const VOID := 0xfffc
 var width: int
 var height: int
 var catalog: RefCounted

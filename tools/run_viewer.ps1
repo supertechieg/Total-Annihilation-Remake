@@ -33,9 +33,17 @@ if ((Test-Path -LiteralPath $mapMetadataPath) -and (Test-Path -LiteralPath (Join
     $mapMetadata = Get-Content -LiteralPath $mapMetadataPath -Raw | ConvertFrom-Json
     $mapBundleCurrent = $mapMetadata.feature_blocking_version -eq 1
 }
+$mapsIndexPath = Join-Path $workspacePath 'local\maps\index.json'
+$mapsBundleCurrent = $false
+if (Test-Path -LiteralPath $mapsIndexPath) {
+    $mapsMetadata = Get-Content -LiteralPath $mapsIndexPath -Raw | ConvertFrom-Json
+    $mapsBundleCurrent = $mapsMetadata.version -eq 2
+}
 foreach ($bundle in @(
     # Older map bundles predate the static feature-blocking grid.
     @{ Index = 'local\viewer-assets\metal.bin'; Script = 'prepare_map_metal.py'; Current = $mapBundleCurrent },
+    # Skirmish maps (index version 2: original loader overlap and void resolution).
+    @{ Index = 'local\maps\index.json'; Script = 'prepare_maps.py'; Current = $mapsBundleCurrent },
     @{ Index = 'local\weapon-sounds\index.json'; Script = 'prepare_weapon_sounds.py'; Current = $true },
     @{ Index = 'local\weapon-effects\index.json'; Script = 'prepare_weapon_effects.py'; Current = $true }
 )) {

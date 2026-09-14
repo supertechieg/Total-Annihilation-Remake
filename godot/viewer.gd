@@ -76,6 +76,8 @@ var walk_button: Button
 var build_button: Button
 var script_label: Label
 var playback_paused := false
+var map_slug := ""
+var map_assets: String
 
 func resolve_faction() -> String:
 	var tree := get_tree()
@@ -101,14 +103,46 @@ static func duel_unit() -> String:
 	var index := args.find("--duel-unit")
 	return String(args[index + 1]).to_lower() if index >= 0 and index + 1 < args.size() else "armflash"
 
+## Selected skirmish map: tree meta (set by the map picker), then --map <slug>; empty means the bundled Comet Catcher.
+func resolve_map() -> String:
+	var tree := get_tree()
+	if tree != null and tree.has_meta("map"):
+		return str(tree.get_meta("map"))
+	var args := OS.get_cmdline_user_args()
+	var index := args.find("--map")
+	return String(args[index + 1]).to_lower() if index >= 0 and index + 1 < args.size() else ""
+
+func switch_map(slug: String) -> void:
+	get_tree().set_meta("map", slug)
+	get_tree().reload_current_scene()
+
+## Skirmish map selection from local/maps/index.json (prepared by tools/prepare_maps.py); picking one reloads the scene.
+func build_map_picker() -> OptionButton:
+	var picker := OptionButton.new()
+	picker.add_item("Comet Catcher (bundled demo)")
+	picker.set_item_metadata(0, "")
+	var index = JSON.parse_string(FileAccess.get_file_as_string(ProjectSettings.globalize_path("res://../local/maps/index.json")))
+	if index is Dictionary:
+		for entry: Dictionary in index.get("maps", []):
+			if not bool(entry.get("supported", false)):
+				continue
+			picker.add_item("%s  ·  %s players" % [entry.name, str(entry.get("players", "?"))])
+			picker.set_item_metadata(picker.item_count - 1, entry.slug)
+			if entry.slug == map_slug:
+				picker.select(picker.item_count - 1)
+	picker.item_selected.connect(func(item: int) -> void:
+		if str(picker.get_item_metadata(item)) != map_slug:
+			switch_map(str(picker.get_item_metadata(item))))
+	return picker
+
 func switch_faction(target: String) -> void:
 	if target == faction:
 		return
 	get_tree().set_meta("faction", target)
 	get_tree().reload_current_scene()
 
-func image_texture(filename: String) -> ImageTexture:
-	var image := Image.load_from_file(assets.path_join(filename))
+func image_texture(filename: String, folder := "") -> ImageTexture:
+	var image := Image.load_from_file((assets if folder.is_empty() else folder).path_join(filename))
 	if image == null:
 		push_error("Cannot load " + filename)
 		return null
@@ -140,9 +174,22 @@ func _ready() -> void:
 		if "--verify" in OS.get_cmdline_user_args():
 			get_tree().quit(1)
 		return
-	scene_data = JSON.parse_string(FileAccess.get_file_as_string(assets.path_join("scene.json")))
+	map_slug = resolve_map()
+	map_assets = assets
+	if not map_slug.is_empty():
+		var folder := ProjectSettings.globalize_path("res://../local/maps/").path_join(map_slug).simplify_path()
+		if FileAccess.file_exists(folder.path_join("scene.json")):
+			map_assets = folder
+		else:
+			push_error("Map bundle not prepared: " + map_slug + " (run tools/prepare_maps.py)")
+			map_slug = ""
+	scene_data = JSON.parse_string(FileAccess.get_file_as_string(map_assets.path_join("scene.json")))
 	unit_data = JSON.parse_string(FileAccess.get_file_as_string(assets.path_join("unit.json")))
-	terrain = image_texture("terrain.png")
+	terrain = image_texture("terrain.png", map_assets)
+	# Player 1 starts at the map's first OTA start position; the bundled Comet Catcher keeps its fixed demo point.
+	var starts: Array = scene_data.get("start_positions", [])
+	if not starts.is_empty():
+		unit_position = Vector2(float(starts[0].x), float(starts[0].z))
 	build_model()
 	build_interface()
 	start_script_runtime()
@@ -159,13 +206,13 @@ func start_world_movement() -> void:
 		get_tree().quit(1)
 		return
 	var terrain_fields: Dictionary = unit_catalog.movement(commander_type)
-	var feature_blocking := FileAccess.get_file_as_bytes(assets.path_join("features.bin"))
+	var feature_blocking := FileAccess.get_file_as_bytes(map_assets.path_join("features.bin"))
 	if feature_blocking.size() != int(scene_data.height_grid_width) * int(scene_data.height_grid_height):
 		push_error("Prepare the map feature-blocking bundle with tools/prepare_map_metal.py")
 		get_tree().quit(1)
 		return
 	navigation = Navigation.new(int(scene_data.height_grid_width), int(scene_data.height_grid_height),
-		FileAccess.get_file_as_bytes(assets.path_join("heights.bin")), int(scene_data.sea_level),
+		FileAccess.get_file_as_bytes(map_assets.path_join("heights.bin")), int(scene_data.sea_level),
 		int(terrain_fields.get("maxslope", 255)), int(terrain_fields.get("maxwaterdepth", 10000)),
 		Vector2i(int(terrain_fields.get("footprintx", 2)), int(terrain_fields.get("footprintz", 2))),
 		int(terrain_fields.get("minwaterdepth", -10000)), int(terrain_fields.get("maxwaterslope", 255)), feature_blocking)
@@ -173,13 +220,13 @@ func start_world_movement() -> void:
 	assert(unit_position.x >= 0, "Map has no passable starting point")
 	mobile = MobileUnit.new(navigation, fields, unit_position, script_vm)
 	economy = ConstructionWorld.new(unit_catalog, navigation, unit_position, commander_type)
-	if not economy.set_terrain_metal(FileAccess.get_file_as_bytes(assets.path_join("metal.bin"))):
+	if not economy.set_terrain_metal(FileAccess.get_file_as_bytes(map_assets.path_join("metal.bin"))):
 		push_error("Prepare the map metal bundle with tools/prepare_map_metal.py")
 		get_tree().quit(1)
 		return
-	var metal_metadata = JSON.parse_string(FileAccess.get_file_as_string(assets.path_join("metal.json")))
+	var metal_metadata = JSON.parse_string(FileAccess.get_file_as_string(map_assets.path_join("metal.json")))
 	if metal_metadata is Dictionary:
-		economy.load_map_features(metal_metadata.get("placements", []))
+		economy.load_map_features(metal_metadata.get("placements", []), metal_metadata.get("voids", []))
 	combat = Combat.new(economy)
 	# The viewer steps the Commander's script and movement; combat and targeting use them through the world.
 	economy.attach_external(economy.builder_id, script_vm, mobile)
@@ -1240,6 +1287,7 @@ func build_interface() -> void:
 	terrain_sprite = Sprite2D.new()
 	terrain_sprite.texture = terrain
 	terrain_sprite.centered = false
+	terrain_sprite.scale = Vector2.ONE * float(scene_data.get("terrain_scale", 1))
 	terrain_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	world.add_child(terrain_sprite)
 	route_line = Line2D.new()
@@ -1272,8 +1320,9 @@ func build_interface() -> void:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 10)
 	margin.add_child(column)
-	column.add_child(label("COMET CATCHER", 21, Color("edf0e8")))
-	column.add_child(label("6,144 × 7,680  ·  Original terrain tiles", 12))
+	column.add_child(label(str(scene_data.name).to_upper(), 21, Color("edf0e8")))
+	column.add_child(label("%d × %d  ·  Original terrain tiles" % [int(scene_data.width), int(scene_data.height)], 12))
+	column.add_child(build_map_picker())
 	var preview := TextureRect.new()
 	preview.texture = model_view.get_texture()
 	preview.custom_minimum_size = Vector2(230, 150)
@@ -1524,7 +1573,7 @@ func _process(delta: float) -> void:
 				tick_accumulator -= 1.0 / 30.0
 				step_script()
 	if frames == 8 and "--verify" in args:
-		if world == null or piece_nodes.size() != 15 or terrain.get_width() != 6144:
+		if world == null or piece_nodes.size() != 15 or (map_slug.is_empty() and terrain.get_width() != 6144):
 			get_tree().quit(1)
 			return
 		# Commander and produced-unit navigation must both consume the prepared feature-blocking grid.
@@ -1627,8 +1676,16 @@ func start_opponent() -> void:
 	var opponent_faction := "arm" if faction == "core" else "core"
 	var builder_type: String = Opponent.FACTIONS[opponent_faction].vehicle_builder
 	var nav = economy.unit_navigation(builder_type)
+	# On prepared skirmish maps the opponent takes the second OTA start position; the demo map keeps nearby offsets.
+	var candidates: Array = []
+	var starts: Array = scene_data.get("start_positions", [])
+	if starts.size() > 1:
+		var second := Vector2(float(starts[1].x), float(starts[1].z))
+		candidates.append_array([second, second + Vector2(96, 0), second + Vector2(0, 96), second + Vector2(-96, 0), second + Vector2(0, -96)])
 	for offset in [Vector2(512, 0), Vector2(-512, 0), Vector2(0, 512), Vector2(0, -512)]:
-		var point: Vector2 = nav.nearest_open(unit_position + offset)
+		candidates.append(unit_position + offset)
+	for candidate: Vector2 in candidates:
+		var point: Vector2 = nav.nearest_open(candidate)
 		if point.x < 0 or point.distance_to(unit_position) < 256:
 			continue
 		var occupied := false
