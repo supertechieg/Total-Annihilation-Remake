@@ -1,0 +1,128 @@
+{
+  "checks": 114000,
+  "differences": [],
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "mismatches": 0,
+  "modes": {
+    "feature_edges": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 252,
+      "true": 577
+    },
+    "feature_los_off_local": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 0,
+      "true": 2482
+    },
+    "feature_los_on": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 0,
+      "true": 1889
+    },
+    "feature_mapping_off": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 0,
+      "true": 2618
+    },
+    "feature_nonlocal_los_off": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 840,
+      "true": 1961
+    },
+    "feature_tall_grid": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 291,
+      "true": 1430
+    },
+    "feature_wrap16": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 397,
+      "true": 2369
+    },
+    "probe_408090_edges": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 429,
+      "true": 764
+    },
+    "probe_408090_local": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 415,
+      "true": 1652
+    },
+    "probe_408090_nonlocal": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 782,
+      "true": 1987
+    },
+    "probe_408090_tall_grid": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 772,
+      "true": 1975
+    },
+    "visible_below_sea": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 115,
+      "true": 3240
+    },
+    "visible_cloaked": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 64,
+      "true": 1874
+    },
+    "visible_edges": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 31,
+      "true": 1477
+    },
+    "visible_los_off_local": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 0,
+      "true": 3791
+    },
+    "visible_los_on": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 0,
+      "true": 2668
+    },
+    "visible_mapping_off": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 0,
+      "true": 4321
+    },
+    "visible_nonlocal_los_off": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 648,
+      "true": 3668
+    },
+    "visible_tall_grid": {
+      "calls": 6000,
+      "mismatches": 0,
+      "own_bit_would_differ": 196,
+      "true": 2268
+    }
+  },
+  "routines": [
+    "0x465ac0",
+    "0x4658e0",
+    "0x408090"
+  ],
+  "scope": "Every native 0x465ac0 / 0x4658e0 / 0x408090 result on random LOS byte grids, mapped words, flags, local player (incl. >=16 shift), sea level, unit bounds and positions (map edges, negative, 16-bit wrap) reproduced by godot/visibility_queries.gd; own_bit_would_differ counts calls whose answer changes if the record's own mapped bit were used instead of the local player's (shows the quirk is exercised)"
+}

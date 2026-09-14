@@ -464,6 +464,14 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Native LOS heights failed' }
         & $godotPath --headless --path godot --script res://compare_native_los_heights.gd
         if ($LASTEXITCODE -ne 0) { throw 'LOS heights native comparison failed' }
+        python tools\native_los_stamp.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native LOS stamp failed' }
+        & $godotPath --headless --path godot --script res://compare_native_los_stamp.gd
+        if ($LASTEXITCODE -ne 0) { throw 'LOS stamp native comparison failed' }
+        python tools\native_visibility_query.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native visibility query failed' }
+        & $godotPath --headless --path godot --script res://compare_native_visibility_query.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Visibility query native comparison failed' }
         python tools\native_hit_notify.py
         if ($LASTEXITCODE -ne 0) { throw 'Native hit notification failed' }
         & $godotPath --headless --path godot --script res://compare_native_hit_notify.gd
