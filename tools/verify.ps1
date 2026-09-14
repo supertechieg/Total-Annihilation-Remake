@@ -162,6 +162,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Arm projection failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --map sherwood --faction core --verify-projection
     if ($LASTEXITCODE -ne 0) { throw 'Core projection failed' }
+    & $godotPath --headless --path godot --script res://test_hover_pick.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Hover pick tests failed' }
     & $godotPath --headless --path godot --script res://test_ai_brain.gd
     if ($LASTEXITCODE -ne 0) { throw 'AI brain tests failed' }
     & $godotPath --headless --path godot --script res://test_minimap.gd
@@ -486,6 +488,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Native AI groups failed' }
         & $godotPath --headless --path godot --script res://compare_native_ai_groups.gd
         if ($LASTEXITCODE -ne 0) { throw 'AI groups native comparison failed' }
+        python tools\native_hover_pick.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native hover pick failed' }
+        & $godotPath --headless --path godot --script res://compare_native_hover_pick.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Hover pick native comparison failed' }
         python tools\native_hit_notify.py
         if ($LASTEXITCODE -ne 0) { throw 'Native hit notification failed' }
         & $godotPath --headless --path godot --script res://compare_native_hit_notify.gd
