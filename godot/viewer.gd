@@ -285,6 +285,10 @@ func start_world_movement() -> void:
 		if not run_commander_combat():
 			push_error("Commander combat scenario failed")
 			get_tree().quit(1)
+	if "--verify-skirmish-start" in OS.get_cmdline_user_args():
+		if not run_skirmish_start():
+			push_error("Skirmish start scenario failed")
+			get_tree().quit(1)
 	if "--verify-opponent" in OS.get_cmdline_user_args():
 		start_opponent()
 		var initial_health: int = economy.units[economy.builder_id].health
@@ -293,6 +297,7 @@ func start_world_movement() -> void:
 			if not economy.units.has(economy.builder_id) or int(economy.units[economy.builder_id].health) < initial_health:
 				break
 		if opponent == null or opponent.structures_started < 2 or opponent.attacks == 0 or (economy.units.has(economy.builder_id) and int(economy.units[economy.builder_id].health) == initial_health):
+			printerr("Opponent scenario: opponent=%s started=%d attacks=%d queued=%d health=%s/%d" % [opponent != null, opponent.structures_started if opponent != null else -1, opponent.attacks if opponent != null else -1, opponent.queued if opponent != null else -1, economy.units[economy.builder_id].health if economy.units.has(economy.builder_id) else "dead", initial_health])
 			push_error("Opponent scenario failed")
 			get_tree().quit(1)
 		else:
@@ -1948,7 +1953,9 @@ func start_opponent() -> void:
 		return
 	# The opponent plays the other faction, as in an Arm versus Core skirmish.
 	var opponent_faction := "arm" if faction == "core" else "core"
-	var builder_type: String = Opponent.FACTIONS[opponent_faction].vehicle_builder
+	# A skirmish computer player starts with its own Commander (not a construction vehicle) and the schema's
+	# ComputerMetal/ComputerEnergy; the human player keeps HumanMetal/HumanEnergy.
+	var builder_type: String = Opponent.FACTIONS[opponent_faction].commander
 	var nav = economy.unit_navigation(builder_type)
 	# On prepared skirmish maps the opponent takes the second OTA start position; the demo map keeps nearby offsets.
 	var candidates: Array = []
@@ -1967,8 +1974,11 @@ func start_opponent() -> void:
 			occupied = occupied or economy.footprint(builder_type, point).intersects(economy.footprint(unit.type, unit.position))
 		if occupied:
 			continue
-		var id: int = economy.add_unit(builder_type, point, 0, 1)
+		var id: int = economy.add_unit(builder_type, point, 0, 1, true)
 		economy.mobile_units[id] = MobileUnit.new(nav, unit_catalog.definition(builder_type), point, economy.scripts[id])
+		economy.mobile_units[id].heading = 32768
+		apply_schema_resources()
+		combat.enable_guard(id, false)
 		var policy := Opponent.new(economy, combat, 1, opponent_faction)
 		policy.build_base()
 		if policy.structures_started == 0:
@@ -1980,6 +1990,49 @@ func start_opponent() -> void:
 		status_label.text = "  Opponent active  -  build an army to defend your Commander"
 		return
 	status_label.text = "  No nearby opponent build site found"
+
+## OTA schema starting resources: HumanMetal/HumanEnergy for the player (team 0), ComputerMetal/ComputerEnergy for the AI.
+func apply_schema_resources() -> void:
+	var schema: Dictionary = scene_data.get("schema", {})
+	if schema.is_empty():
+		return
+	var human: Dictionary = economy.resources(0)
+	human.metal = minf(float(str(schema.get("humanmetal", "1000")).to_int()), float(human.metal_storage))
+	human.energy = minf(float(str(schema.get("humanenergy", "1000")).to_int()), float(human.energy_storage))
+	economy.store_resources(0, human)
+	var computer: Dictionary = economy.resources(1)
+	computer.metal = minf(float(str(schema.get("computermetal", "1000")).to_int()), float(computer.metal_storage))
+	computer.energy = minf(float(str(schema.get("computerenergy", "1000")).to_int()), float(computer.energy_storage))
+	economy.store_resources(1, computer)
+
+func run_skirmish_start() -> bool:
+	# Real-map skirmish: the computer's Commander appears at OTA start position 2 with ComputerMetal/ComputerEnergy
+	# and starts building its base with the normal construction and production rules.
+	var starts: Array = scene_data.get("start_positions", [])
+	if starts.size() < 2:
+		printerr("Skirmish start: map has no second start position")
+		return false
+	start_opponent()
+	if opponent == null:
+		printerr("Skirmish start: opponent not created: ", status_label.text)
+		return false
+	var enemy := 0
+	for id: int in economy.units:
+		if int(economy.units[id].get("team", 0)) == 1 and economy.units[id].type == Opponent.FACTIONS[opponent.faction].commander:
+			enemy = id
+	var second := Vector2(float(starts[1].x), float(starts[1].z))
+	var account: Dictionary = economy.resources(1)
+	if enemy == 0 or economy.units[enemy].position.distance_to(second) > 128 or not economy.scripts.has(enemy):
+		printerr("Skirmish start: enemy Commander %d at %s, start 2 at %s" % [enemy, economy.units[enemy].position if enemy != 0 else Vector2.ZERO, second])
+		return false
+	for tick in range(1800):
+		step_script()
+	if opponent.structures_started < 2 or not economy.scripts[enemy].fault.is_empty():
+		printerr("Skirmish start: structures %d, fault %s" % [opponent.structures_started, economy.scripts[enemy].fault])
+		return false
+	print("SKIRMISH_START_OK %s: %s Commander at start 2 %s with %d metal / %d energy; started %d structures in 1800 ticks" % [scene_data.name,
+		economy.units[enemy].type, second, int(account.metal), int(account.energy), opponent.structures_started])
+	return true
 
 func check_scenario_result() -> void:
 	if scenario_result == null or scenario_result.outcome != "active":

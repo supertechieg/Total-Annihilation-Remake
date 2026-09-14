@@ -54,11 +54,21 @@ Figures below are from the first map checkpoint. With schema features and Seven 
   - The world steps.
 - **Real viewer runs.** Commander combat passes on Sherwood (Arm) and The Cold Place (Core) in NORMAL verification, and also passed on Red Hot Lava. A rendered Sherwood capture shows the terrain, the picker and the start position.
 
+## Skirmish start
+
+- **Computer player.** It starts like a TA skirmish opponent, with its own Commander at OTA start position 2.
+  - The Commander is scripted in the world through `ConstructionWorld.add_unit(..., scripted_commander)`. It holds and guards its base, and the opponent policy uses it as a builder instead of sending it to attack.
+- **Starting resources.** Both sides get the selected schema's values: `HumanMetal`/`HumanEnergy` for the player and `ComputerMetal`/`ComputerEnergy` for the computer, capped by storage.
+- **Opponent behavior.** The policy itself is still the provisional base builder, pending the original AI research.
+- **Evidence.**
+  - `--verify-skirmish-start` passes on Sherwood (Arm) and The Cold Place (Core) in NORMAL verification. In each, the enemy Commander appears at start 2 with 1000/1000 and starts 3–4 structures within 1,800 ticks.
+  - `--verify-opponent` still passes for both factions.
+
 ## Limits
 
 - **2D features.** GAF sprites are drawn as of `MAP_FEATURE_SPRITES.md`.
 - **Not implemented.**
   - Burning and the older TNT attribute layout.
-  - Tidal, wind and gravity come from the OTA through the existing environment code; team resources ignore the schema values.
-- **Start positions and AI.** Start positions beyond two players are recorded but unused, and the opponent AI is still the scripted base builder.
+  - Metal and energy storage beyond the base 1000 is not taken from the schema.
+- **Start positions and AI.** Start positions beyond two players are recorded but unused, and the opponent AI is still the scripted base builder, now starting from its Commander.
 - **Content.** Archive precedence is provisional; maps whose features fall outside the unit bundle profile would be rejected, and none of the 96 are.

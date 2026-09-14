@@ -84,7 +84,10 @@ func _init(source: RefCounted, terrain: RefCounted, commander_position: Vector2,
 	navigation_cache[commander] = {"nav": terrain, "terrain": terrain.blocked.duplicate(), "footprint": Vector2i(2, 2)}
 	builder_id = add_unit(commander, commander_position, 0.0)
 
-func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> int:
+## Commanders are normally scripted by their owner (the viewer's player Commander); computer players run theirs in the world.
+const COMMANDERS := ["armcom", "corcom"]
+
+func add_unit(type: String, position: Vector2, remaining: float, team := 0, scripted_commander := false) -> int:
 	var id := next_id
 	next_id += 1
 	var definition: Dictionary = catalog.definition(type)
@@ -94,7 +97,7 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 		# Unit+0xf6/+0xf7: current and previous 30-tick health percentage samples, both zero at creation.
 		"health_percent": 0, "previous_health_percent": 0}
 	# Only these healthy scripts currently have native lifecycle comparisons.
-	if type in SCRIPTED_UNITS:
+	if type in SCRIPTED_UNITS or (scripted_commander and type in COMMANDERS):
 		var vm = VM.new(catalog.load_script(type))
 		vm.read_values = {4: 100, 17: ceili(remaining * 100)}
 		if type in RESOURCE_BUILDINGS:

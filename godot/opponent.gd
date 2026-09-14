@@ -2,10 +2,10 @@ extends RefCounted
 ## Provisional opponent policy using the normal production and combat APIs.
 ## Faction tables choose each side's original level-one builders, factories, combat units and economy structures.
 const FACTIONS := {
-	"arm": {"builders": ["armcv", "armck"], "vehicle_plant": "armvp", "kbot_lab": "armlab",
+	"arm": {"builders": ["armcv", "armck"], "commander": "armcom", "vehicle_plant": "armvp", "kbot_lab": "armlab",
 		"vehicle_combat": "armflash", "kbot_combat": "armpw", "vehicle_builder": "armcv", "kbot_builder": "armck",
 		"solar": "armsolar", "extractor": "armmex"},
-	"core": {"builders": ["corcv", "corck"], "vehicle_plant": "corvp", "kbot_lab": "corlab",
+	"core": {"builders": ["corcv", "corck"], "commander": "corcom", "vehicle_plant": "corvp", "kbot_lab": "corlab",
 		"vehicle_combat": "corraid", "kbot_combat": "corak", "vehicle_builder": "corcv", "kbot_builder": "corck",
 		"solar": "corsolar", "extractor": "cormex"},
 }
@@ -38,7 +38,7 @@ func step() -> void:
 	build_base()
 	var builder_available := false
 	for unit: Dictionary in world.units.values():
-		if int(unit.get("team", 0)) == team and unit.type in roster.builders:
+		if int(unit.get("team", 0)) == team and (unit.type in roster.builders or unit.type == roster.commander):
 			builder_available = true
 	for factory_id: int in world.factories:
 		if int(world.units[factory_id].get("team", 0)) == team:
@@ -61,6 +61,9 @@ func step() -> void:
 	for id: int in world.units:
 		var unit: Dictionary = world.units[id]
 		if int(unit.get("team", 0)) != team or float(unit.remaining) > 0 or unit.type not in combat.SUPPORTED_UNITS:
+			continue
+		# The Commander stays home to build and defend; only produced units are sent to attack.
+		if unit.type == roster.commander:
 			continue
 		if combat.orders.has(id) and world.units.has(int(combat.orders[id].target)):
 			continue

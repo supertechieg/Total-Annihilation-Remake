@@ -166,6 +166,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Arm real-map ground attack failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-ground-attack --faction core
     if ($LASTEXITCODE -ne 0) { throw 'Core real-map ground attack failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --map sherwood --verify-skirmish-start
+    if ($LASTEXITCODE -ne 0) { throw 'Sherwood skirmish start failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --map the-cold-place --faction core --verify-skirmish-start
+    if ($LASTEXITCODE -ne 0) { throw 'The Cold Place skirmish start failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun
     if ($LASTEXITCODE -ne 0) { throw 'Arm Commander real-map D-gun failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun --faction core
