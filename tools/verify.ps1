@@ -38,6 +38,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Opponent viewer scenario failed' }
     & $godotPath --headless --path godot --script res://test_scenario_result.gd
     if ($LASTEXITCODE -ne 0) { throw 'Scenario result checks failed' }
+    & $godotPath --headless --path godot --quit-after 90 --script res://test_faction_selection.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Viewer faction selection failed' }
     & $godotPath --headless --path godot --script res://test_team_unit_limit.gd
     if ($LASTEXITCODE -ne 0) { throw 'Team unit limit checks failed' }
     python tools\test_assets.py
@@ -385,6 +387,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original interpreter reference run failed' }
         & $godotPath --headless --path godot --script res://compare_native_cob.gd
         if ($LASTEXITCODE -ne 0) { throw 'Runtime differs from original interpreter' }
+        python tools\native_cob_reference.py --cob local/unit-assets/corcom/script.cob --output local/scripts/native-trace-corcom.json
+        if ($LASTEXITCODE -ne 0) { throw 'Original Core commander interpreter reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_cob.gd -- --core
+        if ($LASTEXITCODE -ne 0) { throw 'Core commander runtime differs from original interpreter' }
         python tools\native_movement_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original movement reference run failed' }
         & $godotPath --headless --path godot --script res://compare_native_movement.gd

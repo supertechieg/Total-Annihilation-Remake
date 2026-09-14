@@ -39,6 +39,8 @@ var route_line: Line2D
 var assets: String
 var scene_data: Dictionary
 var unit_data: Dictionary
+var faction := "arm"
+var commander_type := "armcom"
 var terrain: Texture2D
 var map_panel: Control
 var world: Node2D
@@ -68,6 +70,24 @@ var build_button: Button
 var script_label: Label
 var playback_paused := false
 
+func resolve_faction() -> String:
+	var tree := get_tree()
+	if tree != null and tree.has_meta("faction"):
+		return str(tree.get_meta("faction"))
+	var args := OS.get_cmdline_user_args()
+	var index := args.find("--faction")
+	if index >= 0 and index + 1 < args.size():
+		var value := String(args[index + 1]).to_lower()
+		if value == "core" or value == "arm":
+			return value
+	return "arm"
+
+func switch_faction(target: String) -> void:
+	if target == faction:
+		return
+	get_tree().set_meta("faction", target)
+	get_tree().reload_current_scene()
+
 func image_texture(filename: String) -> ImageTexture:
 	var image := Image.load_from_file(assets.path_join(filename))
 	if image == null:
@@ -91,6 +111,8 @@ func button(text: String, action: Callable) -> Button:
 
 func _ready() -> void:
 	assets = ProjectSettings.globalize_path("res://").path_join(ASSET_RELATIVE).simplify_path()
+	faction = resolve_faction()
+	commander_type = "corcom" if faction == "core" else "armcom"
 	if not FileAccess.file_exists(assets.path_join("scene.json")) or not FileAccess.file_exists(ProjectSettings.globalize_path("res://../local/unit-assets/index.json")):
 		var message := label("Run 'Run Viewer.cmd' to prepare the original map and unit assets.", 22)
 		message.position = Vector2(40, 40)
@@ -107,11 +129,17 @@ func _ready() -> void:
 	start_script_runtime()
 	start_world_movement()
 	update_world()
-	print("VIEWER_READY map=%s pieces=%d textures=%d" % [scene_data.name, unit_data.pieces.size(), unit_data.textures.size()])
+	var commander_unit: Dictionary = unit_catalog.load_unit(commander_type)
+	var commander_model: Dictionary = commander_unit.get("model", {})
+	print("VIEWER_READY map=%s commander=%s pieces=%d textures=%d" % [scene_data.name, commander_type, int(commander_model.get("pieces", []).size()), int(commander_model.get("textures", {}).size())])
 
 func start_world_movement() -> void:
-	var fields: Dictionary = unit_data.definition
-	var terrain_fields: Dictionary = unit_catalog.movement("armcom")
+	var fields: Dictionary = unit_catalog.definition(commander_type)
+	if fields.is_empty():
+		push_error("Missing commander definition: " + commander_type)
+		get_tree().quit(1)
+		return
+	var terrain_fields: Dictionary = unit_catalog.movement(commander_type)
 	var feature_blocking := FileAccess.get_file_as_bytes(assets.path_join("features.bin"))
 	if feature_blocking.size() != int(scene_data.height_grid_width) * int(scene_data.height_grid_height):
 		push_error("Prepare the map feature-blocking bundle with tools/prepare_map_metal.py")
@@ -125,7 +153,7 @@ func start_world_movement() -> void:
 	unit_position = navigation.nearest_open(unit_position)
 	assert(unit_position.x >= 0, "Map has no passable starting point")
 	mobile = MobileUnit.new(navigation, fields, unit_position, script_vm)
-	economy = ConstructionWorld.new(unit_catalog, navigation, unit_position)
+	economy = ConstructionWorld.new(unit_catalog, navigation, unit_position, commander_type)
 	if not economy.set_terrain_metal(FileAccess.get_file_as_bytes(assets.path_join("metal.bin"))):
 		push_error("Prepare the map metal bundle with tools/prepare_map_metal.py")
 		get_tree().quit(1)
@@ -523,15 +551,16 @@ func build_model() -> void:
 	unit_catalog = UnitCatalog.new(ProjectSettings.globalize_path("res://../local/unit-assets/"))
 	assert(unit_catalog.fault.is_empty(), unit_catalog.fault)
 	unit_visuals = UnitVisuals.new(unit_catalog)
-	model_root = unit_visuals.instantiate("armcom")
+	model_root = unit_visuals.instantiate(commander_type)
 	model_view.add_child(model_root)
 	piece_nodes.assign(model_root.get_meta("pieces"))
 	rig_nodes = model_root.get_meta("rig")
 	rig_origins = model_root.get_meta("origins")
 	var max_y := 0.0
 	var min_y := 0.0
-	for index in range(unit_data.pieces.size()):
-		for vertex: Array in unit_data.pieces[index].vertices:
+	var model_pieces: Array = unit_catalog.load_unit(commander_type).model.pieces
+	for index in range(mini(model_pieces.size(), piece_nodes.size())):
+		for vertex: Array in model_pieces[index].vertices:
 			var p := piece_nodes[index].global_position + ta_vector(vertex)
 			max_y = maxf(max_y, p.y)
 			min_y = minf(min_y, p.y)
@@ -546,11 +575,13 @@ func build_model() -> void:
 	camera.current = true
 
 func start_script_runtime() -> void:
-	var path := assets.path_join("armcom.cob.json")
-	if not FileAccess.file_exists(path):
-		status_label.text = "  Missing COB data. Run python tools/prepare_viewer.py."
+	var data: Dictionary = unit_catalog.load_script(commander_type)
+	if data.is_empty():
+		status_label.text = "  Missing COB data for " + commander_type + ". Run python tools/prepare_units.py."
+		printerr("FAIL: missing commander script for ", commander_type)
+		if "--verify" in OS.get_cmdline_user_args() or "--faction" in OS.get_cmdline_user_args():
+			get_tree().quit(1)
 		return
-	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
 	script_vm = CobVM.new(data)
 	script_vm.invoke("Create")
 	apply_script_pose()
@@ -793,15 +824,26 @@ func build_interface() -> void:
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	column.add_child(preview)
-	column.add_child(label("ARM COMMANDER", 20, Color("d5e4ac")))
+	var commander_name: String = unit_catalog.definition(commander_type).get("name", commander_type)
+	column.add_child(label(("CORE COMMANDER" if faction == "core" else "ARM COMMANDER"), 20, Color("d5e4ac")))
 	column.add_child(label("Original geometry, textures & script", 13))
+	var faction_row := HBoxContainer.new()
+	column.add_child(faction_row)
+	var arm_button := button("Arm", func() -> void: switch_faction("arm"))
+	arm_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	arm_button.disabled = faction == "arm"
+	faction_row.add_child(arm_button)
+	var core_button := button("Core", func() -> void: switch_faction("core"))
+	core_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	core_button.disabled = faction == "core"
+	faction_row.add_child(core_button)
 	resource_label = label("Metal 1000\nEnergy 1000", 14, Color("d5e4ac"))
 	resource_label.tooltip_text = "Income and demand show the last resource update. Unpaid costs can pause construction or metal production until repaid."
 	column.add_child(resource_label)
-	selection_label = label("Selected: Arm Commander", 13)
+	selection_label = label("Selected: " + commander_name, 13)
 	column.add_child(selection_label)
 	build_picker = OptionButton.new()
-	for type: String in unit_catalog.build_options("armcom"):
+	for type: String in unit_catalog.build_options(commander_type):
 		build_picker.add_item(unit_catalog.definition(type).get("name", type))
 		build_picker.set_item_metadata(build_picker.item_count - 1, type)
 	column.add_child(build_picker)

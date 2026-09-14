@@ -1,0 +1,125 @@
+{
+  "cob_sha256": "cb8605c01c82f98d69ddae501eaa56270d1ff0773fb64a954475e3b43b9657a1",
+  "executable_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "host_callbacks_exercised": [
+    "set_transform(0)",
+    "set_rotation(1)",
+    "set_visible(2)",
+    "get_transform(5)",
+    "get_rotation(6)",
+    "set_value(16)"
+  ],
+  "instruction_count": 911,
+  "mismatches": 0,
+  "piece_count": 15,
+  "scenario_calls": {
+    "0": [
+      [
+        "Create",
+        []
+      ]
+    ],
+    "1": [
+      [
+        "StartMoving",
+        []
+      ]
+    ],
+    "100": [
+      [
+        "TargetCleared",
+        [
+          0.0
+        ]
+      ]
+    ],
+    "150": [
+      [
+        "AimPrimary",
+        [
+          16000.0,
+          0.0
+        ]
+      ]
+    ],
+    "151": [
+      [
+        "AimTertiary",
+        [
+          -8192.0,
+          0.0
+        ]
+      ]
+    ],
+    "20": [
+      [
+        "AimPrimary",
+        [
+          8192.0,
+          0.0
+        ]
+      ]
+    ],
+    "200": [
+      [
+        "FireTertiary",
+        []
+      ]
+    ],
+    "205": [
+      [
+        "TargetCleared",
+        [
+          0.0
+        ]
+      ]
+    ],
+    "250": [
+      [
+        "StartBuilding",
+        [
+          4096.0,
+          0.0
+        ]
+      ]
+    ],
+    "290": [
+      [
+        "StopBuilding",
+        []
+      ]
+    ],
+    "330": [
+      [
+        "StartMoving",
+        []
+      ]
+    ],
+    "380": [
+      [
+        "StopMoving",
+        []
+      ]
+    ],
+    "60": [
+      [
+        "FirePrimary",
+        []
+      ]
+    ],
+    "65": [
+      [
+        "StopMoving",
+        []
+      ]
+    ]
+  },
+  "scenario_scope": "Create/StartMoving/StopMoving/AimPrimary/FirePrimary/AimTertiary/FireTertiary/StartBuilding/TargetCleared/StopBuilding (identical to armcom oracle scenario)",
+  "scope_limits": "Original bytecode against reconstructed VM only; no world simulation, weapons, damage, or combat behavior is validated here. Report matches Core Commander lifecycle callbacks used by the viewer (movement, aim, build, target clear) with no VM fault.",
+  "script": "local/unit-assets/corcom/script.json",
+  "snapshots_checked": 464,
+  "static_count": 4,
+  "ticks_replayed": 451,
+  "unit": "corcom",
+  "vm_fault": ""
+}
