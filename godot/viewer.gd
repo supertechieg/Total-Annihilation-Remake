@@ -37,6 +37,8 @@ var feature_sprite_revision := -1
 ## Shared per-type animation states for animating 2D features: name -> {state, durations, loop, frames, sprites}.
 var feature_animations: Dictionary = {}
 var feature_layers: Array = []
+const Minimap = preload("res://minimap.gd")
+var minimap: Control
 var structure_views: Dictionary = {}
 var structure_models: Dictionary = {}
 var selected_unit := 0
@@ -1454,6 +1456,8 @@ func step_script() -> void:
 		var selected_target: int = economy.builder_jobs[selected_unit].target if economy.builder_jobs.has(selected_unit) else 0
 		economy.step()
 		step_feature_animations()
+		if economy.ticks % 10 == 0:
+			refresh_minimap()
 		if opponent != null:
 			opponent.step()
 		combat.step()
@@ -1594,6 +1598,13 @@ func build_interface() -> void:
 	column.add_child(label(str(scene_data.name).to_upper(), 21, Color("edf0e8")))
 	column.add_child(label("%d × %d  ·  Original terrain tiles" % [int(scene_data.width), int(scene_data.height)], 12))
 	column.add_child(build_map_picker())
+	minimap = Minimap.new()
+	var minimap_image = image_texture("minimap.png", map_assets)
+	minimap.setup(minimap_image if minimap_image != null else terrain, Vector2(float(scene_data.width), float(scene_data.height)))
+	minimap.view_requested.connect(func(point: Vector2) -> void:
+		map_center = point
+		update_world())
+	column.add_child(minimap)
 	var preview := TextureRect.new()
 	preview.texture = model_view.get_texture()
 	preview.custom_minimum_size = Vector2(230, 150)
@@ -1696,6 +1707,13 @@ func update_world() -> void:
 	unit_sprite.position = unit_position
 	if zoom_label != null:
 		zoom_label.text = "Zoom  %d%%" % roundi(map_zoom * 100)
+	refresh_minimap()
+
+func refresh_minimap() -> void:
+	if minimap == null or economy == null:
+		return
+	var extent: Vector2 = map_panel.size / map_zoom
+	minimap.refresh(economy.units, Rect2(map_center - extent * 0.5, extent))
 
 func rotate_unit(amount: float) -> void:
 	heading += amount
