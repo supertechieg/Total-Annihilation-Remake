@@ -1,8 +1,19 @@
 extends RefCounted
 ## Provisional opponent policy using the normal production and combat APIs.
+## Faction tables choose each side's original level-one builders, factories, combat units and economy structures.
+const FACTIONS := {
+	"arm": {"builders": ["armcv", "armck"], "vehicle_plant": "armvp", "kbot_lab": "armlab",
+		"vehicle_combat": "armflash", "kbot_combat": "armpw", "vehicle_builder": "armcv", "kbot_builder": "armck",
+		"solar": "armsolar", "extractor": "armmex"},
+	"core": {"builders": ["corcv", "corck"], "vehicle_plant": "corvp", "kbot_lab": "corlab",
+		"vehicle_combat": "corraid", "kbot_combat": "corak", "vehicle_builder": "corcv", "kbot_builder": "corck",
+		"solar": "corsolar", "extractor": "cormex"},
+}
 var world: RefCounted
 var combat: RefCounted
 var team: int
+var faction := "arm"
+var roster: Dictionary
 var next_decision := 0
 var queued := 0
 var attacks := 0
@@ -10,10 +21,12 @@ var structures_started := 0
 var structures_resumed := 0
 var metal_sites: Array[Vector2] = []
 
-func _init(source: RefCounted, battle: RefCounted, owner: int) -> void:
+func _init(source: RefCounted, battle: RefCounted, owner: int, side := "arm") -> void:
 	world = source
 	combat = battle
 	team = owner
+	faction = side if FACTIONS.has(side) else "arm"
+	roster = FACTIONS[faction]
 	for index in range(world.terrain_metal.size()):
 		if world.terrain_metal[index] > 0:
 			metal_sites.append(Vector2((index % world.navigation.width) * 16, (index / world.navigation.width) * 16))
@@ -25,24 +38,25 @@ func step() -> void:
 	build_base()
 	var builder_available := false
 	for unit: Dictionary in world.units.values():
-		if int(unit.get("team", 0)) == team and unit.type in ["armcv", "armck"]:
+		if int(unit.get("team", 0)) == team and unit.type in roster.builders:
 			builder_available = true
 	for factory_id: int in world.factories:
 		if int(world.units[factory_id].get("team", 0)) == team:
 			for pending in world.factories[factory_id].queue:
-				builder_available = builder_available or pending in ["armcv", "armck"]
+				builder_available = builder_available or pending in roster.builders
 	for id: int in world.factories:
 		if int(world.units[id].get("team", 0)) != team or float(world.units[id].remaining) > 0:
 			continue
 		var factory: Dictionary = world.factories[id]
 		if not factory.queue.is_empty() or int(factory.product) != 0:
 			continue
-		var type := "armpw" if world.units[id].type == "armlab" else "armflash"
+		var kbot: bool = world.units[id].type == roster.kbot_lab
+		var type: String = roster.kbot_combat if kbot else roster.vehicle_combat
 		if not builder_available:
-			type = "armck" if world.units[id].type == "armlab" else "armcv"
+			type = roster.kbot_builder if kbot else roster.vehicle_builder
 		if world.queue_unit(id, type):
 			queued += 1
-			if type in ["armcv", "armck"]:
+			if type in roster.builders:
 				builder_available = true
 	for id: int in world.units:
 		var unit: Dictionary = world.units[id]
@@ -94,14 +108,14 @@ func build_base() -> void:
 	var energy_debt := 0.0
 	for unit: Dictionary in world.units.values():
 		if int(unit.get("team", 0)) == team:
-			has_solar = has_solar or unit.type == "armsolar"
-			has_factory = has_factory or unit.type in ["armvp", "armlab"]
-			pending_solar = pending_solar or (unit.type == "armsolar" and float(unit.remaining) > 0)
+			has_solar = has_solar or unit.type == roster.solar
+			has_factory = has_factory or unit.type in [roster.vehicle_plant, roster.kbot_lab]
+			pending_solar = pending_solar or (unit.type == roster.solar and float(unit.remaining) > 0)
 			energy_debt += float(unit.energy_ledger.debt)
-	var type := "armsolar" if not has_solar else "armvp"
+	var type: String = roster.solar if not has_solar else roster.vehicle_plant
 	if has_solar and has_factory:
 		if energy_debt > 0 and not pending_solar:
-			type = "armsolar"
+			type = roster.solar
 		else:
 			build_extractor()
 			return
@@ -128,7 +142,7 @@ func build_extractor() -> void:
 		if int(unit.get("team", 0)) != team:
 			continue
 		metal_debt += float(unit.metal_ledger.debt)
-		if unit.type == "armmex":
+		if unit.type == roster.extractor:
 			has_extractor = true
 			if float(unit.remaining) > 0:
 				return
@@ -138,16 +152,16 @@ func build_extractor() -> void:
 		var unit: Dictionary = world.units[id]
 		if int(unit.get("team", 0)) != team or not world.can_build(id) or world.builder_jobs.has(id):
 			continue
-		if "armmex" not in world.catalog.build_options(unit.type) or not world.mobile_units.has(id):
+		if roster.extractor not in world.catalog.build_options(unit.type) or not world.mobile_units.has(id):
 			continue
 		if not world.mobile_units[id].route.is_empty():
 			continue
 		var sites := metal_sites.duplicate()
 		sites.sort_custom(func(a: Vector2, b: Vector2) -> bool: return unit.position.distance_squared_to(a) < unit.position.distance_squared_to(b))
 		for point: Vector2 in sites:
-			var error: String = world.placement_error("armmex", point, id)
+			var error: String = world.placement_error(roster.extractor, point, id)
 			if error.is_empty():
-				if world.begin_build("armmex", point, id) != 0:
+				if world.begin_build(roster.extractor, point, id) != 0:
 					structures_started += 1
 					return
 			elif error == "Move builder closer to build site":

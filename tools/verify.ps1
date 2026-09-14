@@ -34,8 +34,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Opponent production/combat checks failed' }
     & $godotPath --headless --path godot --script res://test_opponent_base.gd
     if ($LASTEXITCODE -ne 0) { throw 'Opponent base-building checks failed' }
+    & $godotPath --headless --path godot --script res://test_opponent_base.gd -- --core
+    if ($LASTEXITCODE -ne 0) { throw 'Core opponent base-building checks failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-opponent
     if ($LASTEXITCODE -ne 0) { throw 'Opponent viewer scenario failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-opponent --faction core
+    if ($LASTEXITCODE -ne 0) { throw 'Core player versus Arm opponent scenario failed' }
     & $godotPath --headless --path godot --script res://test_scenario_result.gd
     if ($LASTEXITCODE -ne 0) { throw 'Scenario result checks failed' }
     & $godotPath --headless --path godot --quit-after 90 --script res://test_faction_selection.gd

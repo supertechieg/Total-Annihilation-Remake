@@ -10,13 +10,15 @@ func _initialize() -> void:
 	var heights := PackedByteArray()
 	heights.resize(64 * 64)
 	heights.fill(0)
+	var faction := "core" if "--core" in OS.get_cmdline_user_args() else "arm"
+	var roster: Dictionary = Opponent.FACTIONS[faction]
 	var world = World.new(catalog, Navigation.new(64, 64, heights), Vector2(128, 128))
-	var builder: int = world.add_unit("armcv", Vector2(512, 512), 0, 1)
-	world.mobile_units[builder] = Mobile.new(world.unit_navigation("armcv"), catalog.definition("armcv"), Vector2(512, 512), world.scripts[builder])
+	var builder: int = world.add_unit(roster.vehicle_builder, Vector2(512, 512), 0, 1)
+	world.mobile_units[builder] = Mobile.new(world.unit_navigation(roster.vehicle_builder), catalog.definition(roster.vehicle_builder), Vector2(512, 512), world.scripts[builder])
 	var victim: int = world.add_unit("armstump", Vector2(512, 800), 0, 0)
 	var initial: int = world.units[victim].health
 	var combat = Combat.new(world)
-	var opponent := Opponent.new(world, combat, 1)
+	var opponent := Opponent.new(world, combat, 1, faction)
 	var spent := false
 	var interrupted := false
 	var interrupted_target := 0
@@ -37,8 +39,14 @@ func _initialize() -> void:
 		not world.units.has(victim) or world.units[victim].health < initial,
 		opponent.structures_started == 2, interrupted, opponent.structures_resumed == 1,
 		world.units.has(interrupted_target) and float(world.units[interrupted_target].remaining) == 0.0]
+	var produced := 0
 	for unit: Dictionary in world.units.values():
-		if unit.type == "armflash":
+		if unit.type == roster.vehicle_combat:
+			produced += 1
 			checks.append(int(unit.team) == 1)
-	print("OPPONENT_BASE %d / %d checks pass; queued=%d attacks=%d" % [checks.size() - checks.count(false), checks.size(), opponent.queued, opponent.attacks])
+	for id: int in world.scripts:
+		checks.append(world.scripts[id].fault.is_empty())
+	if checks.count(false) > 0:
+		printerr("Opponent base checks: ", checks.slice(0, 8), " produced=", produced, " structures=", opponent.structures_started)
+	print("OPPONENT_BASE %s %d / %d checks pass; queued=%d attacks=%d" % [faction, checks.size() - checks.count(false), checks.size(), opponent.queued, opponent.attacks])
 	quit(0 if checks.count(false) == 0 else 1)

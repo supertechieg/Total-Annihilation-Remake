@@ -1,5 +1,20 @@
 # Initial opponent controller
 
+## Faction-aware opponent
+
+`opponent.gd` takes a faction (`arm` or `core`) and reads a table of each side's original level-one choices:
+
+| | Arm | Core |
+|---|---|---|
+| Vehicle / Kbot builders | armcv / armck | corcv / corck |
+| Factories | armvp / armlab | corvp / corlab |
+| Combat products | armflash / armpw | corraid / corak |
+| Economy | armsolar, armmex | corsolar, cormex |
+
+All of these are natively verified scripts and combat-enabled units. The policy logic is unchanged: base construction, builder replacement, power and metal expansion, production and nearest-enemy attacks.
+
+The viewer's **Start opponent** now spawns the opposite faction's construction vehicle: a Core AI for an Arm player, and an Arm AI for a Core player. `test_opponent_base.gd -- --core` runs the base scenario with a Core construction vehicle and passes 16 checks, as does the Arm run; the checks now also require every script to be fault-free. `--verify-opponent` passes on Comet Catcher for both player factions (`--faction core` for the Core player): construction, production, Commander damage, and victory latching after the enemy is removed. All run in NORMAL verification. This remains a provisional policy, not the original AI.
+
 opponent.gd is a provisional skirmish policy, not a reconstruction of original TA
 AI. Once per second it queues a Flash or Peewee in idle owned factories, using
 normal construction costs and scripts. Completed supported combat units finish

@@ -1194,19 +1194,22 @@ func start_opponent() -> void:
 	if opponent != null:
 		status_label.text = "  Opponent already active"
 		return
-	var nav = economy.unit_navigation("armcv")
+	# The opponent plays the other faction, as in an Arm versus Core skirmish.
+	var opponent_faction := "arm" if faction == "core" else "core"
+	var builder_type: String = Opponent.FACTIONS[opponent_faction].vehicle_builder
+	var nav = economy.unit_navigation(builder_type)
 	for offset in [Vector2(512, 0), Vector2(-512, 0), Vector2(0, 512), Vector2(0, -512)]:
 		var point: Vector2 = nav.nearest_open(unit_position + offset)
 		if point.x < 0 or point.distance_to(unit_position) < 256:
 			continue
 		var occupied := false
 		for unit: Dictionary in economy.units.values():
-			occupied = occupied or economy.footprint("armcv", point).intersects(economy.footprint(unit.type, unit.position))
+			occupied = occupied or economy.footprint(builder_type, point).intersects(economy.footprint(unit.type, unit.position))
 		if occupied:
 			continue
-		var id: int = economy.add_unit("armcv", point, 0, 1)
-		economy.mobile_units[id] = MobileUnit.new(nav, unit_catalog.definition("armcv"), point, economy.scripts[id])
-		var policy := Opponent.new(economy, combat, 1)
+		var id: int = economy.add_unit(builder_type, point, 0, 1)
+		economy.mobile_units[id] = MobileUnit.new(nav, unit_catalog.definition(builder_type), point, economy.scripts[id])
+		var policy := Opponent.new(economy, combat, 1, opponent_faction)
 		policy.build_base()
 		if policy.structures_started == 0:
 			economy.remove_unit(id)
