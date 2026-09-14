@@ -7,6 +7,7 @@ const Origin = preload("res://piece_origin.gd")
 const Launch = preload("res://ballistic_launch.gd")
 const Motion = preload("res://ballistic_motion.gd")
 const Combat = preload("res://combat_world.gd")
+const GameRandom = preload("res://wind_state.gd")
 
 ## JSON numbers parse as floats; compare nested values as integers.
 static func integers(value: Variant) -> Variant:
@@ -57,7 +58,12 @@ func _initialize() -> void:
 		var expected: Dictionary = case.expected
 		if not requested.is_empty():
 			var start := Combat.offset_point(unit_raw, Origin.model_origin(model, vm.pieces, queries.piece_name(false), [0, unit_heading, 0]))
-			var velocity: Array = launch.velocity(int(requested[0]) + unit_heading, int(requested[1]), speed, gravity, offset)
+			var rng := GameRandom.new()
+			rng.game_seed = int(case.get("seed", 1))
+			var spread := Combat.firing_spread((int(requested[0]) + unit_heading) & 0xffff, int(requested[1]) & 0xffff, int(case.get("accuracy", 0)),
+				int(case.get("health", 1000)), int(case.get("maxdamage", 1000)), int(case.get("experience", 0)), rng)
+			var launch_velocity: Array = launch.velocity(int(spread[0]), int(spread[1]), speed, gravity, offset)
+			var velocity := launch_velocity
 			var path: Array = []
 			var position := start
 			for step in range(1, 41):
@@ -65,16 +71,21 @@ func _initialize() -> void:
 				position = next.position
 				velocity = next.velocity
 				path.append(position)
-			actual.merge({"start": start, "velocity": launch.velocity(int(requested[0]) + unit_heading, int(requested[1]), speed, gravity, offset), "path": path})
+			actual.merge({"start": start, "velocity": launch_velocity, "path": path,
+				"launch_heading": int(spread[0]), "launch_pitch": int(spread[1]), "seed": rng.game_seed})
 		var checks := {"offset": int(actual.offset) == int(expected.offset),
 			"requests": integers(actual.requests) == integers(case.requests),
 			"start": actual.has("start") and integers(actual.start) == integers(expected.get("start")),
 			"velocity": actual.has("velocity") and integers(actual.velocity) == integers(expected.get("velocity")),
-			"path": actual.has("path") and integers(actual.path.slice(0, expected.get("path", []).size())) == integers(expected.get("path"))}
+			"path": actual.has("path") and integers(actual.path.slice(0, expected.get("path", []).size())) == integers(expected.get("path")),
+			"spread": not expected.has("launch_pitch") or (actual.has("launch_heading") and int(actual.launch_heading) == int(expected.launch_heading)
+				and int(actual.launch_pitch) == int(expected.launch_pitch) and int(actual.seed) == int(expected.seed))}
 		for key: String in checks:
 			summary[key] = int(summary.get(key, 0)) + int(checks[key])
 		if checks.values().has(false) and mismatches.size() < 4:
 			mismatches.append({"unit": unit, "target": target_raw, "checks": checks,
+				"inputs": {"health": case.get("health"), "maxdamage": case.get("maxdamage"), "experience": case.get("experience"), "accuracy": case.get("accuracy"), "seed": case.get("seed")},
+				"launch": {"host": [actual.get("launch_heading"), actual.get("launch_pitch"), actual.get("seed")], "native": [expected.get("launch_heading"), expected.get("launch_pitch"), expected.get("seed")]},
 				"host": {"offset": actual.offset, "requests": actual.requests.slice(-2), "start": actual.get("start"), "velocity": actual.get("velocity")},
 				"native": {"offset": expected.offset, "requests": case.requests.slice(-2), "start": expected.get("start"), "velocity": expected.get("velocity")}})
 	var report := {"exe_sha256": trace.exe_sha256, "cases": trace.cases.size(), "matching": summary, "mismatches": mismatches,

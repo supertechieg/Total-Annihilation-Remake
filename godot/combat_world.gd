@@ -155,6 +155,28 @@ static func ballistic_angles(aim_raw: Array, target_raw: Array, unit_heading: in
 	var heading := roundi(atan2(float(delta[0]), float(delta[2])) * 65536.0 / TAU) - unit_heading
 	return [heading, Aim.solve(delta, speed, gravity, minimum_angle)]
 
+## Turret fire callback 0x49d580 spread: damage and accuracy widen, experience narrows, two game-RNG draws.
+## Returns the perturbed absolute heading and pitch (16-bit). Direct launchers recompute direction, so only the draws matter there.
+static func firing_spread(heading: int, pitch: int, accuracy: int, health: int, maxdamage: int, experience: int, rng: RefCounted) -> Array:
+	var health_word := health & 0xffff
+	if health_word >= 0x8000:
+		health_word -= 0x10000
+	var shifted := (health_word << 11) & 0xffffffff
+	@warning_ignore("integer_division")
+	var damage := (shifted / maxi(1, maxdamage)) & 0xffff
+	var spread := ((accuracy & 0xffff) - damage + 0x800) & 0xffff
+	# imul by 0x2aaaaaab keeps the high word (/6), then sar 1: experience / 12.
+	@warning_ignore("integer_division")
+	var divisor := (experience & 0xffff) / 12
+	if divisor > 1:
+		@warning_ignore("integer_division")
+		spread = spread / divisor
+	if spread != 0:
+		var half := spread >> 1
+		heading = (heading + rng.bounded_random(spread) - half) & 0xffff
+		pitch = (pitch + rng.bounded_random(spread) - half) & 0xffff
+	return [heading & 0xffff, pitch & 0xffff]
+
 static func raw_point(point: Vector3) -> Array:
 	return [roundi(point.x * 65536.0), roundi(point.y * 65536.0), roundi(point.z * 65536.0)]
 
@@ -215,17 +237,24 @@ func step() -> void:
 		for shot: Dictionary in cycle.shots:
 			var start: Vector3 = shot.position
 			request_sound(str(cycle.definition.get("soundstart", "")), start)
+			var world_heading := (heading + int(world.mobile_units[source].heading)) & 0xffff
+			var shot_pitch := pitch & 0xffff
+			if int(cycle.definition.get("turret", "0")) & 1:
+				var source_unit: Dictionary = world.units[source]
+				var spread := firing_spread(world_heading, shot_pitch, int(cycle.definition.get("accuracy", "0")), int(source_unit.health),
+					int(world.catalog.definition(source_unit.type).get("maxdamage", "1")), int(source_unit.get("experience", 0)), burst_random)
+				world_heading = int(spread[0])
+				shot_pitch = int(spread[1])
 			if ballistic:
 				var speed := int(shot.velocity_raw_per_tick)
 				var raw := raw_point(start)
 				var timer := int(float(cycle.definition.get("weapontimer", "0")) * 30.0) & 65535
 				var burn := int(cycle.definition.get("burnblow", "0")) != 0
-				var world_heading := heading + int(world.mobile_units[source].heading)
 				projectiles.append({"source": source, "owner": int(world.units[source].get("team", 0)),
 					"position": start, "previous": start, "position_raw": raw,
-					"velocity_raw": launch.velocity(world_heading, pitch, speed, gravity, int(launch_offsets[source])),
+					"velocity_raw": launch.velocity(world_heading, shot_pitch, speed, gravity, int(launch_offsets[source])),
 					"ballistic": true, "timer": timer, "burnblow": burn,
-					"deadline": Launch.deadline(tick, timer, burn, raw, raw_point(center(target)), launch.trig.velocity_component(pitch, speed, 16384)),
+					"deadline": Launch.deadline(tick, timer, burn, raw, raw_point(center(target)), launch.trig.velocity_component(shot_pitch, speed, 16384)),
 					"area": int(cycle.definition.get("areaofeffect", "0")), "edge": float(cycle.definition.get("edgeeffectiveness", "0")),
 					"collision_flags": world.collision.collision_flags(cycle.definition),
 					"explosion": str(cycle.definition.get("explosiongaf", "")) + "/" + str(cycle.definition.get("explosionart", "")), "soundhit": str(cycle.definition.get("soundhit", "")), "damage": cycle.definition.get("damage", {})})

@@ -1,12 +1,13 @@
 {
-  "cases": 48,
+  "cases": 108,
   "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
   "matching": {
-    "offset": 48,
-    "path": 48,
-    "requests": 48,
-    "start": 48,
-    "velocity": 48
+    "offset": 108,
+    "path": 108,
+    "requests": 108,
+    "spread": 108,
+    "start": 108,
+    "velocity": 108
   },
   "mismatches": [],
   "scope": "Original 0x49e070 creation offset, AimFrom/atan/0x49a890 aim loop driving the original AimPrimary script for 90 ticks, turret fire 0x49d580 with muzzle query and launcher 0x49cde0, then 40 updates of 0x49b720; collision, sound and script-start effects stubbed; full health, zero accuracy/experience and zero wind drift"

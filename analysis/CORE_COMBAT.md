@@ -28,7 +28,18 @@ Measured in the original's own trajectories, the shell passes the aim point (6 u
 
 Under the modeled conditions: full health, zero `accuracy` and experience, zero wind drift, a stationary target, and creation heading 32768.
 
-**Recovered but not yet implemented: firing inaccuracy.** `0x49d580` perturbs the launch heading and pitch before `0x49cde0`. The spread is `s = accuracy − (health_word(unit+0x108) × 2048 / maxdamage(def+0x1fa)) + 0x800`, which is `accuracy` at full health and grows toward `accuracy + 2048` as health falls. When experience word `unit+0xb8` divided by 6 exceeds 1, `s` is divided by that value. If the 16-bit `s` is nonzero, heading and pitch each get `random(s) − s/2` from `0x4b6c30`. The host has no spread, so damaged Thuds and Hammers never scatter a shot low onto a short target, as they could in the original. Field names come from inspection; this needs its own native comparison and random-state integration.
+**Firing spread (implemented, native-compared).** `0x49d580` perturbs the absolute launch heading and pitch before the launcher runs:
+- **Spread value.** `s = (accuracy − ((signed16 health(unit+0x108) << 11) ÷ maxdamage(def+0x1fa)) + 0x800) & 0xffff`. This equals `accuracy` at full health and grows toward `accuracy + 2048` as health falls.
+- **Experience.** Let `d = experience word(unit+0xb8) ÷ 12`; the multiply by `0x2aaaaaab` keeps the ÷6 high word, then `sar 1` halves it. If `d > 1`, `s ÷= d`.
+- **Random offsets.** If `s ≠ 0`, heading and then pitch each get `bounded_random(s) − (s >> 1)` from the game RNG `0x4b6c30` (Park–Miller at `0x51fc88`, the same RNG as wind). Bounds below 2 return 0 without a draw.
+
+A first reading of the instructions as ÷6 was wrong. The native comparison exposed it: experience 12 and 17 do not divide, and experience 600 divides by 50.
+
+`combat_world.firing_spread` applies this to every shot from a turret weapon using the shared world game RNG. For ballistic weapons the perturbed angles set launch velocity and burn-blow speed. Direct launchers recompute direction from positions, so there it only consumes the draws, as the original does.
+
+The native oracle adds 10 spread cases per cannon unit on the settled engagement: half health, near-zero health, one hit point lost, accuracy 400, experience 12/17/600, health equal to maximum, 1/1 health, and a wrapping accuracy of 65000 with extreme seeds. The host matches launch heading, pitch, final RNG state, velocity and path in every case (native-cannon-launch-validation.json). `test_firing_spread.gd` pins 10 native-derived fixtures in the normal suite.
+
+Limits: the perturbed controller angles persist into the next tolerance check in the original; the host recomputes aim each tick instead. Non-turret weapon callbacks (`0x49d9c0`, `0x49db70`, `0x49dd60`) are not yet inspected for spread.
 
 ## Limits
 

@@ -107,7 +107,7 @@ class CannonReference(MovementReference, FactoryReference):
         fire_state = self.snapshot()
         return create_state, fire_state, requests
 
-    def shot(self, create_state, fire_state, unit_raw, unit_heading, target_raw, tick):
+    def shot(self, create_state, fire_state, unit_raw, unit_heading, target_raw, tick, health=1000, maxdamage=1000, experience=0, accuracy=0, seed=1):
         for axis in range(3):
             self.write(UNIT + 0x6a + axis * 4, unit_raw[axis])
         self.short(UNIT + 0x64, 0)
@@ -132,8 +132,11 @@ class CannonReference(MovementReference, FactoryReference):
         self.short(controller + 0x16, heading)
         self.short(controller + 0x18, pitch)
         self.mu.mem_write(controller + 0x1b, bytes([1]))
-        self.short(UNIT + 0x108, 1000)
-        self.short(UNIT + 0xb8, 0)
+        self.short(UNIT + 0x108, health)
+        self.short(UNIT + 0xb8, experience)
+        self.write(DEFINITION + 0x1fa, maxdamage)
+        self.mu.mem_write(WEAPON + 0x104, struct.pack('<H', accuracy & 0xffff))
+        self.write(0x51fc88, seed)
         self.write(UNIT + 0x110, 0)
         self.mu.mem_write(UNIT + 0xff, bytes([0]))
         self.write(GAME + 0x141f3, 0)
@@ -141,7 +144,8 @@ class CannonReference(MovementReference, FactoryReference):
         self.mu.mem_write(POOL, bytes(0x6b))
         fired = self.call(0x49d580, [UNIT, controller, 0, TARGET])
         result = dict(offset=offset, aim=aim, heading=heading, pitch=pitch, fired=fired & 0xff,
-                      launch_heading=self.read(controller + 0x16) & 0xffff)
+                      launch_heading=self.read(controller + 0x16) & 0xffff, launch_pitch=self.read(controller + 0x18) & 0xffff,
+                      seed=self.read(0x51fc88))
         if result['fired'] and pitch != 0x8000:
             result['start'] = [signed(self.read(POOL + 4 + axis * 4)) for axis in range(3)]
             result['velocity'] = [signed(self.read(POOL + 0x1c + axis * 4)) for axis in range(3)]
@@ -175,7 +179,19 @@ def main():
             create_state, fire_state, requests = native.engagement(unit_raw, 32768, target, 1000 + case_index)
             outcome = native.shot(create_state, fire_state, unit_raw, 32768, target, 1000 + case_index)
             cases.append(dict(unit=unit, create_state=create_state, fire_state=fire_state, requests=requests, unit_raw=unit_raw,
-                              unit_heading=32768, target=target, tick=1000 + case_index, gravity=GRAVITY, expected=outcome))
+                              unit_heading=32768, target=target, tick=1000 + case_index, gravity=GRAVITY, expected=outcome,
+                              health=1000, maxdamage=1000, experience=0, accuracy=0, seed=1))
+            if case_index == 0:
+                # Damage, experience and accuracy spread in 0x49d580 on the same settled engagement.
+                for spread_index, (health, maxdamage, experience, accuracy, seed) in enumerate([
+                        (500, 1000, 0, 0, 1), (1, 1000, 0, 0, 12345), (999, 1000, 0, 0, 777), (1000, 1000, 0, 400, 99991),
+                        (250, 1000, 12, 0, 2024), (250, 1000, 17, 0, 31337), (100, 1000, 600, 300, 424242), (1058, 1058, 0, 0, 5),
+                        (1, 1, 0, 0, 1), (300, 700, 0, 65000, 2147483646)]):
+                    outcome = native.shot(create_state, fire_state, unit_raw, 32768, target, 2000 + spread_index,
+                                          health, maxdamage, experience, accuracy, seed)
+                    cases.append(dict(unit=unit, create_state=create_state, fire_state=fire_state, requests=requests, unit_raw=unit_raw,
+                                      unit_heading=32768, target=target, tick=2000 + spread_index, gravity=GRAVITY, expected=outcome,
+                                      health=health, maxdamage=maxdamage, experience=experience, accuracy=accuracy, seed=seed))
         print(f'NATIVE_CANNON_LAUNCH {unit}: {sum(1 for c in cases if c["unit"] == unit)} cases; first offset={cases[-1]["expected"]["offset"]} fired={cases[-1]["expected"]["fired"]}', flush=True)
     folder = Path('local/ballistics')
     folder.mkdir(exist_ok=True)

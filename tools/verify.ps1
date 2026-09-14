@@ -104,6 +104,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Reload combat checks failed' }
     & $godotPath --headless --path godot --script res://test_cannon_combat.gd
     if ($LASTEXITCODE -ne 0) { throw 'Cannon combat checks failed' }
+    & $godotPath --headless --path godot --script res://test_firing_spread.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Firing spread checks failed' }
     & $godotPath --headless --path godot --script res://test_guard_combat.gd
     if ($LASTEXITCODE -ne 0) { throw 'Guard combat checks failed' }
     & $godotPath --headless --path godot --script res://test_attack_orders.gd
