@@ -440,6 +440,16 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original Killed script reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_killed.gd
         if ($LASTEXITCODE -ne 0) { throw 'Killed scripts differ from original interpreter' }
+        python tools\prepare_visibility.py
+        if ($LASTEXITCODE -ne 0) { throw 'Visibility asset preparation failed' }
+        python tools\native_los_tables.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native LOS tables failed' }
+        & $godotPath --headless --path godot --script res://compare_native_los_tables.gd
+        if ($LASTEXITCODE -ne 0) { throw 'LOS tables native comparison failed' }
+        python tools\native_los_heights.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native LOS heights failed' }
+        & $godotPath --headless --path godot --script res://compare_native_los_heights.gd
+        if ($LASTEXITCODE -ne 0) { throw 'LOS heights native comparison failed' }
         python tools\native_hit_notify.py
         if ($LASTEXITCODE -ne 0) { throw 'Native hit notification failed' }
         & $godotPath --headless --path godot --script res://compare_native_hit_notify.gd

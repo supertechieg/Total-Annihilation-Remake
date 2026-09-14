@@ -1,0 +1,124 @@
+{
+  "cases": 39,
+  "checks": 33899,
+  "differences": [],
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "fault_cases": [
+    "negative-count",
+    "numlines-zero-and-negative",
+    "numtables-negative",
+    "odd-pair-count",
+    "count-exceeds-tokens",
+    "unterminated-block-comment",
+    "fatal-missing-semicolon",
+    "fatal-unclosed-section",
+    "fatal-no-equals",
+    "fatal-no-bracket",
+    "fatal-no-brace",
+    "numlines-8193",
+    "numlines-32767"
+  ],
+  "matching": 33899,
+  "ray_steps_compared": 3368,
+  "rays_compared": 33508,
+  "rays_per_table": {
+    "case-and-comments": [
+      4
+    ],
+    "comments-in-values": [
+      16
+    ],
+    "count-int16-wrap": [
+      8
+    ],
+    "duplicate-keys": [
+      12
+    ],
+    "duplicate-sections": [
+      4,
+      0
+    ],
+    "extra-spaces": [
+      8,
+      16,
+      16,
+      24,
+      32,
+      40,
+      48,
+      48,
+      56
+    ],
+    "extra-tokens": [
+      4
+    ],
+    "field-without-equals": [
+      4
+    ],
+    "high-byte-case": [
+      8
+    ],
+    "key-swallows-section": [
+      8
+    ],
+    "long-line-truncation": [
+      8
+    ],
+    "los.tdf": [
+      8,
+      16,
+      16,
+      24,
+      32,
+      40,
+      48,
+      48,
+      56
+    ],
+    "missing-line-and-table": [
+      12,
+      0,
+      4
+    ],
+    "negative-and-plus": [
+      8,
+      4
+    ],
+    "nested-sections": [
+      8,
+      0
+    ],
+    "no-tableinfo": [],
+    "numlines-8192": [
+      32768
+    ],
+    "numlines-less-than-lines": [
+      4
+    ],
+    "numlines-zero": [
+      0,
+      4
+    ],
+    "numtables-zero": [],
+    "overflow-digits": [
+      4
+    ],
+    "section-name-spaces": [
+      4
+    ],
+    "stray-close-at-root": [
+      0
+    ],
+    "tabs-and-junk": [
+      12
+    ],
+    "tdf-whitespace-set": [
+      16
+    ],
+    "zero-count": [
+      8
+    ]
+  },
+  "scope": "LosTables.parse_detailed vs the original loader 0x433130/0x433380/0x4336f0 run natively (TDF parser, strtok, atoi unmodified; file I/O, heap and TLS stubbed) on the extracted gamedata/los.tdf and synthetic variants; every ray step, table/ray counts, the line strings passed to strtok, fault classification and 0x433500 index arithmetic",
+  "tdf_sha256": "87c70544384a58195d8e7dfb86137d470fea6b52bda58f207c02ea347e66724c"
+}
