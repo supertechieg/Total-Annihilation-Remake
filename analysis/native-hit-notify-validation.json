@@ -1,0 +1,78 @@
+{
+  "cases": 3720,
+  "categories": {
+    "armor-boundary": {
+      "cases": 120,
+      "checks": 600,
+      "dying": 97,
+      "exact_zero": 0,
+      "matched": 600,
+      "scripted": 23
+    },
+    "core": {
+      "cases": 2400,
+      "checks": 12000,
+      "dying": 964,
+      "exact_zero": 288,
+      "matched": 12000,
+      "scripted": 1436
+    },
+    "gated": {
+      "cases": 200,
+      "checks": 1000,
+      "dying": 0,
+      "exact_zero": 0,
+      "matched": 1000,
+      "scripted": 0
+    },
+    "inactive-owner": {
+      "cases": 150,
+      "checks": 750,
+      "dying": 0,
+      "exact_zero": 61,
+      "matched": 750,
+      "scripted": 150
+    },
+    "owner-type": {
+      "cases": 200,
+      "checks": 1000,
+      "dying": 0,
+      "exact_zero": 51,
+      "matched": 1000,
+      "scripted": 133
+    },
+    "paralyzer": {
+      "cases": 150,
+      "checks": 750,
+      "dying": 0,
+      "exact_zero": 0,
+      "matched": 750,
+      "scripted": 0
+    },
+    "veterancy": {
+      "cases": 500,
+      "checks": 2500,
+      "dying": 168,
+      "exact_zero": 7,
+      "matched": 2500,
+      "scripted": 332
+    }
+  },
+  "checks": 18601,
+  "comparator": "godot/compare_native_hit_notify.gd",
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "lethal_without_scripts": 1229,
+  "matched": 18601,
+  "mismatches": [],
+  "oracle": "tools/native_hit_notify.py",
+  "ordered_hit_then_take_damage": 2074,
+  "scope": "Original 0x499cd0 (scale 1.0 and random float32 scale, null per-unit damage table) through 0x489bb0 and 0x489ce0: packet damage/angle/type, health word, dying flag 0x4000, HitByWeapon(cos400, sin400) then TakeDamage(percent) via recorded 0x4b0a70. Core cases use DamageNotify only; veterancy/game flags, paralyzer (type 2 with def+0x241 0x4000000) and inactive-owner / owner-type not 1-2 (health clamped to 0, scripts still start), gated (flags without 0x10000000 or with 0x4000: packet only) use inline recovered formulas; armor-boundary uses DamageNotify only.",
+  "sine_table_matches": true,
+  "stubs": {
+    "0x406f50": "kill statistics, asserted unreached",
+    "0x406f80": "damage statistics (ret 0xc)",
+    "0x451df0": "network send, asserted unreached (owner types 1/2 only)",
+    "0x494ff0": "local-player global counter (ret 4)",
+    "0x4b0a70": "script start recorder (thiscall ret 0x20)"
+  }
+}

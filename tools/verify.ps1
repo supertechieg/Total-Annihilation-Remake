@@ -152,6 +152,20 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Sherwood map feature sprites failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --map acid-pools --faction core --verify-map-features --require-animation
     if ($LASTEXITCODE -ne 0) { throw 'Acid Pools animated map features failed' }
+    & $godotPath --headless --path godot --script res://test_damage_notify.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Damage notification checks failed' }
+    & $godotPath --headless --path godot --script res://test_self_destruct.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Self-destruct checks failed' }
+    & $godotPath --headless --path godot --script res://test_ground_attack.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Ground attack checks failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-self-destruct
+    if ($LASTEXITCODE -ne 0) { throw 'Arm real-map self-destruct failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-self-destruct --faction core
+    if ($LASTEXITCODE -ne 0) { throw 'Core real-map self-destruct failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-ground-attack
+    if ($LASTEXITCODE -ne 0) { throw 'Arm real-map ground attack failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-ground-attack --faction core
+    if ($LASTEXITCODE -ne 0) { throw 'Core real-map ground attack failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun
     if ($LASTEXITCODE -ne 0) { throw 'Arm Commander real-map D-gun failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun --faction core
@@ -422,6 +436,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original Killed script reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_killed.gd
         if ($LASTEXITCODE -ne 0) { throw 'Killed scripts differ from original interpreter' }
+        python tools\native_hit_notify.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native hit notification failed' }
+        & $godotPath --headless --path godot --script res://compare_native_hit_notify.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Hit notification native comparison failed' }
         python tools\native_map_features.py
         if ($LASTEXITCODE -ne 0) { throw 'Native map feature loading failed' }
         python tools\compare_native_map_features.py

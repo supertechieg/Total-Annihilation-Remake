@@ -18,6 +18,7 @@ var weapon_audio: Node
 const Opponent = preload("res://opponent.gd")
 const ScenarioResult = preload("res://scenario_result.gd")
 const DGUN_MODE := "__dgun__"
+const GROUND_ATTACK_MODE := "__ground__"
 const CORE_DUEL_UNITS :=["corthud", "corlevlr", "corstorm", "cormist", "corcrash", "corfav", "corgator", "corak"]
 var scenario_result: RefCounted
 var opponent: RefCounted
@@ -251,6 +252,14 @@ func start_world_movement() -> void:
 	if "--verify-wreckage" in OS.get_cmdline_user_args():
 		if not run_wreckage_demo():
 			push_error("Wreckage scenario failed")
+			get_tree().quit(1)
+	if "--verify-ground-attack" in OS.get_cmdline_user_args():
+		if not run_ground_attack_demo():
+			push_error("Ground attack scenario failed")
+			get_tree().quit(1)
+	if "--verify-self-destruct" in OS.get_cmdline_user_args():
+		if not run_self_destruct_demo():
+			push_error("Self-destruct scenario failed")
 			get_tree().quit(1)
 	if "--verify-map-features" in OS.get_cmdline_user_args():
 		if not run_map_features_demo():
@@ -793,6 +802,41 @@ func run_reclaim_demo() -> bool:
 		int(definition.metal), ConstructionWorld.reclaim_countdown(definition), int(result.tick) - started, successor, stock, economy.metal])
 	return true
 
+## Ctrl+D: toggle self-destruct on the selected group, the selected unit, or the Commander.
+func toggle_self_destruct() -> void:
+	var ids: Array = selected_group.duplicate() if not selected_group.is_empty() else [economy.builder_id if selected_unit == 0 else selected_unit]
+	var started: bool = combat.toggle_self_destruct(ids)
+	status_label.text = "  Self-destruct %s for %d unit(s)" % ["started" if started else "cancelled", ids.size()]
+
+func run_self_destruct_demo() -> bool:
+	# A friendly Flash and Raider self-destruct: countdown voice lines, a reason-3 death and the selfdestructas blast.
+	var type := "armflash" if faction == "arm" else "corraid"
+	var point: Vector2 = navigation.nearest_open(unit_position + Vector2(0, 260))
+	var unit: int = economy.add_unit(type, point, 0.0, 0)
+	add_structure_sprite(unit)
+	economy.mobile_units[unit] = MobileUnit.new(economy.unit_navigation(type), unit_catalog.definition(type), point, economy.scripts[unit])
+	var deaths_before: int = combat.deaths.size()
+	selected_group.clear()
+	selected_unit = unit
+	toggle_self_destruct()
+	var started_tick: int = combat.tick
+	for tick in range(400):
+		step_script()
+		if not economy.units.has(unit):
+			break
+	var voices: Array = combat.voice_requests.filter(func(entry: Array) -> bool: return int(entry[0]) == unit).map(func(entry: Array): return entry[1])
+	if economy.units.has(unit) or combat.deaths.size() == deaths_before:
+		printerr("Self-destruct demo: unit alive after 400 ticks; voices %s" % [voices])
+		return false
+	var death: Dictionary = combat.deaths[deaths_before]
+	var elapsed: int = int(death.tick) - started_tick
+	if voices != ["count5", "count4", "count3", "count2", "count1", "count0"] or elapsed < 151 or elapsed > 165:
+		printerr("Self-destruct demo: voices %s, death after %d ticks" % [voices, elapsed])
+		return false
+	print("SELF_DESTRUCT_VERIFY_OK %s counted down %s and died after %d ticks with severity %d (selfdestructas %s)" % [type, voices, elapsed, int(death.severity),
+		unit_catalog.definition(type).get("selfdestructas", "")])
+	return true
+
 func choose_dgun() -> void:
 	if economy == null or not economy.units.has(economy.builder_id):
 		return
@@ -806,8 +850,60 @@ func dgun_at(point: Vector2) -> bool:
 			var accepted: bool = combat.command_fire(economy.builder_id, id)
 			status_label.text = "  " + combat.status
 			return accepted
-	status_label.text = "  D-gun needs an enemy unit target"
-	return false
+	# No enemy under the cursor: the mode-3 selector issues a ground (Suppress) command fire at the point.
+	var fired: bool = combat.command_fire_ground(economy.builder_id, point)
+	status_label.text = "  " + combat.status
+	return fired
+
+## G then click: the selected group, unit or Commander fires its primary weapon at the ground point until stopped.
+func attack_ground_at(point: Vector2) -> int:
+	var ids: Array = selected_group.duplicate() if not selected_group.is_empty() else [economy.builder_id if selected_unit == 0 else selected_unit]
+	var accepted := 0
+	for id in ids:
+		if combat.attack_ground(int(id), point):
+			accepted += 1
+	status_label.text = "  Attack ground: %d unit(s) suppressing" % accepted
+	return accepted
+
+func run_ground_attack_demo() -> bool:
+	# A friendly cannon tank shells a ground point repeatedly; then the Commander D-guns a ground point beyond an enemy.
+	var type := "armstump" if faction == "arm" else "corraid"
+	var point: Vector2 = navigation.nearest_open(unit_position + Vector2(-200, 0))
+	var tank: int = economy.add_unit(type, point, 0.0, 0)
+	add_structure_sprite(tank)
+	economy.mobile_units[tank] = MobileUnit.new(economy.unit_navigation(type), unit_catalog.definition(type), point, economy.scripts[tank])
+	selected_group.clear()
+	selected_unit = tank
+	var target: Vector2 = point + Vector2(0, 150)
+	if attack_ground_at(target) != 1:
+		return false
+	var shots: int = combat.shots_fired
+	for tick in range(360):
+		step_script()
+	var fired: int = combat.shots_fired - shots
+	if fired < 2 or not combat.orders.has(tank) or not combat.orders[tank].has("point"):
+		printerr("Ground attack demo: %s fired %d shots, order present %s" % [type, fired, combat.orders.has(tank)])
+		return false
+	combat.stop(tank)
+	selected_unit = 0
+	var enemy_type := "armflash" if faction == "core" else "corraid"
+	var enemy: int = economy.add_unit(enemy_type, navigation.nearest_open(unit_position + Vector2(0, 200)), 0.0, 1)
+	add_structure_sprite(enemy)
+	combat.guards.erase(economy.builder_id)
+	var dgun_shots: int = combat.shots_fired
+	# The ground point sits under the enemy, so the D-gun descends into it.
+	if not combat.command_fire_ground(economy.builder_id, economy.units[enemy].position):
+		printerr("Ground attack demo: ground D-gun refused: ", combat.status)
+		return false
+	for tick in range(300):
+		step_script()
+		if combat.shots_fired > dgun_shots and not combat.command_orders.has(economy.builder_id) and combat.projectiles.is_empty():
+			break
+	if combat.shots_fired != dgun_shots + 1 or combat.command_orders.has(economy.builder_id) or economy.units.has(enemy):
+		printerr("Ground attack demo: D-gun shots %d, order left %s, enemy alive %s" % [combat.shots_fired - dgun_shots, combat.command_orders.has(economy.builder_id), economy.units.has(enemy)])
+		return false
+	print("GROUND_ATTACK_VERIFY_OK %s fired %d shots at the ground over 360 ticks and kept suppressing; %s ground D-gun at the ground under %s fired once, completed and destroyed it" % [type, fired, commander_type, enemy_type])
+	return true
 
 func run_dgun_demo() -> bool:
 	# Three enemies in a row; one D-gun shot aimed at the nearest must destroy all of them.
@@ -1653,6 +1749,9 @@ func map_input(event: InputEvent) -> void:
 						group_move(pos)
 				if group_handled:
 					pass
+				elif placement_type == GROUND_ATTACK_MODE:
+					placement_type = ""
+					attack_ground_at(pos)
 				elif placement_type == DGUN_MODE:
 					placement_type = ""
 					dgun_at(pos)
@@ -1726,6 +1825,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		clear_target()
 	elif event.keycode == KEY_B:
 		toggle_build()
+	elif event.keycode == KEY_G and economy != null:
+		placement_type = GROUND_ATTACK_MODE
+		status_label.text = "  Attack ground: click a map point"
+	elif event.keycode == KEY_D and event.ctrl_pressed and economy != null:
+		toggle_self_destruct()
 	elif event.keycode == KEY_D:
 		choose_dgun()
 	elif event.keycode == KEY_A and economy != null:

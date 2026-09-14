@@ -9,6 +9,9 @@ const Launch = preload("res://ballistic_launch.gd")
 const Motion = preload("res://ballistic_motion.gd")
 const Splash = preload("res://splash_damage.gd")
 const FeatureDamage = preload("res://feature_damage.gd")
+const DamageNotify = preload("res://damage_notify.gd")
+## Weapon-hit script notifications issued: {id, tick, hit [cos, sin], percent}.
+var notifications: Array = []
 ## Game option word +0x37f2f as initialized at 0x430e84/0x430e90; bit 8 enables feature damage.
 const GAME_FLAGS := 0xc
 var feature_destructions := 0
@@ -110,6 +113,63 @@ func command_fire(source: int, target: int) -> bool:
 	status = "Command fire ordered"
 	return true
 
+## Ground attack (the Suppress order 0x4038a0): keep firing the primary weapon at a map point until stopped.
+func attack_ground(source: int, point: Vector2) -> bool:
+	if not world.units.has(source) or world.units[source].type not in SUPPORTED_UNITS or float(world.units[source].remaining) > 0 or not world.scripts.has(source):
+		status = "Select a completed combat unit"
+		return false
+	if not cycles.has(source):
+		cycles[source] = Cycle.new(world.scripts[source], world.catalog.weapon(str(world.catalog.definition(world.units[source].type).weapon1)))
+	if not world.mobile_units.has(source):
+		world.mobile_units[source] = Mobile.new(world.unit_navigation(world.units[source].type), world.catalog.definition(world.units[source].type), world.units[source].position, world.scripts[source])
+		world.mobile_units[source].heading = 32768
+	if not launch_offsets.has(source):
+		launch_offsets[source] = int(world.units[source].get("weapon_launch_offset", 0))
+	orders[source] = ground_order(point, float(cycles[source].definition.get("range", "0")))
+	status = "Suppressing fire"
+	return true
+
+## Command fire (D-gun, weapon slot 3) at a map point: one shot, then the order completes (event 0x800).
+func command_fire_ground(source: int, point: Vector2) -> bool:
+	if not world.units.has(source) or not world.scripts.has(source):
+		return false
+	var weapon: Dictionary = world.catalog.weapon(str(world.catalog.definition(world.units[source].type).get("weapon3", "")))
+	if weapon.is_empty() or int(weapon.definition.get("commandfire", "0")) & 1 == 0:
+		status = "Unit has no command-fire weapon"
+		return false
+	if not command_cycles.has(source):
+		command_cycles[source] = Cycle.new(world.scripts[source], weapon, "Tertiary")
+	if not launch_offsets.has(source):
+		launch_offsets[source] = int(world.units[source].get("weapon_launch_offset", 0))
+	if orders.has(source):
+		stop(source, false)
+	command_orders[source] = ground_order(point, float(weapon.definition.get("range", "0")))
+	status = "Command fire at ground ordered"
+	return true
+
+## Ground orders store the clicked point as integer world X/Z words (0x48a0a0: a Z of 0x8000 becomes 0x8001);
+## approach distance R starts at the weapon range.
+func ground_order(point: Vector2, weapon_range: float) -> Dictionary:
+	var x16 := Ground.signed16(roundi(point.x * 65536.0) >> 16)
+	var z16 := Ground.signed16(roundi(point.y * 65536.0) >> 16)
+	if z16 == -32768:
+		z16 = -32767
+	return {"target": 0, "point": [x16, z16], "heading": -999999, "pitch": -999999, "pursue": true, "chasing": false, "next_path": 0,
+		"approach": int(weapon_range), "restart": 0}
+
+## 0x48a1e0 point target: (X << 16, max(bilinear terrain height, sea level) << 16 with a strict '>', Z << 16);
+## no SweetSpot, height offset or target leading.
+static func ground_target(point: Array, heights: PackedByteArray, width: int, rows: int, sea_level: int) -> Array:
+	var tx := Ground.signed32(int(point[0]) << 16)
+	var tz := Ground.signed32(int(point[1]) << 16)
+	var height := FeatureDamage.height(heights, width, rows, tx, tz)
+	return [tx, Ground.signed32((height if height > sea_level else sea_level) << 16), tz]
+
+func order_target_point(order: Dictionary) -> Vector3:
+	if order.has("point"):
+		return render_point(ground_target(order.point, world.navigation.heights, world.navigation.width, world.navigation.height, int(world.navigation.sea_level)))
+	return center(int(order.target))
+
 func shot_affordable(source: int, definition: Dictionary) -> bool:
 	var energy := float(definition.get("energypershot", "0"))
 	var metal := float(definition.get("metalpershot", "0"))
@@ -163,6 +223,9 @@ func step_guards() -> void:
 		if not pursue:
 			radius = minf(radius, float(world.catalog.weapon(str(fields.get("weapon1", ""))).get("definition", {}).get("range", "0")))
 		if orders.has(id):
+			# Player ground-attack orders are not replaced by automatic targeting.
+			if orders[id].has("point"):
+				continue
 			var previous := int(orders[id].target)
 			if world.units.has(previous) and world.units[previous].get("team", 0) != unit.get("team", 0) and unit.position.distance_to(world.units[previous].position) <= radius:
 				continue
@@ -279,6 +342,7 @@ static func render_point(raw: Array) -> Vector3:
 
 func step() -> void:
 	tick += 1
+	step_self_destructs()
 	var burst_copies := advance_bursts()
 	step_guards()
 	destroyed.clear()
@@ -296,13 +360,14 @@ func step() -> void:
 		var active: Dictionary = command_orders if command else orders
 		if not active.has(source):
 			continue
-		if not world.units.has(source) or not world.units.has(active[source].target):
+		if not world.units.has(source) or (not active[source].has("point") and not world.units.has(active[source].target)):
 			end_order(source, command)
 			continue
 		var order: Dictionary = active[source]
 		var target := int(order.target)
+		var ground: bool = order.has("point")
 		var origin: Vector2 = world.units[source].position
-		var destination: Vector2 = world.units[target].position
+		var destination: Vector2 = Vector2(int(order.point[0]), int(order.point[1])) if ground else world.units[target].position
 		var cycle = command_cycles[source] if command else cycles[source]
 		var aim_piece: String = cycle.queries.piece_name(true)
 		if aim_piece.is_empty():
@@ -310,12 +375,14 @@ func step() -> void:
 			end_order(source, command)
 			continue
 		var aim_origin := muzzle(source, aim_piece)
-		var target_point := center(target)
+		var target_point := order_target_point(order)
 		var ballistic := int(cycle.definition.get("ballistic", "0")) != 0
 		var angles := ballistic_angles(raw_point(aim_origin), raw_point(target_point), int(world.mobile_units[source].heading), int(cycle.runtime.velocity_raw_per_tick), gravity, float(cycle.runtime.minimum_barrel_angle))
 		var heading := int(angles[0])
 		var within_range := origin.distance_to(destination) <= float(cycle.definition.get("range", "0"))
-		if order.pursue:
+		if ground:
+			step_ground_approach(source, order, origin, destination, within_range, float(cycle.definition.get("range", "0")))
+		elif order.pursue:
 			if not within_range and tick >= int(order.next_path):
 				var approach: Vector2 = destination + (origin - destination).normalized() * float(cycle.definition.range) * 0.85
 				order.chasing = world.mobile_units[source].move_to(approach)
@@ -366,20 +433,20 @@ func step() -> void:
 					"position": start, "previous": start, "position_raw": raw,
 					"velocity_raw": launch.velocity(world_heading, shot_pitch, speed, gravity, int(launch_offsets[source])),
 					"ballistic": true, "timer": timer, "burnblow": burn,
-					"deadline": Launch.deadline(tick, timer, burn, raw, raw_point(center(target)), launch.trig.velocity_component(shot_pitch, speed, 16384)),
+					"deadline": Launch.deadline(tick, timer, burn, raw, raw_point(target_point), launch.trig.velocity_component(shot_pitch, speed, 16384)),
 					"area": int(cycle.definition.get("areaofeffect", "0")), "edge": float(cycle.definition.get("edgeeffectiveness", "0")),
 					"collision_flags": world.collision.collision_flags(cycle.definition),
 					"explosion": str(cycle.definition.get("explosiongaf", "")) + "/" + str(cycle.definition.get("explosionart", "")), "soundhit": str(cycle.definition.get("soundhit", "")), "damage": cycle.definition.get("damage", {}), "firestarter": int(cycle.definition.get("firestarter", "0"))})
 				shots_fired += 1
 				continue
-			var direct := DirectLaunch.solve(raw_point(start), raw_point(center(target)), int(shot.velocity_raw_per_tick), int(cycle.runtime.start_velocity_raw_per_tick), int(cycle.runtime.acceleration_raw_per_tick_squared))
+			var direct := DirectLaunch.solve(raw_point(start), raw_point(target_point), int(shot.velocity_raw_per_tick), int(cycle.runtime.start_velocity_raw_per_tick), int(cycle.runtime.acceleration_raw_per_tick_squared))
 			var velocity_raw: Array = direct.velocity
 			var projectile := {"source": source, "owner": int(world.units[source].get("team", 0)), "position": start, "previous": start,
 				"position_raw": raw_point(start), "velocity_raw": velocity_raw, "collision_flags": world.collision.collision_flags(cycle.definition),
 				"explosion": str(cycle.definition.get("explosiongaf", "")) + "/" + str(cycle.definition.get("explosionart", "")), "soundhit": str(cycle.definition.get("soundhit", "")), "distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"}), "firestarter": int(cycle.definition.get("firestarter", "0"))}
 			if int(cycle.definition.get("selfprop", "0")) != 0:
 				projectile.merge({"rocket": true, "guided": int(cycle.definition.get("guidance", "0")) != 0,
-					"target_id": target, "saved_target": raw_point(center(target)), "turn": int(cycle.runtime.turn_raw_per_tick), "speed": int(direct.initial_speed),
+					"target_id": target, "saved_target": raw_point(target_point), "turn": int(cycle.runtime.turn_raw_per_tick), "speed": int(direct.initial_speed),
 					"maximum": int(shot.velocity_raw_per_tick), "acceleration": int(cycle.runtime.acceleration_raw_per_tick_squared),
 					"heading": int(direct.heading), "pitch": int(direct.pitch),
 					"deadline": DirectDeadline.deadline(tick, int(shot.velocity_raw_per_tick), int(cycle.definition.range), int(float(cycle.definition.get("weapontimer", "0")) * 30.0), int(cycle.definition.get("noautorange", "0")) != 0),
@@ -435,7 +502,7 @@ func step() -> void:
 			continue
 		var target: int = world.collision.target_at(world, next_raw, int(projectile.owner))
 		if target != 0:
-			apply_damage(target, Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0))
+			apply_damage(target, Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0), next_raw)
 			add_effect(end, str(projectile.get("explosion", "")))
 			request_sound(str(projectile.get("soundhit", "")), end)
 			continue
@@ -531,7 +598,7 @@ func step_beam(projectile: Dictionary) -> bool:
 	var target: int = world.collision.target_at(world, next.head, int(projectile.owner))
 	if target != 0:
 		if int(projectile.get("area", 0)) < 17:
-			apply_damage(target, Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0))
+			apply_damage(target, Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0), next.head)
 			add_effect(projectile.position, str(projectile.get("explosion", "")))
 			request_sound(str(projectile.get("soundhit", "")), projectile.position)
 		else:
@@ -551,16 +618,119 @@ func destroy_unit(id: int) -> void:
 	launch_offsets.erase(id)
 	pending_deaths.erase(id)
 
-## 0x489ce0: subtract from the signed health word; at or below zero the unit is flagged dying (0x4000) and ignores
-## further damage until its update processes the death.
-func apply_damage(id: int, damage: int) -> void:
+## 0x489bb0/0x489ce0: a weapon hit (source_raw = projectile position) first applies the ARMORED damagemodifier, then
+## the signed health word is reduced; at or below zero the unit is flagged dying (0x4000), ignores further damage until
+## its update processes the death, and gets no scripts. Surviving weapon-hit victims queue HitByWeapon(cos, sin) and
+## TakeDamage(percent) threads. Veterancy scaling awaits kill tracking.
+func apply_damage(id: int, damage: int, source_raw = null, damage_type := 1) -> void:
 	if not world.units.has(id) or pending_deaths.has(id):
 		return
 	var unit: Dictionary = world.units[id]
-	unit.health = int(unit.health) - damage
+	# Unit +0xf5: the last damage type selects the death explosion (3 = self-destruct uses selfdestructas).
+	unit.damage_type = damage_type
+	var vm = world.scripts.get(id)
+	var fields: Dictionary = world.catalog.definition(unit.type)
+	if source_raw != null:
+		var armored: bool = vm != null and int(vm.values.get(20, 0)) != 0
+		damage = DamageNotify.armored_damage(damage, armored, int(float(fields.get("damagemodifier", "1")) * 65536.0))
+	unit.health = Ground.signed16(int(unit.health) - (damage & 0xffff))
 	hits += 1
 	if int(unit.health) < 1:
 		pending_deaths.append(id)
+		return
+	if source_raw == null or vm == null or not vm.fault.is_empty():
+		return
+	var record: Dictionary = world.collision.records.get(id, {})
+	var unit_raw: Array = record.get("position_raw", [roundi(unit.position.x * 65536.0), 0, roundi(unit.position.y * 65536.0)])
+	var heading := int(world.mobile_units[id].heading) if world.mobile_units.has(id) else 0
+	var arguments := DamageNotify.hit_arguments(DamageNotify.angle_byte(source_raw, unit_raw, heading))
+	var percent := DamageNotify.health_percent(int(unit.health), int(fields.get("maxdamage", "1")))
+	notifications.append({"id": id, "tick": tick, "hit": arguments, "percent": percent})
+	# Queued without running, as 0x4b0a70 is called with runNow=0; a unit with all eight threads busy drops them.
+	for call: Array in [["HitByWeapon", arguments], ["TakeDamage", [percent]]]:
+		if vm.functions.has(call[0]) and vm.active_threads() < vm.SLOT_COUNT:
+			vm.invoke(call[0], call[1], false)
+
+## Self-destruct background orders (handler 0x402010): id -> {counter, expired, wake, runs}.
+var self_destructs: Dictionary = {}
+## Local voice lines requested by the countdown: [id, "count5".."count0" or "canceldestruct"].
+var voice_requests: Array = []
+
+## FBI selfdestructcountdown, stored as 3 bits (& 7) with a default of 5.
+static func self_destruct_countdown(fields: Dictionary) -> int:
+	return (str(fields.selfdestructcountdown).to_int() & 7) if fields.has("selfdestructcountdown") else 5
+
+## Ctrl+D over a selection: if any selected unit already has the order it is removed from those units, otherwise it
+## is added to all. Removal after the final countdown run (expired) detonates immediately; earlier removal after the
+## first run plays canceldestruct.
+func toggle_self_destruct(ids: Array) -> bool:
+	var active := ids.filter(func(id) -> bool: return self_destructs.has(int(id)))
+	if active.is_empty():
+		for id in ids:
+			if world.units.has(int(id)) and not pending_deaths.has(int(id)):
+				self_destructs[int(id)] = {"counter": self_destruct_countdown(world.catalog.definition(world.units[int(id)].type)), "expired": false, "wake": tick + 1, "runs": 0}
+		return true
+	for id in active:
+		var order: Dictionary = self_destructs[int(id)]
+		self_destructs.erase(int(id))
+		if int(order.runs) == 0:
+			continue
+		if bool(order.expired):
+			self_destruct_kill(int(id))
+		elif not pending_deaths.has(int(id)):
+			voice_requests.append([int(id), "canceldestruct"])
+	return false
+
+## Each run: an expired order (or countdown 0) kills; otherwise count n down with a 30-tick sleep, and at 0 mark it
+## expired and sleep a game-RNG 0..14 ticks.
+func step_self_destructs() -> void:
+	for id: int in self_destructs.keys():
+		if not world.units.has(id) or pending_deaths.has(id):
+			self_destructs.erase(id)
+			continue
+		var order: Dictionary = self_destructs[id]
+		if tick < int(order.wake):
+			continue
+		var countdown := self_destruct_countdown(world.catalog.definition(world.units[id].type))
+		if bool(order.expired) or countdown == 0:
+			self_destructs.erase(id)
+			self_destruct_kill(id)
+			continue
+		var remaining := int(order.counter)
+		voice_requests.append([id, "count%d" % remaining])
+		if remaining == 0:
+			order.expired = true
+			order.wake = tick + world.game_random.bounded_random(15)
+		else:
+			order.counter = remaining - 1
+			order.wake = tick + 30
+		order.runs = int(order.runs) + 1
+
+## 0x489bb0(unit, unit, 30000, 3, 0): target veterancy would reduce it to 24000..30000 (kills are not tracked yet).
+func self_destruct_kill(id: int) -> void:
+	apply_damage(id, 30000, null, 3)
+
+## Suppress approach on an out-of-range event (0x403904..0x403957): a mobile unit moves to within R of the point and
+## R shrinks by a game-RNG draw below range/3; at R <= 0 the lone order waits 30 + rand(30) ticks and restarts with R
+## reset to the weapon range. The move-request semantics are provisional (a path to the point at distance R).
+func step_ground_approach(source: int, order: Dictionary, origin: Vector2, destination: Vector2, within_range: bool, weapon_range: float) -> void:
+	var mobile = world.mobile_units[source]
+	if within_range:
+		if order.chasing:
+			mobile.stop()
+			order.chasing = false
+		return
+	if tick < int(order.restart) or (order.chasing and not mobile.route.is_empty()):
+		return
+	if int(order.approach) <= 0:
+		order.approach = int(weapon_range)
+		order.restart = tick + 30 + world.game_random.bounded_random(30)
+		order.chasing = false
+		return
+	var goal: Vector2 = destination + (origin - destination).normalized() * float(order.approach)
+	order.chasing = mobile.move_to(mobile.navigation.nearest_open(goal))
+	@warning_ignore("integer_division")
+	order.approach = int(order.approach) - world.game_random.bounded_random(int(weapon_range) / 3)
 
 func process_deaths() -> void:
 	while not pending_deaths.is_empty():
@@ -594,7 +764,9 @@ func kill_unit(id: int) -> void:
 		"position": unit.position, "position_raw": position_raw, "team": team, "debris": debris, "tick": tick, "anchor": -1}
 	deaths.append(record)
 	destroy_unit(id)
-	var explosion: Dictionary = world.catalog.weapon(str(fields.get("explodeas", ""))) if complete and severity > 0 else {}
+	# 0x49b000: reason 3 (self-destruct) detonates selfdestructas (def+0x224) instead of explodeas (def+0x220).
+	var blast_weapon := str(fields.get("selfdestructas" if int(unit.get("damage_type", 1)) == 3 else "explodeas", ""))
+	var explosion: Dictionary = world.catalog.weapon(blast_weapon) if complete and severity > 0 else {}
 	if not explosion.is_empty():
 		var definition: Dictionary = explosion.definition
 		blast({"source": id, "owner": team, "position": render_point(position_raw), "position_raw": position_raw,
@@ -655,7 +827,7 @@ func blast(projectile: Dictionary) -> void:
 		var multiplier := Splash.multiplier(projectile.position_raw, record.position_raw, record.bounds.lower, record.bounds.upper, radius, float(projectile.edge))
 		if multiplier <= 0:
 			continue
-		apply_damage(id, Damage.amount(Damage.base_damage(projectile.damage, world.units[id].type), multiplier))
+		apply_damage(id, Damage.amount(Damage.base_damage(projectile.damage, world.units[id].type), multiplier), projectile.position_raw)
 	# 0x49a120 feature pass: features within half the area of effect take the weapon's default damage (0x4244b0).
 	if "features" in world and world.features != null:
 		var weapon := {"default": int(str(projectile.damage.get("default", "0")).to_int()), "area": int(projectile.get("area", 0)),
