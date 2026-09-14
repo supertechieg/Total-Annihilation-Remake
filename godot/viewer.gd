@@ -172,6 +172,9 @@ func start_world_movement() -> void:
 		get_tree().quit(1)
 		return
 	combat = Combat.new(economy)
+	# The viewer steps the Commander's script and movement; combat and targeting use them through the world.
+	economy.attach_external(economy.builder_id, script_vm, mobile)
+	combat.enable_guard(economy.builder_id, false)
 	var environment: Dictionary = scene_data.get("environment", {})
 	economy.tidal_strength = float(environment.get("tidal_strength", 0.0))
 	economy.configure_wind(int(environment.get("min_wind", 100)), int(environment.get("max_wind", 2000)))
@@ -184,6 +187,10 @@ func start_world_movement() -> void:
 	combat_overlay.z_index = 10
 	world.add_child(combat_overlay)
 	map_center = unit_position
+	if "--verify-commander-combat" in OS.get_cmdline_user_args():
+		if not run_commander_combat():
+			push_error("Commander combat scenario failed")
+			get_tree().quit(1)
 	if "--verify-opponent" in OS.get_cmdline_user_args():
 		start_opponent()
 		var initial_health: int = economy.units[economy.builder_id].health
@@ -410,6 +417,26 @@ func run_factory_demo(factory_type := "armvp", product_type := "armflash", produ
 	print("FACTORY_VERIFY_OK built=%s produced=%d %s; exit and selected movement passed" % [factory_type, product_count, product_type])
 	return true
 
+func run_commander_combat() -> bool:
+	# An enemy of the other faction appears inside laser range; the holding guard must destroy it in place.
+	var enemy_type := "armflash" if faction == "core" else "corraid"
+	var start: Vector2 = mobile.point()
+	var point: Vector2 = navigation.nearest_open(unit_position + Vector2(160, 0))
+	if point.x < 0:
+		return false
+	var enemy: int = economy.add_unit(enemy_type, point, 0.0, 1)
+	add_structure_sprite(enemy)
+	var shots: int = combat.shots_fired
+	for tick in range(1500):
+		step_script()
+		if not economy.units.has(enemy):
+			break
+	if economy.units.has(enemy) or combat.shots_fired == shots or not script_vm.fault.is_empty() or mobile.point() != start:
+		printerr("Commander combat: enemy alive=%s shots=%d fault=%s moved=%s" % [economy.units.has(enemy), combat.shots_fired - shots, script_vm.fault, mobile.point() != start])
+		return false
+	print("COMMANDER_VERIFY_OK %s destroyed an adjacent %s with its laser while holding position" % [commander_type, enemy_type])
+	return true
+
 func run_core_factory_demo() -> bool:
 	if faction != "core":
 		return false
@@ -481,6 +508,8 @@ func issue_move(target: Vector2) -> bool:
 	if not mobile.move_to(target):
 		status_label.text = "  " + mobile.status
 		return false
+	if combat != null and economy != null:
+		combat.stop(economy.builder_id, false)
 	if walking:
 		walking = false
 		script_vm.invoke("StopMoving")
@@ -492,7 +521,7 @@ func issue_move(target: Vector2) -> bool:
 func stop_order() -> void:
 	placement_type = ""
 	if combat != null:
-		combat.stop(selected_unit)
+		combat.stop(selected_unit if selected_unit != 0 or economy == null else economy.builder_id)
 	if selected_unit != 0 and economy.mobile_units.has(selected_unit):
 		economy.stop_build(selected_unit)
 		economy.mobile_units[selected_unit].stop()

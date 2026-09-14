@@ -33,6 +33,7 @@ const SCRIPTED_UNITS = ["armtide", "armwin", "armmex", "armmakr", "armsolar", "c
 	# Create-only structure lifecycles validated by compare_native_structures.
 	"corestor", "cormstor", "cordrag", "cormine1", "cormine2", "cormine3", "cormine4", "cormine5", "cormine6"]
 var mobile_units: Dictionary = {}
+var external_units: Dictionary = {}
 var navigation_cache: Dictionary = {}
 var yard_signature := ""
 var scripts: Dictionary = {}
@@ -94,18 +95,33 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 		if remaining == 0 and type in RESOURCE_BUILDINGS:
 			vm.invoke("Activate")
 		scripts[id] = vm
-		if not str(definition.get("weapon1", "")).is_empty():
-			var queries := WeaponQueries.new(vm)
-			var muzzle_name := queries.piece_name(false)
-			var aim_name := queries.piece_name(true)
-			if queries.fault.is_empty():
-				var model: Dictionary = catalog.load_unit(type).model
-				var muzzle := PieceOrigin.model_origin(model, vm.pieces, muzzle_name, [0, 32768, 0])
-				var aim := PieceOrigin.model_origin(model, vm.pieces, aim_name, [0, 32768, 0])
-				units[id].weapon_launch_offset = BallisticLaunch.initial_offset(int(muzzle[2]), int(aim[2]))
+		capture_launch_offset(id)
 	refresh_extractor(id)
 	collision.sync_unit(self, id)
 	return id
+
+## Weapon initialization 0x49e070: muzzle/AimFrom Z separation at creation pose and default heading 32768.
+func capture_launch_offset(id: int) -> void:
+	var type: String = units[id].type
+	if str(catalog.definition(type).get("weapon1", "")).is_empty() or not scripts.has(id):
+		return
+	var vm = scripts[id]
+	var queries := WeaponQueries.new(vm)
+	var muzzle_name := queries.piece_name(false)
+	var aim_name := queries.piece_name(true)
+	if queries.fault.is_empty():
+		var model: Dictionary = catalog.load_unit(type).model
+		var muzzle := PieceOrigin.model_origin(model, vm.pieces, muzzle_name, [0, 32768, 0])
+		var aim := PieceOrigin.model_origin(model, vm.pieces, aim_name, [0, 32768, 0])
+		units[id].weapon_launch_offset = BallisticLaunch.initial_offset(int(muzzle[2]), int(aim[2]))
+
+## Register a script and movement controller stepped by their owner (the viewer's Commander) so combat,
+## targeting and orders can use them; the world does not step external entries itself.
+func attach_external(id: int, vm: RefCounted, mobile: RefCounted) -> void:
+	scripts[id] = vm
+	mobile_units[id] = mobile
+	external_units[id] = true
+	capture_launch_offset(id)
 
 func set_active(id: int, active: bool) -> bool:
 	if not scripts.has(id) or units[id].type not in RESOURCE_BUILDINGS or float(units[id].remaining) > 0:
@@ -130,6 +146,7 @@ func remove_unit(id: int) -> void:
 			factory.product = 0
 	factories.erase(id)
 	mobile_units.erase(id)
+	external_units.erase(id)
 	scripts.erase(id)
 	units.erase(id)
 	refresh_navigation(true)
@@ -393,12 +410,15 @@ func step() -> void:
 	step_wind()
 	completed.clear()
 	for id: int in scripts:
+		if external_units.has(id):
+			continue
 		# Construction health is not combat damage. Damaged smoke awaits its opcodes.
 		scripts[id].read_values[17] = ceili(float(units[id].remaining) * 100)
 		scripts[id].step()
 	refresh_navigation()
 	for id: int in mobile_units:
-		mobile_units[id].step()
+		if not external_units.has(id):
+			mobile_units[id].step()
 		units[id].position = mobile_units[id].point()
 	collision.sync(self)
 	var schedule := ResourceSchedule.poll(ticks - 1, resource_deadline)

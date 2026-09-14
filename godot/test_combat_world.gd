@@ -26,7 +26,7 @@ func _initialize() -> void:
 	var combat = Combat.new(world)
 	check(world.units[source].has("weapon_launch_offset"), "Weapon offset is captured during unit creation")
 	var initial_offset: int = world.units[source].weapon_launch_offset
-	check(not combat.attack(world.builder_id, target), "Unsupported weapon source is explicit")
+	check(not combat.attack(world.builder_id, target) and combat.status == "Unit has no running weapon script", "Commander without an attached script is rejected explicitly")
 	check(not combat.attack(source, world.builder_id), "Friendly attack order is rejected")
 	check(combat.attack(source, target), "Flash accepts enemy target")
 	check(int(combat.launch_offsets[source]) == initial_offset, "First attack keeps creation offset despite mobile heading changes")

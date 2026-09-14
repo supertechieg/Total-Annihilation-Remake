@@ -110,6 +110,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Cannon combat checks failed' }
     & $godotPath --headless --path godot --script res://test_firing_spread.gd
     if ($LASTEXITCODE -ne 0) { throw 'Firing spread checks failed' }
+    & $godotPath --headless --path godot --script res://test_commander_combat.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Commander combat checks failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-commander-combat
+    if ($LASTEXITCODE -ne 0) { throw 'Arm Commander real-map combat failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-commander-combat --faction core
+    if ($LASTEXITCODE -ne 0) { throw 'Core Commander real-map combat failed' }
     & $godotPath --headless --path godot --script res://test_guard_combat.gd
     if ($LASTEXITCODE -ne 0) { throw 'Guard combat checks failed' }
     & $godotPath --headless --path godot --script res://test_attack_orders.gd
@@ -372,7 +378,7 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original beam motion reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_beam_motion.gd
         if ($LASTEXITCODE -ne 0) { throw 'Beam motion differs from original executable' }
-        foreach ($coreUnit in @('corthud', 'corlevlr', 'corstorm', 'cormist', 'corcrash', 'armfav', 'corfav', 'corgator', 'corak')) {
+        foreach ($coreUnit in @('corthud', 'corlevlr', 'corstorm', 'cormist', 'corcrash', 'armfav', 'corfav', 'corgator', 'corak', 'armcom', 'corcom')) {
             python tools\native_firing_reference.py --unit $coreUnit
             if ($LASTEXITCODE -ne 0) { throw "Original $coreUnit firing reference failed" }
             & $godotPath --headless --path godot --script res://compare_native_firing.gd -- "--$coreUnit"

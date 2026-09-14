@@ -4,7 +4,7 @@ const VM = preload("res://cob_vm.gd")
 func _initialize() -> void:
 	var folder := ProjectSettings.globalize_path("res://../local/")
 	var unit := "armflash"
-	for candidate: String in ["corraid", "armstump", "armham", "armpw", "armrock", "armwar", "armsam", "armjeth", "corthud", "corlevlr", "corstorm", "cormist", "corcrash", "armfav", "corfav", "corgator", "corak"]:
+	for candidate: String in ["corraid", "armstump", "armham", "armpw", "armrock", "armwar", "armsam", "armjeth", "corthud", "corlevlr", "corstorm", "cormist", "corcrash", "armfav", "corfav", "corgator", "corak", "armcom", "corcom"]:
 		if "--" + candidate in OS.get_cmdline_user_args():
 			unit = candidate
 	var trace_folder := "firing/" + unit if unit != "armflash" else "firing"

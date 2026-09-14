@@ -27,7 +27,9 @@ const SUPPORTED_UNITS = ["armflash", "corraid", "armstump", "armham", "armpw", "
 	# Core counterparts use the same cannon, rocket and guided-missile hosts.
 	"corthud", "corlevlr", "corstorm", "cormist", "corcrash",
 	# Beam lasers (weapon flag 0x8) use the native-compared tail update in beam_motion.gd.
-	"armfav", "corfav", "corgator", "corak"]
+	"armfav", "corfav", "corgator", "corak",
+	# Commander primary beam lasers (the D-gun command-fire weapon is not yet connected).
+	"armcom", "corcom"]
 var launch := Launch.new()
 var gravity := 8155
 var tick := 0
@@ -36,6 +38,7 @@ var orders: Dictionary = {}
 var cycles: Dictionary = {}
 var launch_offsets: Dictionary = {}
 var guards: Dictionary = {}
+var guard_pursuit: Dictionary = {}
 var projectiles: Array = []
 var effects: Array = []
 const EffectAssets = preload("res://weapon_effects.gd")
@@ -56,16 +59,20 @@ func stop(id: int, stop_movement := true) -> void:
 	if cycles.has(id):
 		cycles[id].stop()
 
-func enable_guard(id: int) -> bool:
+## Automatic target acquisition. Pursuing guards search their sight radius and chase; holding guards only
+## engage within weapon range and never stop or move the unit (used for the player-controlled Commander).
+func enable_guard(id: int, pursue := true) -> bool:
 	if not world.units.has(id) or world.units[id].type not in SUPPORTED_UNITS or float(world.units[id].remaining) > 0:
 		return false
 	guards[id] = tick
+	guard_pursuit[id] = pursue
 	return true
 
 func step_guards() -> void:
 	for id: int in guards.keys():
 		if not world.units.has(id):
 			guards.erase(id)
+			guard_pursuit.erase(id)
 			stop(id)
 			cycles.erase(id)
 			launch_offsets.erase(id)
@@ -74,12 +81,19 @@ func step_guards() -> void:
 			continue
 		guards[id] = tick + 15
 		var unit: Dictionary = world.units[id]
-		var radius := float(world.catalog.definition(unit.type).get("sightdistance", "0"))
+		var pursue: bool = guard_pursuit.get(id, true)
+		var fields: Dictionary = world.catalog.definition(unit.type)
+		var radius := float(fields.get("sightdistance", "0"))
+		if not pursue:
+			radius = minf(radius, float(world.catalog.weapon(str(fields.get("weapon1", ""))).get("definition", {}).get("range", "0")))
 		if orders.has(id):
 			var previous := int(orders[id].target)
 			if world.units.has(previous) and world.units[previous].get("team", 0) != unit.get("team", 0) and unit.position.distance_to(world.units[previous].position) <= radius:
 				continue
-			stop(id)
+			# A player-issued pursuit order on a holding guard is left to the player.
+			if not pursue and orders[id].pursue:
+				continue
+			stop(id, pursue)
 		var chosen := 0
 		var nearest := radius * radius
 		for candidate: int in world.units:
@@ -91,9 +105,9 @@ func step_guards() -> void:
 				chosen = candidate
 				nearest = distance
 		if chosen != 0:
-			attack(id, chosen, true)
+			attack(id, chosen, pursue, pursue)
 
-func attack(source: int, target: int, pursue := false) -> bool:
+func attack(source: int, target: int, pursue := false, stop_movement := true) -> bool:
 	if not world.units.has(source) or not world.units.has(target) or source == target:
 		return false
 	if world.units[source].type not in SUPPORTED_UNITS or float(world.units[source].remaining) > 0:
@@ -101,6 +115,9 @@ func attack(source: int, target: int, pursue := false) -> bool:
 		return false
 	if world.units[source].get("team", 0) == world.units[target].get("team", 0):
 		status = "Select an enemy target"
+		return false
+	if not world.scripts.has(source):
+		status = "Unit has no running weapon script"
 		return false
 	if not cycles.has(source):
 		cycles[source] = Cycle.new(world.scripts[source], world.catalog.weapon(str(world.catalog.definition(world.units[source].type).weapon1)))
@@ -112,7 +129,8 @@ func attack(source: int, target: int, pursue := false) -> bool:
 		var muzzle_piece: String = query.piece_name(false)
 		var aim_piece: String = query.piece_name(true)
 		launch_offsets[source] = int(world.units[source].get("weapon_launch_offset", Launch.initial_offset(raw_point(muzzle(source, muzzle_piece))[2], raw_point(muzzle(source, aim_piece))[2])))
-	world.mobile_units[source].stop()
+	if stop_movement:
+		world.mobile_units[source].stop()
 	orders[source] = {"target": target, "heading": -999999, "pitch": -999999,
 		"pursue": pursue, "chasing": false, "next_path": 0}
 	status = "Attacking target"
