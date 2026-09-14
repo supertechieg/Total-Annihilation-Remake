@@ -75,7 +75,7 @@ func resolve_faction() -> String:
 	if tree != null and tree.has_meta("faction"):
 		return str(tree.get_meta("faction"))
 	var args := OS.get_cmdline_user_args()
-	if "--core-factory-demo" in args:
+	if "--core-factory-demo" in args or "--core-builder-demo" in args:
 		return "core"
 	var index := args.find("--faction")
 	if index >= 0 and index + 1 < args.size():
@@ -212,7 +212,7 @@ func start_world_movement() -> void:
 		if not run_core_factory_demo():
 			push_error("Core factory demo failed")
 			get_tree().quit(1)
-	if "--builder-demo" in OS.get_cmdline_user_args():
+	if "--builder-demo" in OS.get_cmdline_user_args() or "--core-builder-demo" in OS.get_cmdline_user_args():
 		if not run_builder_demo():
 			push_error("Mobile builder demo failed")
 			get_tree().quit(1)
@@ -400,28 +400,37 @@ func run_core_factory_demo() -> bool:
 	return true
 
 func run_builder_demo() -> bool:
-	if not run_factory_demo("armvp", "armcv", 1):
+	var prefix := "cor" if faction == "core" else "arm"
+	if not run_factory_demo(prefix + "vp", prefix + "cv", 1):
 		return false
 	var source := 0
 	for unit: Dictionary in economy.units.values():
-		if unit.type == "armcv":
+		if unit.type == prefix + "cv":
 			source = unit.id
 	if source == 0:
 		return false
 	select_unit(source)
 	for index in range(build_picker.item_count):
-		if build_picker.get_item_metadata(index) == "armsolar":
+		if build_picker.get_item_metadata(index) == prefix + "solar":
 			build_picker.select(index)
 	choose_build()
 	var point: Vector2 = economy.units[source].position + Vector2(-64, 0)
-	if placement_type != "armsolar" or not place_structure(placement_type, point):
+	# Footprints differ by faction; try nearby sites in a fixed order and take the first the world accepts.
+	for offset: Vector2 in [Vector2(-64, 0), Vector2(64, 0), Vector2(0, 64), Vector2(-64, 64), Vector2(64, 64)]:
+		var candidate: Vector2 = economy.units[source].position + offset
+		if economy.placement_error(prefix + "solar", candidate.snapped(Vector2(16, 16)), source).is_empty():
+			point = candidate
+			break
+	if placement_type != prefix + "solar" or not place_structure(placement_type, point):
+		printerr("Builder demo placement failed: type=", placement_type, " ", status_label.text)
 		return false
 	var target: int = economy.builder_jobs[source].target
 	for tick in range(1800):
 		step_script()
 	if float(economy.units[target].remaining) != 0 or economy.builder_jobs.has(source) or not economy.scripts[source].fault.is_empty():
+		printerr("Builder demo stopped: ", economy.status, " remaining=", economy.units[target].remaining)
 		return false
-	print("BUILDER_VERIFY_OK factory-produced Construction Vehicle built a solar collector through selected-unit controls")
+	print("BUILDER_VERIFY_OK faction=%s factory-produced Construction Vehicle built a solar collector through selected-unit controls" % faction)
 	return true
 
 func issue_move(target: Vector2) -> bool:

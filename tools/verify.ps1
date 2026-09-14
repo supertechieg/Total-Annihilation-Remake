@@ -118,6 +118,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Core factory production failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --builder-demo
     if ($LASTEXITCODE -ne 0) { throw 'Real-map mobile builder construction failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --core-builder-demo
+    if ($LASTEXITCODE -ne 0) { throw 'Real-map Core mobile builder construction failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-combat
     if ($LASTEXITCODE -ne 0) { throw 'Real-map Flash combat failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-duel
@@ -375,6 +377,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original factory reference run failed' }
         & $godotPath --headless --path godot --script res://compare_native_factory.gd
         if ($LASTEXITCODE -ne 0) { throw 'Factory scripts differ from original interpreter' }
+        python tools\native_structure_reference.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original Core structure reference run failed' }
+        & $godotPath --headless --path godot --script res://compare_native_structures.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Core structure scripts differ from original interpreter' }
         python tools\native_solar_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original solar reference run failed' }
         & $godotPath --headless --path godot --script res://compare_native_solar.gd

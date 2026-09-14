@@ -29,7 +29,9 @@ const RESOURCE_BUILDINGS := ["armsolar", "armmakr", "armmex", "armwin", "armtide
 # Ground factories and their level-one products are validated by compare_native_factory and compare_native_units.
 const GROUND_FACTORIES := ["armvp", "armlab", "corvp", "corlab"]
 const SCRIPTED_UNITS = ["armtide", "armwin", "armmex", "armmakr", "armsolar", "corsolar", "cormakr", "cormex", "corwin", "cortide", "armvp", "armlab", "armck", "armpw", "armrock", "armham", "armjeth", "armwar", "armcv", "armfav", "armflash", "armstump", "armsam", "armmlv",
-	"corvp", "corlab", "corck", "corak", "corstorm", "corthud", "corcrash", "corcv", "corfav", "corgator", "corraid", "cormist", "corlevlr", "cormlv"]
+	"corvp", "corlab", "corck", "corak", "corstorm", "corthud", "corcrash", "corcv", "corfav", "corgator", "corraid", "cormist", "corlevlr", "cormlv",
+	# Create-only structure lifecycles validated by compare_native_structures.
+	"corestor", "cormstor", "cordrag", "cormine1", "cormine2", "cormine3", "cormine4", "cormine5", "cormine6"]
 var mobile_units: Dictionary = {}
 var navigation_cache: Dictionary = {}
 var yard_signature := ""
