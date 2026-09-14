@@ -1,0 +1,12 @@
+{
+  "exe_sha256": "3b9c0fad",
+  "oracle": "tools/native_feature_damage.py",
+  "comparator": "godot/compare_native_feature_damage.gd",
+  "height_cases": 1000,
+  "splash_cases": 1500,
+  "cases_with_hits": 325,
+  "replacements": 168,
+  "ignitions": 4,
+  "checks": 8668,
+  "matched": 8668
+}

@@ -132,6 +132,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Arm real-map reclaim failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-reclaim --faction core
     if ($LASTEXITCODE -ne 0) { throw 'Core real-map reclaim failed' }
+    & $godotPath --headless --path godot --script res://test_feature_damage.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Feature damage checks failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-feature-damage
+    if ($LASTEXITCODE -ne 0) { throw 'Arm real-map feature damage failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-feature-damage --faction core
+    if ($LASTEXITCODE -ne 0) { throw 'Core real-map feature damage failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun
     if ($LASTEXITCODE -ne 0) { throw 'Arm Commander real-map D-gun failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun --faction core
@@ -402,6 +408,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original Killed script reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_killed.gd
         if ($LASTEXITCODE -ne 0) { throw 'Killed scripts differ from original interpreter' }
+        python tools\native_feature_damage.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native feature damage failed' }
+        & $godotPath --headless --path godot --script res://compare_native_feature_damage.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Feature damage native comparison failed' }
         python tools\native_beam_motion.py
         if ($LASTEXITCODE -ne 0) { throw 'Original beam motion reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_beam_motion.gd

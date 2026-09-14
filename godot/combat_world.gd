@@ -8,6 +8,11 @@ const Aim = preload("res://ballistic_aim.gd")
 const Launch = preload("res://ballistic_launch.gd")
 const Motion = preload("res://ballistic_motion.gd")
 const Splash = preload("res://splash_damage.gd")
+const FeatureDamage = preload("res://feature_damage.gd")
+## Game option word +0x37f2f as initialized at 0x430e84/0x430e90; bit 8 enables feature damage.
+const GAME_FLAGS := 0xc
+var feature_destructions := 0
+var feature_ignitions: Array = []
 const Mobile = preload("res://mobile_unit.gd")
 const TargetPoint = preload("res://target_point.gd")
 const Queries = preload("res://weapon_queries.gd")
@@ -364,14 +369,14 @@ func step() -> void:
 					"deadline": Launch.deadline(tick, timer, burn, raw, raw_point(center(target)), launch.trig.velocity_component(shot_pitch, speed, 16384)),
 					"area": int(cycle.definition.get("areaofeffect", "0")), "edge": float(cycle.definition.get("edgeeffectiveness", "0")),
 					"collision_flags": world.collision.collision_flags(cycle.definition),
-					"explosion": str(cycle.definition.get("explosiongaf", "")) + "/" + str(cycle.definition.get("explosionart", "")), "soundhit": str(cycle.definition.get("soundhit", "")), "damage": cycle.definition.get("damage", {})})
+					"explosion": str(cycle.definition.get("explosiongaf", "")) + "/" + str(cycle.definition.get("explosionart", "")), "soundhit": str(cycle.definition.get("soundhit", "")), "damage": cycle.definition.get("damage", {}), "firestarter": int(cycle.definition.get("firestarter", "0"))})
 				shots_fired += 1
 				continue
 			var direct := DirectLaunch.solve(raw_point(start), raw_point(center(target)), int(shot.velocity_raw_per_tick), int(cycle.runtime.start_velocity_raw_per_tick), int(cycle.runtime.acceleration_raw_per_tick_squared))
 			var velocity_raw: Array = direct.velocity
 			var projectile := {"source": source, "owner": int(world.units[source].get("team", 0)), "position": start, "previous": start,
 				"position_raw": raw_point(start), "velocity_raw": velocity_raw, "collision_flags": world.collision.collision_flags(cycle.definition),
-				"explosion": str(cycle.definition.get("explosiongaf", "")) + "/" + str(cycle.definition.get("explosionart", "")), "soundhit": str(cycle.definition.get("soundhit", "")), "distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"})}
+				"explosion": str(cycle.definition.get("explosiongaf", "")) + "/" + str(cycle.definition.get("explosionart", "")), "soundhit": str(cycle.definition.get("soundhit", "")), "distance": 0.0, "range": float(cycle.definition.range), "damage": cycle.definition.get("damage", {"default": "8"}), "firestarter": int(cycle.definition.get("firestarter", "0"))}
 			if int(cycle.definition.get("selfprop", "0")) != 0:
 				projectile.merge({"rocket": true, "guided": int(cycle.definition.get("guidance", "0")) != 0,
 					"target_id": target, "saved_target": raw_point(center(target)), "turn": int(cycle.runtime.turn_raw_per_tick), "speed": int(direct.initial_speed),
@@ -595,7 +600,8 @@ func kill_unit(id: int) -> void:
 		blast({"source": id, "owner": team, "position": render_point(position_raw), "position_raw": position_raw,
 			"area": int(definition.get("areaofeffect", "0")), "edge": float(definition.get("edgeeffectiveness", "0")),
 			"explosion": str(definition.get("explosiongaf", "")) + "/" + str(definition.get("explosionart", "")),
-			"soundhit": str(definition.get("soundhit", "")), "damage": definition.get("damage", {})})
+			"soundhit": str(definition.get("soundhit", "")), "damage": definition.get("damage", {}), "firestarter": int(definition.get("firestarter", "0")),
+			"collision_flags": world.collision.collision_flags(definition)})
 	# 0x486360 after the explosion: the corpse (or its featuredead heap) anchors at the unit's collision rectangle cell.
 	if corpse > 0 and "features" in world and world.features != null:
 		record.anchor = world.features.place_corpse(str(fields.get("corpse", "")), corpse, rect.position.x, rect.position.y, position_raw, team)
@@ -650,3 +656,14 @@ func blast(projectile: Dictionary) -> void:
 		if multiplier <= 0:
 			continue
 		apply_damage(id, Damage.amount(Damage.base_damage(projectile.damage, world.units[id].type), multiplier))
+	# 0x49a120 feature pass: features within half the area of effect take the weapon's default damage (0x4244b0).
+	if "features" in world and world.features != null:
+		var weapon := {"default": int(str(projectile.damage.get("default", "0")).to_int()), "area": int(projectile.get("area", 0)),
+			"firestarter": int(projectile.get("firestarter", 0)), "flags": int(projectile.get("collision_flags", 0))}
+		var result := FeatureDamage.splash(world.features, weapon, projectile.position_raw, GAME_FLAGS)
+		for call: Array in result.replaced:
+			world.features.replace(int(call[1]) * int(world.features.width) + int(call[0]), false)
+		feature_ignitions.append_array(result.ignited)
+		if not result.replaced.is_empty():
+			feature_destructions += result.replaced.size()
+			world.refresh_feature_blocking()

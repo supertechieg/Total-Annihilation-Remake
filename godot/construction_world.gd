@@ -38,6 +38,7 @@ var external_units: Dictionary = {}
 var features: RefCounted
 var map_feature_blocking := PackedByteArray()
 var blocking_revision := -1
+var last_blocking_grid := PackedByteArray()
 var navigation_cache: Dictionary = {}
 var yard_signature := ""
 var scripts: Dictionary = {}
@@ -78,6 +79,7 @@ func _init(source: RefCounted, terrain: RefCounted, commander_position: Vector2,
 	navigation = terrain
 	collision = WorldCollision.new(terrain.width, terrain.height)
 	features = FeatureWorld.new(terrain.width, terrain.height, source)
+	features.heights = terrain.heights
 	map_feature_blocking = terrain.features.duplicate()
 	navigation_cache[commander] = {"nav": terrain, "terrain": terrain.blocked.duplicate(), "footprint": Vector2i(2, 2)}
 	builder_id = add_unit(commander, commander_position, 0.0)
@@ -117,6 +119,7 @@ func load_map_features(placements: Array) -> int:
 		if placement.has("name") and features.place(str(placement.name), int(placement.x), int(placement.z), null, 10) >= 0:
 			placed += 1
 	blocking_revision = features.revision
+	last_blocking_grid = features.blocking_grid(map_feature_blocking)
 	return placed
 
 ## Rebuild every cached navigation grid when a blocking wreck appears or disappears.
@@ -125,6 +128,10 @@ func refresh_feature_blocking() -> void:
 		return
 	blocking_revision = features.revision
 	var grid: PackedByteArray = features.blocking_grid(map_feature_blocking)
+	# Replacements that keep the same blocking cells (heaps over heaps, smudges) need no navigation rebuild.
+	if grid == last_blocking_grid:
+		return
+	last_blocking_grid = grid
 	var rebuilt: Array = []
 	for entry: Dictionary in navigation_cache.values():
 		if not rebuilt.has(entry.nav):

@@ -1,6 +1,7 @@
 extends RefCounted
 ## Map feature grid: cell codes (+8), continuation offsets (+10 row, +11 column), owner nibble and feature instances.
 ## Placement follows 0x423c50, removal 0x4246b0 and corpse selection 0x486360. See analysis/WRECKAGE.md.
+const FeatureDamage = preload("res://feature_damage.gd")
 const NONE := 0xffff
 const CONTINUATION := 0xfffe
 var width: int
@@ -16,10 +17,16 @@ var name_index: Dictionary = {}
 ## Instances keyed by anchor cell: {name, cell, position_raw, health, metal, energy, owner}.
 var instances: Dictionary = {}
 var revision := 0
+## Terrain height bytes (cell +4) for default instance heights and the 2D-feature splash distance.
+var heights := PackedByteArray()
+var depth: int
+## Per definition index: {footprintx, footprintz, damage, flags} with the +0xfe flag bits used by feature damage.
+var damage_definitions: Array = []
 
 func _init(w: int, h: int, source: RefCounted) -> void:
 	width = w
 	height = h
+	depth = h
 	catalog = source
 	codes.resize(w * h)
 	codes.fill(NONE)
@@ -35,6 +42,10 @@ func index_of(name: String) -> int:
 		name_index[name] = names.size()
 		names.append(name)
 		feature_heights.append(int(catalog.feature(name).get("height", 0)))
+		var definition: Dictionary = catalog.feature(name)
+		damage_definitions.append({"footprintx": int(definition.get("footprintx", 0)), "footprintz": int(definition.get("footprintz", 0)), "damage": int(definition.get("damage", 0)),
+			"flags": (0x1 if str(definition.get("object", "")).is_empty() else 0) | (0x10 if definition.get("flamable", false) else 0) | (0x40 if definition.get("blocking", false) else 0)
+				| (0x80 if definition.get("reclaimable", false) else 0) | (0x200 if definition.get("indestructible", false) else 0)})
 	return int(name_index[name])
 
 func anchor_of(cell: int) -> int:
@@ -90,10 +101,13 @@ func place(name: String, x: int, z: int, position_raw = null, owner := 0) -> int
 				rows[covered] = dz
 				columns[covered] = dx
 	if position_raw == null:
-		# Default instance position: footprint centre on the grid, 0x80000 per half cell.
-		position_raw = [(footprint_x + x * 2) * 0x80000, 0, (footprint_z + z * 2) * 0x80000]
+		# 0x423e3d default instance position: footprint centre (0x80000 per half cell) at the 0x485070 terrain height.
+		var px := (footprint_x + x * 2) << 19
+		var pz := (footprint_z + z * 2) << 19
+		position_raw = [px, FeatureDamage.height(heights, width, height, px, pz) << 16 if not heights.is_empty() else 0, pz]
+	# Instance +0x26 damage restarts at zero; 2D features accumulate damage in the anchor cell word instead.
 	instances[anchor] = {"name": name.to_lower(), "cell": anchor, "position_raw": position_raw, "owner": owner & 0xf,
-		"health": int(definition.damage), "metal": float(definition.metal), "energy": float(definition.energy)}
+		"health": int(definition.damage), "metal": float(definition.metal), "energy": float(definition.energy), "damage_taken": 0}
 	revision += 1
 	return anchor
 
@@ -109,7 +123,9 @@ func replace(cell: int, reclaimed: bool) -> int:
 		return -1
 	if successor.is_empty() or catalog.feature(successor).is_empty():
 		return -1
-	return place(successor, anchor % width, anchor / width, instance.position_raw, 10)
+	# 0x4237ae: features without an instance record place their successor at the default position.
+	var keep_position: bool = int(damage_definitions[index_of(instance.name)].flags) & 0x1 == 0
+	return place(successor, anchor % width, anchor / width, instance.position_raw if keep_position else null, 10)
 
 ## 0x486360: corpse type 1 places the definition corpse; each further step follows featuredead.
 func place_corpse(corpse: String, corpse_type: int, x: int, z: int, position_raw: Array, owner: int) -> int:
@@ -146,3 +162,41 @@ func contact_fields(cell: int) -> Dictionary:
 	var anchor := anchor_of(cell)
 	var anchor_code := int(codes[anchor]) if code == CONTINUATION and anchor >= 0 else NONE
 	return {"code": code, "anchor_code": anchor_code, "feature_count": names.size(), "feature_heights": feature_heights}
+
+## Grid interface for FeatureDamage.splash. Anchors of features with an object carry the instance flag and use
+## the anchor cell as the instance index; 2D anchors expose their damage accumulator as the cell word.
+func code_at(cell: int) -> int:
+	return int(codes[cell])
+
+func has_instance_record(cell: int) -> bool:
+	return codes[cell] < 0xfffb and instances.has(cell) and int(damage_definitions[codes[cell]].flags) & 0x1 == 0
+
+func word_at(cell: int) -> int:
+	if codes[cell] == CONTINUATION:
+		return int(rows[cell]) | (int(columns[cell]) << 8)
+	if has_instance_record(cell):
+		return cell
+	return int(instances[cell].damage_taken) if instances.has(cell) else 0
+
+func bits_at(cell: int) -> int:
+	return 1 if has_instance_record(cell) else 0
+
+func set_word(cell: int, value: int) -> void:
+	if instances.has(cell):
+		instances[cell].damage_taken = value
+
+func definition_of(code: int) -> Dictionary:
+	return damage_definitions[code]
+
+func instance_position(index: int) -> Array:
+	return instances[index].position_raw
+
+func instance_anchor(index: int) -> Vector2i:
+	@warning_ignore("integer_division")
+	return Vector2i(index % width, index / width)
+
+func instance_damage(index: int) -> int:
+	return int(instances[index].damage_taken)
+
+func set_instance_damage(index: int, value: int) -> void:
+	instances[index].damage_taken = value

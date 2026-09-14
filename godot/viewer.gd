@@ -200,6 +200,10 @@ func start_world_movement() -> void:
 		if not run_wreckage_demo():
 			push_error("Wreckage scenario failed")
 			get_tree().quit(1)
+	if "--verify-feature-damage" in OS.get_cmdline_user_args():
+		if not run_feature_damage_demo():
+			push_error("Feature damage scenario failed")
+			get_tree().quit(1)
 	if "--verify-reclaim" in OS.get_cmdline_user_args():
 		if not run_reclaim_demo():
 			push_error("Reclaim scenario failed")
@@ -601,6 +605,44 @@ func reclaim_at(point: Vector2) -> bool:
 	status_label.text = "  " + economy.status
 	return accepted
 
+func run_feature_damage_demo() -> bool:
+	# The Commander's laser leaves a wreck; a D-gun aimed at an enemy behind it blasts through and destroys the wreck.
+	var enemy_type := "armflash" if faction == "core" else "corraid"
+	var first: int = economy.add_unit(enemy_type, navigation.nearest_open(unit_position + Vector2(0, 110)), 0.0, 1)
+	add_structure_sprite(first)
+	var deaths_before: int = combat.deaths.size()
+	for tick in range(1500):
+		step_script()
+		if not economy.units.has(first):
+			break
+	if economy.units.has(first) or combat.deaths.size() == deaths_before or int(combat.deaths[deaths_before].anchor) < 0:
+		printerr("Feature damage demo: no wreck")
+		return false
+	var anchor := int(combat.deaths[deaths_before].anchor)
+	var wreck: String = economy.features.instances[anchor].name
+	combat.guards.erase(economy.builder_id)
+	var second: int = economy.add_unit(enemy_type, navigation.nearest_open(unit_position + Vector2(0, 220)), 0.0, 1)
+	add_structure_sprite(second)
+	var destroyed_before: int = combat.feature_destructions
+	if not dgun_at(economy.units[second].position):
+		printerr("Feature damage demo: D-gun refused: ", combat.status)
+		return false
+	var shots: int = combat.shots_fired
+	for tick in range(600):
+		step_script()
+		if combat.shots_fired > shots and combat.projectiles.is_empty():
+			break
+	for tick in range(3):
+		step_script()
+	var remaining: String = economy.features.instances[anchor].name if economy.features.instances.has(anchor) else "nothing"
+	var sprite_ok: bool = not feature_sprites.has(anchor) or str(feature_sprites[anchor].get_meta("feature", "")) == remaining
+	if remaining == wreck or combat.feature_destructions == destroyed_before or not sprite_ok or not script_vm.fault.is_empty():
+		printerr("Feature damage demo: %s -> %s destructions=%d sprite=%s fault=%s" % [wreck, remaining, combat.feature_destructions - destroyed_before, sprite_ok, script_vm.fault])
+		return false
+	print("FEATURE_DAMAGE_VERIFY_OK %s D-gun passed over %s (damage %d): %d feature replacements, now %s; enemy destroyed=%s" % [commander_type, wreck,
+		int(unit_catalog.feature(wreck).damage), combat.feature_destructions - destroyed_before, remaining, not economy.units.has(second)])
+	return true
+
 func run_reclaim_demo() -> bool:
 	# The Commander destroys an adjacent enemy, then reclaims its wreck: metal is credited and the wreck becomes its featurereclamate.
 	var enemy_type := "armflash" if faction == "core" else "corraid"
@@ -853,7 +895,8 @@ func sync_feature_sprites() -> void:
 		return
 	feature_sprite_revision = economy.features.revision
 	for anchor: int in feature_sprites.keys():
-		if not economy.features.instances.has(anchor):
+		# Replacements (wreck -> heap) reuse the anchor; rebuild the sprite when the feature name changes.
+		if not economy.features.instances.has(anchor) or str(feature_sprites[anchor].get_meta("feature", "")) != str(economy.features.instances[anchor].name):
 			feature_sprites[anchor].queue_free()
 			feature_sprites.erase(anchor)
 	for anchor: int in economy.features.instances:
@@ -865,6 +908,7 @@ func sync_feature_sprites() -> void:
 		var key: String = "feature:" + str(instance.name)
 		var sprite := Sprite2D.new()
 		sprite.texture = structure_texture(key, -anchor - 1)
+		sprite.set_meta("feature", str(instance.name))
 		sprite.position = Vector2(float(instance.position_raw[0]), float(instance.position_raw[2])) / 65536.0
 		sprite.scale = Vector2.ONE * (0.28 * 192.0 / 55.0)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
