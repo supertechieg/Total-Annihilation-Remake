@@ -44,3 +44,19 @@ Recovered by the command-layer research workflow (analyst + adversarial verifier
 - The Commander and factories are outside the viewer's selectable group.
 - Squad inheritance for factory-built units, Ctrl+S, camera bookmarks and the SwitchAlt option are not implemented.
 - Order hotkeys await the unified order queue and order GUI port (research plan recorded in HANDOFF.md).
+
+
+## Picture build menu
+
+- **Menu pages.** Builder menus come from the original GUI page files `guis/<builder><page>.gui`.
+  - Build buttons are gadgets with `attribs=32` and `commonattribs=4`, named after the unit and placed in 64×64 slots at `xpos`/`ypos`.
+  - GUI files repeat `[GADGETn]` names, so gadgets are read in file order.
+- **Download entries.** Download TDF entries (`menu`/`button`) are merged as page `menu − 2`, slot `button`. The data fits this mapping, for example `armamb` at menu 3 button 5 fills armack page 2 slot 5, but the executable routine was not traced.
+- **Pictures.** Unit pictures are the 96×96 `unitpics/<unit>.pcx` files, converted to PNG. `prepare_units.py` writes `build_pages` and `unit_pictures` (`ui_runtime_version=1`); 268 pictures and 51 builder page sets.
+- **`build_menu.gd`.** Shows the selected builder's or factory's page as picture buttons with previous/next page controls; unverified units are greyed and disabled. A builder's pick enters placement mode, a factory's pick queues the unit. The dropdowns stay for tests and demos.
+- **Evidence.** `--verify-build-menu` passes for both factions in NORMAL.
+  - The Commander's page 1 is solar, wind, energy storage, metal storage, extractor and metal maker.
+  - Page 2 holds the factories.
+  - Picking the solar enters placement mode.
+  - A plant's page shows cv, fav, flash/gator, stump/raid, sam/mist and mlv, and picking the combat unit queues it.
+- **Limits.** Orders pages (Move, Attack, Patrol and similar), the `ARMPAN` panel art and the 9 sidedata-only menu entries with no GUI button are not shown.

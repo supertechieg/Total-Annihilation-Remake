@@ -128,6 +128,87 @@ def feature_sprites(content, output, fields, palette, cache, issues, name):
     return result or None
 
 
+def gui_commons(text):
+    """[COMMON] blocks of every top-level gadget in file order, as lowercase key -> trimmed value."""
+    import re
+    text = re.sub(r'//[^\n]*', '', text)
+    commons = []
+    for match in re.finditer(r'\[common\]\s*\{([^{}]*)\}', text, re.IGNORECASE):
+        fields = {}
+        for key, value in re.findall(r'([A-Za-z0-9_]+)\s*=\s*([^;]*);', match.group(1)):
+            fields[key.lower()] = value.strip()
+        commons.append(fields)
+    return commons
+
+
+def build_pages(content, units):
+    """Builder menu pages from guis/<builder><page>.gui: gadgets with attribs 32 and commonattribs 4 are build buttons
+    named after the unit, placed at xpos/ypos in a 64x64 grid. Pages are numbered from 1."""
+    pages = {}
+    for path in sorted(content.paths):
+        if not path.startswith('guis/') or not path.endswith('.gui'):
+            continue
+        stem = Path(path).stem
+        digits = len(stem) - len(stem.rstrip('0123456789'))
+        if digits == 0:
+            continue
+        builder, page = stem[:-digits], int(stem[-digits:])
+        if builder not in units:
+            continue
+        buttons = []
+        # GUI files repeat [GADGETn] names, so read gadgets in file order instead of through the keyed TDF parser.
+        for common in gui_commons(content.read(path).decode('latin-1')):
+            name = str(common.get('name', '')).lower()
+            if common.get('attribs') == '32' and common.get('commonattribs') == '4' and name in units:
+                buttons.append(dict(unit=name, x=int(common.get('xpos', '0')), y=int(common.get('ypos', '0'))))
+        buttons.sort(key=lambda item: (item['y'], item['x']))
+        pages.setdefault(builder, {})[page] = buttons
+    return {builder: [entries[index] for index in sorted(entries)] for builder, entries in pages.items()}
+
+
+SLOTS = [(0, 27), (64, 27), (0, 91), (64, 91), (0, 155), (64, 155)]
+
+
+def merge_download_pages(pages, additions):
+    """Download TDF menu entries add buttons to builder pages. The data fits page index = MENU - 2 and slot = BUTTON
+    (row-major 2x3), with new pages appended as needed; this mapping is inferred, not traced in the executable."""
+    for addition in additions:
+        try:
+            page_index, slot = int(str(addition.get('menu'))) - 2, int(str(addition.get('button')))
+        except (TypeError, ValueError):
+            continue
+        if page_index < 0 or not 0 <= slot < len(SLOTS):
+            continue
+        builder_pages = pages.setdefault(addition['builder'], [])
+        while len(builder_pages) <= page_index:
+            builder_pages.append([])
+        page = builder_pages[page_index]
+        x, y = SLOTS[slot]
+        if any(entry['unit'] == addition['unit'] for entry in page):
+            continue
+        page[:] = [entry for entry in page if (entry['x'], entry['y']) != (x, y)] + [dict(unit=addition['unit'], x=x, y=y, download=True)]
+        page.sort(key=lambda item: (item['y'], item['x']))
+
+
+def unit_pictures(content, output, units, issues):
+    """96x96 build pictures from unitpics/<unit>.pcx, converted to PNG."""
+    import io
+    from PIL import Image
+    folder = output / 'unitpics'
+    folder.mkdir(exist_ok=True)
+    pictures = {}
+    for unit in sorted(units):
+        path = f'unitpics/{unit}.pcx'
+        if path not in content.paths:
+            continue
+        try:
+            Image.open(io.BytesIO(content.read(path))).convert('RGB').save(folder / f'{unit}.png')
+            pictures[unit] = f'unitpics/{unit}.png'
+        except OSError as error:
+            issues.append(dict(unit=unit, picture_error=str(error)))
+    return pictures
+
+
 def prepare_features(content, output, required_textures, issues, palette):
     features = {}
     folder = output / 'features'
@@ -231,6 +312,9 @@ def prepare(root, output):
             textures[name] = 'textures/' + filename
     missing_textures = sorted(required_textures - textures.keys())
     menus, additions, missing_menu_units = build_menus(content, units)
+    pages = build_pages(content, units)
+    merge_download_pages(pages, additions)
+    pictures = unit_pictures(content, output, units, issues)
     weapons = {}
     for path in sorted(content.paths):
         if path.startswith('weapons/') and path.endswith('.tdf'):
@@ -238,7 +322,7 @@ def prepare(root, output):
                 if name in weapons:
                     issues.append(dict(duplicate_weapon=name, previous=weapons[name]['source'], source=path))
                 weapons[name] = dict(source=path, definition=fields, runtime=weapon_runtime(fields))
-    index = dict(movement_runtime_version=1, weapon_runtime_version=5, feature_runtime_version=5, profile=PROFILE, profile_status='provisional archive precedence', units=units,
+    index = dict(movement_runtime_version=1, weapon_runtime_version=5, feature_runtime_version=5, ui_runtime_version=1, build_pages=pages, unit_pictures=pictures, profile=PROFILE, profile_status='provisional archive precedence', units=units,
                  build_menus=menus, menu_additions=additions, weapons=weapons, features=features, textures=textures,
                  palette=[palette[i:i + 3] for i in range(0, 768, 3)], issues=issues,
                  missing_textures=missing_textures, missing_menu_units=missing_menu_units)

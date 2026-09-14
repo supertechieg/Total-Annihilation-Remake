@@ -38,6 +38,8 @@ var feature_sprite_revision := -1
 var feature_animations: Dictionary = {}
 var feature_layers: Array = []
 const Minimap = preload("res://minimap.gd")
+const BuildMenu = preload("res://build_menu.gd")
+var build_menu: VBoxContainer
 var minimap: Control
 var structure_views: Dictionary = {}
 var structure_models: Dictionary = {}
@@ -254,6 +256,10 @@ func start_world_movement() -> void:
 	if "--verify-wreckage" in OS.get_cmdline_user_args():
 		if not run_wreckage_demo():
 			push_error("Wreckage scenario failed")
+			get_tree().quit(1)
+	if "--verify-build-menu" in OS.get_cmdline_user_args():
+		if not run_build_menu_demo():
+			push_error("Build menu scenario failed")
 			get_tree().quit(1)
 	if "--verify-squads" in OS.get_cmdline_user_args():
 		if not run_squad_demo():
@@ -1379,11 +1385,63 @@ func select_unit(id: int) -> void:
 	place_button.disabled = not builder
 	if builder:
 		fill_build_picker(build_picker, economy.units[source_id].type)
+	if build_menu != null:
+		build_menu.show_builder(economy.units[source_id].type if builder or economy.factories.has(id) else "")
 	factory_controls.visible = economy != null and economy.factories.has(id)
 	if factory_controls.visible:
 		factory_picker.clear()
 		fill_build_picker(factory_picker, economy.units[id].type)
 	update_world()
+
+## A picture button picks the unit: factories queue it, builders enter placement mode for it.
+func choose_menu_unit(type: String) -> void:
+	if economy.factories.has(selected_unit):
+		economy.queue_unit(selected_unit, type)
+		status_label.text = "  " + economy.factories[selected_unit].status
+		return
+	for index in range(build_picker.item_count):
+		if str(build_picker.get_item_metadata(index)) == type and not build_picker.is_item_disabled(index):
+			build_picker.select(index)
+			choose_build()
+			return
+	status_label.text = "  Selected builder cannot build that unit"
+
+func run_build_menu_demo() -> bool:
+	# The Commander's original GUI pages appear as picture buttons; a button enters placement, factories queue units.
+	select_unit(0)
+	var prefix := "cor" if faction == "core" else "arm"
+	var first_page: Array = build_menu.pages[0].map(func(entry: Dictionary): return entry.unit) if not build_menu.pages.is_empty() else []
+	if first_page != [prefix + "solar", prefix + "win", prefix + "estor", prefix + "mstor", prefix + "mex", prefix + "makr"]:
+		printerr("Build menu demo: commander page 1 is ", first_page)
+		return false
+	var buttons: Array = build_menu.grid.get_children().filter(func(child) -> bool: return child is TextureButton)
+	if buttons.size() != 6 or buttons[0].texture_normal == null:
+		printerr("Build menu demo: %d picture buttons" % buttons.size())
+		return false
+	build_menu.turn(1)
+	var second: Array = build_menu.pages[build_menu.page].map(func(entry: Dictionary): return entry.unit)
+	if not (prefix + "vp" in second and prefix + "lab" in second):
+		printerr("Build menu demo: page 2 is ", second)
+		return false
+	build_menu.turn(-1)
+	choose_menu_unit(prefix + "solar")
+	if placement_type != prefix + "solar":
+		printerr("Build menu demo: placement type ", placement_type)
+		return false
+	placement_type = ""
+	economy.energy = economy.energy_storage
+	economy.metal = economy.metal_storage
+	var plant: int = economy.add_unit(prefix + "vp", navigation.nearest_open(unit_position + Vector2(-260, 0)), 0.0, 0)
+	add_structure_sprite(plant)
+	select_unit(plant)
+	var units_page: Array = build_menu.pages[0].map(func(entry: Dictionary): return entry.unit) if not build_menu.pages.is_empty() else []
+	var combat_type := prefix + ("flash" if faction == "arm" else "raid")
+	choose_menu_unit(combat_type)
+	if not combat_type in units_page or economy.factories[plant].queue.is_empty():
+		printerr("Build menu demo: plant page %s queue %s" % [units_page, economy.factories[plant].queue])
+		return false
+	print("BUILD_MENU_VERIFY_OK %s pages %s; plant page %s; picture pick placed %ssolar and queued %s" % [commander_type, first_page, units_page, prefix, combat_type])
+	return true
 
 func fill_build_picker(picker: OptionButton, source_type: String) -> void:
 	var first_enabled := -1
@@ -1718,6 +1776,11 @@ func build_interface() -> void:
 	column.add_child(resource_label)
 	selection_label = label("Selected: " + commander_name, 13)
 	column.add_child(selection_label)
+	build_menu = BuildMenu.new()
+	build_menu.setup(unit_catalog, func(type: String) -> bool: return ConstructionWorld.supported(type))
+	build_menu.unit_chosen.connect(choose_menu_unit)
+	column.add_child(build_menu)
+	build_menu.show_builder(commander_type)
 	build_picker = OptionButton.new()
 	fill_build_picker(build_picker, commander_type)
 	column.add_child(build_picker)
