@@ -125,20 +125,24 @@ def gaf_frame(data, at, palette, ancestors=()):
     return image.convert('RGBA'), x, y
 
 
-def tnt_image(data, palette):
+def tnt_image(data, palette, scale=1, max_cells=1024 * 1024):
+    """Terrain image from 32x32 tiles; scale (a power of two) pastes nearest-sampled tiles for oversized maps."""
     header = unpack('<16I', data)
     magic, w, h, indices_at, attrs_at, tiles_at, tile_count = header[:7]
-    if magic != 0x2000 or w % 2 or h % 2 or not 0 < w * h <= 1024 * 1024:
+    if magic != 0x2000 or w % 2 or h % 2 or not 0 < w * h <= max_cells or 32 % scale:
         raise FormatError('Unsupported TNT map header or excessive dimensions')
+    size = 32 // scale
     tiles = [Image.frombytes('P', (32, 32), span(data, tiles_at + i * 1024, 1024)) for i in range(tile_count)]
-    image = Image.new('P', (w * 16, h * 16))
+    if scale != 1:
+        tiles = [tile.resize((size, size), Image.Resampling.NEAREST) for tile in tiles]
+    image = Image.new('P', (w * size // 2, h * size // 2))
     image.putpalette(palette)
     for row in range(h // 2):
         for col in range(w // 2):
             tile, = unpack('<H', data, indices_at + (row * (w // 2) + col) * 2)
             if tile >= len(tiles):
                 raise FormatError('TNT tile index out of bounds')
-            image.paste(tiles[tile], (col * 32, row * 32))
+            image.paste(tiles[tile], (col * size, row * size))
     heights = span(data, attrs_at, w * h * 4)[::4]
     return image, dict(width=w * 16, height=h * 16, tiles=tile_count, sea_level=header[9],
                       height_grid_width=w, height_grid_height=h), heights

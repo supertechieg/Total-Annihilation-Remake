@@ -34,11 +34,14 @@ The host can now load every official multiplayer map that its feature loader rep
 
 ## Coverage
 
-- **Maps.** 96 official multiplayer maps were found and **86 load**.
-- **Unsupported.** 9 have OTA schema features (`0x423160`, not yet implemented). `seven-islands` has an unsupported TNT header.
+- **Maps.** All **96** official multiplayer maps load.
+- **Schema features.** The 9 maps whose OTA schemas list extra features now place them (see `MAP_FEATURE_SPRITES.md`).
+- **Oversized maps.** Seven Islands (1280×1280 cells) prepares with a scaled terrain image.
 - **Before the loader was traced.** Only 48 maps loaded; 32 were rejected for overlapping placements and 15 for reserved codes. All of them now resolve through the original rules.
 
 ## Evidence
+
+Figures below are from the first map checkpoint. With schema features and Seven Islands added, the oracle matches 1,985 of 1,985 checks over all 96 maps, and `test_maps.gd` passes 480 checks (see `MAP_FEATURE_SPRITES.md`).
 
 - **Native loader.** `native_map_features.py` runs the original `0x423c50`/`0x4246b0` in the loader's two-pass order. Model-instance creation, geothermal effects and the pathing refresh are stubbed, and the instance pool is linked as `0x421f20` does.
   - It covers 300 random grids with voids, reserved codes, out-of-range indices, zero or negative footprints, indestructible and object-less features, plus a pool-exhaustion grid.
@@ -53,9 +56,9 @@ The host can now load every official multiplayer map that its feature loader rep
 
 ## Limits
 
-- **2D features are not drawn.** Trees, shrubs and rocks from GAF sprites are invisible even though they block movement and take damage.
+- **2D features.** GAF sprites are drawn as of `MAP_FEATURE_SPRITES.md`.
 - **Not implemented.**
-  - OTA schema features, burning, and the older TNT attribute layout.
+  - Burning and the older TNT attribute layout.
   - Tidal, wind and gravity come from the OTA through the existing environment code; team resources ignore the schema values.
 - **Start positions and AI.** Start positions beyond two players are recorded but unused, and the opponent AI is still the scripted base builder.
 - **Content.** Archive precedence is provisional; maps whose features fall outside the unit bundle profile would be rejected, and none of the 96 are.

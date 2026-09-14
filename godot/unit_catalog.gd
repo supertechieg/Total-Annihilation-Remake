@@ -53,6 +53,20 @@ func load_feature_model(name: String) -> Dictionary:
 	feature_models[name] = value
 	return value
 
+var feature_textures: Dictionary = {}
+
+## 2D feature GAF sequences: {"sprite": {"frames": [{image, x, y, width, height}]}, "shadow": {...}} or empty.
+func feature_sprites(name: String) -> Dictionary:
+	var value = index.get("features", {}).get(name.to_lower(), {}).get("sprites")
+	return value if value is Dictionary else {}
+
+## Cached texture for a bundled feature sprite frame path.
+func feature_texture(path: String) -> Texture2D:
+	if not feature_textures.has(path):
+		var image := Image.load_from_file(root.path_join(path))
+		feature_textures[path] = ImageTexture.create_from_image(image) if image != null else null
+	return feature_textures[path]
+
 func build_options(unit_id: String) -> Array:
 	return index.get("build_menus", {}).get(unit_id.to_lower(), [])
 

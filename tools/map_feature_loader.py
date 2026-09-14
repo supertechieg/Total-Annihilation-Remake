@@ -80,15 +80,79 @@ class FeatureGrid:
         return True
 
 
-def load(width, height, attributes, definitions):
-    """attributes: the TNT attribute feature word per cell. Returns the resulting FeatureGrid."""
-    grid = FeatureGrid(width, height, definitions)
+def msvc_atoi(text):
+    """MSVC atol as used by the TDF integer accessor: skip whitespace, optional sign, decimal digits, wrap to int32."""
+    text = str(text).lstrip(' \t\n\r\v\f')
+    sign = 1
+    if text[:1] in '+-' and text:
+        sign = -1 if text[0] == '-' else 1
+        text = text[1:]
+    value = 0
+    for character in text:
+        if not character.isdigit() or not character.isascii():
+            break
+        value = (value * 10 + int(character)) & 0xffffffff
+    value = (value * sign) & 0xffffffff
+    return value - 0x100000000 if value >= 0x80000000 else value
+
+
+def schema_features(schema):
+    """0x436c30: the chosen schema's [features] children in file order as (name, xpos, zpos); XPos/ZPos default -1 and
+    a negative coordinate (or a missing name) blanks the entry, which 0x423160 then skips. Names keep 127 characters."""
+    section = next((value for key, value in schema.items() if key.lower() == 'features' and isinstance(value, dict)), {})
+    entries = []
+    for child in section.values():
+        if not isinstance(child, dict):
+            continue
+        fields = {key.lower(): value for key, value in child.items()}
+        name = str(fields.get('featurename', ''))[:0x7f]
+        x = msvc_atoi(fields['xpos']) if 'xpos' in fields else -1
+        z = msvc_atoi(fields['zpos']) if 'zpos' in fields else -1
+        entries.append(('' if x < 0 or z < 0 else name, x, z))
+    return entries
+
+
+def trunc_half(value):
+    return int(value / 2)
+
+
+def place_schema_features(grid, entries, extra_definitions):
+    """0x423160 after TNT pass 2: case-insensitive name lookup (appending unknown definitions by name, as 0x4224b0 does),
+    2D features anchor at (x, z) and 3D features at (x - fx/2, z - fz/2) truncated; placement uses owner 10.
+    An anchor outside the map passes a null cell in the original (undefined); it is skipped and returned."""
+    skipped = []
+    for name, x, z in entries:
+        if not name:
+            continue
+        code = next((index for index, definition in enumerate(grid.definitions) if definition['name'].lower() == name.lower()), None)
+        if code is None:
+            if name.lower() not in extra_definitions:
+                raise KeyError(f'schema feature definition not found: {name}')
+            grid.definitions.append(dict(extra_definitions[name.lower()], name=name))
+            code = len(grid.definitions) - 1
+        definition = grid.definitions[code]
+        if definition['object']:
+            x -= trunc_half(signed16(definition['footprintx']))
+            z -= trunc_half(signed16(definition['footprintz']))
+        if not (0 <= x < grid.width and 0 <= z < grid.height):
+            skipped.append((name, x, z))
+            continue
+        grid.place(z * grid.width + x, code)
+    return skipped
+
+
+def load(width, height, attributes, definitions, schema_entries=(), extra_definitions=None):
+    """attributes: the TNT attribute feature word per cell; schema_entries from schema_features. Returns the FeatureGrid
+    (definitions appended by schema features extend grid.definitions)."""
+    grid = FeatureGrid(width, height, list(definitions))
+    count = len(definitions)
     for cell, code in enumerate(attributes):
         if code == VOID:
             grid.place(cell, VOID)
     for cell, code in enumerate(attributes):
-        if code < len(definitions):
+        if code < count:
             grid.place(cell, code)
+    grid.skipped_schema_features = place_schema_features(grid, schema_entries, extra_definitions or {})
     return grid
 
 

@@ -18,7 +18,7 @@ $unitIndexPath = Join-Path $workspacePath 'local\unit-assets\index.json'
 $unitBundleCurrent = $false
 if (Test-Path -LiteralPath $unitIndexPath) {
     $unitMetadata = Get-Content -LiteralPath $unitIndexPath -Raw | ConvertFrom-Json
-    $unitBundleCurrent = $unitMetadata.weapon_runtime_version -eq 5 -and $unitMetadata.movement_runtime_version -eq 1 -and $unitMetadata.feature_runtime_version -eq 2
+    $unitBundleCurrent = $unitMetadata.weapon_runtime_version -eq 5 -and $unitMetadata.movement_runtime_version -eq 1 -and $unitMetadata.feature_runtime_version -eq 5
 }
 if ($Prepare -or -not $unitBundleCurrent) {
     Push-Location $workspacePath

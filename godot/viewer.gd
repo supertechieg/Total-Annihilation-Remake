@@ -5,6 +5,7 @@ const ASSET_RELATIVE = "../local/viewer-assets/"
 const CobVM = preload("res://cob_vm.gd")
 const UnitCatalog = preload("res://unit_catalog.gd")
 const UnitVisuals = preload("res://unit_visuals.gd")
+const FeatureAnimation = preload("res://feature_animation.gd")
 var unit_catalog: RefCounted
 var unit_visuals: RefCounted
 const Navigation = preload("res://terrain_navigation.gd")
@@ -32,6 +33,9 @@ var structure_sprites: Dictionary = {}
 ## Wreck and other modelled feature sprites keyed by anchor cell.
 var feature_sprites: Dictionary = {}
 var feature_sprite_revision := -1
+## Shared per-type animation states for animating 2D features: name -> {state, durations, loop, frames, sprites}.
+var feature_animations: Dictionary = {}
+var feature_layers: Array = []
 var structure_views: Dictionary = {}
 var structure_models: Dictionary = {}
 var selected_unit := 0
@@ -227,6 +231,7 @@ func start_world_movement() -> void:
 	var metal_metadata = JSON.parse_string(FileAccess.get_file_as_string(map_assets.path_join("metal.json")))
 	if metal_metadata is Dictionary:
 		economy.load_map_features(metal_metadata.get("placements", []), metal_metadata.get("voids", []))
+		prime_feature_animations()
 	combat = Combat.new(economy)
 	# The viewer steps the Commander's script and movement; combat and targeting use them through the world.
 	economy.attach_external(economy.builder_id, script_vm, mobile)
@@ -246,6 +251,10 @@ func start_world_movement() -> void:
 	if "--verify-wreckage" in OS.get_cmdline_user_args():
 		if not run_wreckage_demo():
 			push_error("Wreckage scenario failed")
+			get_tree().quit(1)
+	if "--verify-map-features" in OS.get_cmdline_user_args():
+		if not run_map_features_demo():
+			push_error("Map features scenario failed")
 			get_tree().quit(1)
 	if "--verify-feature-damage" in OS.get_cmdline_user_args():
 		if not run_feature_damage_demo():
@@ -652,6 +661,55 @@ func reclaim_at(point: Vector2) -> bool:
 	status_label.text = "  " + economy.status
 	return accepted
 
+func run_map_features_demo() -> bool:
+	# Every drawable 2D feature has a node at the 0x46a610 anchor, computed here independently from the raw height grid;
+	# with --require-animation, animating types must change drawn frames as their GAF durations elapse.
+	sync_feature_sprites()
+	var width: int = economy.features.width
+	var rows: int = economy.features.height
+	var heights: PackedByteArray = navigation.heights
+	var expected := 0
+	for anchor: int in economy.features.instances:
+		var name: String = economy.features.instances[anchor].name
+		if not unit_catalog.load_feature_model(name).is_empty() or not unit_catalog.feature_sprites(name).has("sprite"):
+			continue
+		@warning_ignore("integer_division")
+		var x := anchor % width
+		@warning_ignore("integer_division")
+		var z := anchor / width
+		if x >= width - 1 or z >= rows - 1:
+			if feature_sprites.has(anchor):
+				printerr("Map features demo: %s in the last column/row is drawn" % name)
+				return false
+			continue
+		expected += 1
+		if not feature_sprites.has(anchor):
+			printerr("Map features demo: no sprite for %s at %d" % [name, anchor])
+			return false
+		var definition: Dictionary = unit_catalog.feature(name)
+		var lift := (int(heights[z * width + x]) + int(heights[z * width + x + 1]) + int(heights[(z + 1) * width + x]) + int(heights[(z + 1) * width + x + 1])) >> 3
+		var point := Vector2(x * 16 + int(definition.footprintx) * 8, z * 16 + int(definition.footprintz) * 8 - lift)
+		if feature_sprites[anchor].position != point:
+			printerr("Map features demo: %s drawn at %s, expected %s" % [name, feature_sprites[anchor].position, point])
+			return false
+	var textures: Dictionary = {}
+	for id: String in feature_animations:
+		for sprite in feature_animations[id].sprites:
+			if is_instance_valid(sprite):
+				textures[sprite] = sprite.texture
+	for tick in range(90):
+		step_script()
+	var changed := 0
+	for sprite in textures:
+		if is_instance_valid(sprite) and sprite.texture != textures[sprite]:
+			changed += 1
+	var require := "--require-animation" in OS.get_cmdline_user_args()
+	if expected == 0 or (require and (feature_animations.is_empty() or changed == 0)):
+		printerr("Map features demo: sprites=%d animation states=%d changed sprites=%d" % [expected, feature_animations.size(), changed])
+		return false
+	print("MAP_FEATURES_VERIFY_OK %s: %d 2D feature sprites at independently computed anchors, %d animation states, %d sprites changed frame over 90 ticks" % [scene_data.name, expected, feature_animations.size(), changed])
+	return true
+
 func run_feature_damage_demo() -> bool:
 	# The Commander's laser leaves a wreck; a D-gun aimed at an enemy behind it blasts through and destroys the wreck.
 	var enemy_type := "armflash" if faction == "core" else "corraid"
@@ -941,6 +999,7 @@ func sync_feature_sprites() -> void:
 	if economy == null or economy.features.revision == feature_sprite_revision:
 		return
 	feature_sprite_revision = economy.features.revision
+	var added_flat := false
 	for anchor: int in feature_sprites.keys():
 		# Replacements (wreck -> heap) reuse the anchor; rebuild the sprite when the feature name changes.
 		if not economy.features.instances.has(anchor) or str(feature_sprites[anchor].get_meta("feature", "")) != str(economy.features.instances[anchor].name):
@@ -951,6 +1010,10 @@ func sync_feature_sprites() -> void:
 			continue
 		var instance: Dictionary = economy.features.instances[anchor]
 		if unit_catalog.load_feature_model(instance.name).is_empty():
+			var flat := feature_sprite_2d(anchor, str(instance.name))
+			if flat != null:
+				feature_sprites[anchor] = flat
+				added_flat = true
 			continue
 		var key: String = "feature:" + str(instance.name)
 		var sprite := Sprite2D.new()
@@ -961,6 +1024,112 @@ func sync_feature_sprites() -> void:
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		world.add_child(sprite)
 		feature_sprites[anchor] = sprite
+	if added_flat:
+		order_feature_layers()
+
+## A 2D GAF feature drawn as 0x46a610 does: shadow frame then main frame, each blitted with its top-left at the
+## anchor minus the frame's x/y offsets. The map draw loop never visits the last column or row, so features anchored
+## there are not drawn. Features at least 10 high draw above ground units; lower ones beneath them.
+func feature_sprite_2d(anchor: int, name: String) -> Node2D:
+	var sprites: Dictionary = unit_catalog.feature_sprites(name)
+	if not sprites.has("sprite"):
+		return null
+	var width: int = economy.features.width
+	var rows: int = economy.features.height
+	@warning_ignore("integer_division")
+	var cell := Vector2i(anchor % width, anchor / width)
+	if cell.x >= width - 1 or cell.y >= rows - 1:
+		return null
+	var definition: Dictionary = unit_catalog.feature(name)
+	var point := FeatureAnimation.anchor(navigation.heights, width, rows, cell.x, cell.y, int(definition.get("footprintx", 1)), int(definition.get("footprintz", 1)))
+	var node := Node2D.new()
+	node.position = Vector2(point)
+	node.set_meta("feature", name)
+	node.set_meta("anchor", anchor)
+	for key: String in ["shadow", "sprite"]:
+		if not sprites.has(key) or sprites[key].frames.is_empty():
+			continue
+		var frames: Array = sprites[key].frames
+		var sprite := Sprite2D.new()
+		sprite.centered = false
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		# animtrans/shadtrans select the translucent blitter; rendered here as half alpha.
+		if bool(definition.get("shadtrans" if key == "shadow" else "animtrans", false)):
+			sprite.modulate.a = 0.5
+		sprite.name = key
+		node.add_child(sprite)
+		if bool(definition.get("animating", false)):
+			# Separate shared states for the main (+0xcc) and shadow (+0xd8) sequences of the type.
+			var shared := feature_animation(name, key)
+			shared.sprites.append(sprite)
+			apply_feature_frame(sprite, frames, shared.state)
+		else:
+			apply_feature_frame(sprite, frames, {"active": true, "index": 0})
+	# Pass A (height below 10) draws before units; pass B after the ground units of the row. Approximated with two layers.
+	feature_layer(int(definition.get("height", 0)) >= 10).add_child(node)
+	return node
+
+## Low and tall 2D feature layers: low sits just above the terrain, tall above ground units.
+func feature_layer(tall: bool) -> Node2D:
+	if feature_layers.is_empty():
+		for index in range(2):
+			var layer := Node2D.new()
+			layer.name = "tall_features" if index == 1 else "low_features"
+			layer.z_index = index
+			world.add_child(layer)
+			world.move_child(layer, 1 + index)
+			feature_layers.append(layer)
+	return feature_layers[1 if tall else 0]
+
+## Keep each layer in row-major anchor order (later nodes overdraw earlier ones, as the original's row walk does).
+func order_feature_layers() -> void:
+	for layer: Node2D in feature_layers:
+		var children: Array = layer.get_children()
+		var sorted := children.duplicate()
+		sorted.sort_custom(func(a, b) -> bool: return int(a.get_meta("anchor", 0)) < int(b.get_meta("anchor", 0)))
+		if sorted == children:
+			continue
+		for index in range(sorted.size()):
+			layer.move_child(sorted[index], index)
+
+## Shared animation state of one type and sequence, created at frame 0 on first use (or at map load, see prime_feature_animations).
+func feature_animation(name: String, key: String) -> Dictionary:
+	var id := name + ":" + key
+	if not feature_animations.has(id):
+		var sequence: Dictionary = unit_catalog.feature_sprites(name).get(key, {})
+		var durations: Array = sequence.get("durations", [])
+		feature_animations[id] = {"state": FeatureAnimation.start(durations), "durations": durations, "loop": int(sequence.get("loop", 0)) != 0,
+			"frames": sequence.get("frames", []), "sprites": []}
+	return feature_animations[id]
+
+## 0x4224b0 arms the shared states when a definition loads, so every animating type on the map starts before tick 1.
+func prime_feature_animations() -> void:
+	for anchor: int in economy.features.instances:
+		var name: String = economy.features.instances[anchor].name
+		if bool(unit_catalog.feature(name).get("animating", false)):
+			for key: String in unit_catalog.feature_sprites(name):
+				feature_animation(name, key)
+
+## A sequence whose state ended (seq cleared in 0x4b8b90) yields no frame, so nothing is drawn.
+func apply_feature_frame(sprite: Sprite2D, frames: Array, state: Dictionary) -> void:
+	var index := int(state.get("index", 0))
+	if not bool(state.get("active", false)) or index < 0 or index >= frames.size():
+		sprite.visible = false
+		return
+	var frame: Dictionary = frames[index]
+	sprite.visible = true
+	sprite.texture = unit_catalog.feature_texture(str(frame.image))
+	sprite.offset = Vector2(-float(frame.x), -float(frame.y))
+
+## 0x424050: every animating feature type advances its shared states once per simulation tick, so instances move in lockstep.
+func step_feature_animations() -> void:
+	for id: String in feature_animations.keys():
+		var shared: Dictionary = feature_animations[id]
+		if FeatureAnimation.step(shared.state, shared.durations, shared.loop):
+			var live: Array = shared.sprites.filter(func(sprite) -> bool: return is_instance_valid(sprite))
+			shared.sprites = live
+			for sprite: Sprite2D in live:
+				apply_feature_frame(sprite, shared.frames, shared.state)
 
 func add_structure_sprite(id: int) -> void:
 	var unit: Dictionary = economy.units[id]
@@ -1183,6 +1352,7 @@ func step_script() -> void:
 		var was_building: bool = economy.task_id != 0
 		var selected_target: int = economy.builder_jobs[selected_unit].target if economy.builder_jobs.has(selected_unit) else 0
 		economy.step()
+		step_feature_animations()
 		if opponent != null:
 			opponent.step()
 		combat.step()

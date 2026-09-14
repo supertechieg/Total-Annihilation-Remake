@@ -146,6 +146,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Sherwood viewer run failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --map the-cold-place --faction core --verify-commander-combat
     if ($LASTEXITCODE -ne 0) { throw 'The Cold Place Core viewer run failed' }
+    & $godotPath --headless --path godot --script res://test_feature_animation.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Feature animation checks failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --map sherwood --verify-map-features
+    if ($LASTEXITCODE -ne 0) { throw 'Sherwood map feature sprites failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --map acid-pools --faction core --verify-map-features --require-animation
+    if ($LASTEXITCODE -ne 0) { throw 'Acid Pools animated map features failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun
     if ($LASTEXITCODE -ne 0) { throw 'Arm Commander real-map D-gun failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun --faction core

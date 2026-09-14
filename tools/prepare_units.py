@@ -8,7 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from ta_assets import Archive, FormatError
+from ta_assets import Archive, FormatError, span, unpack
 from tdf import parse
 from prepare_viewer import model_3do, gaf_entries, gaf_frame
 from cob import decode
@@ -73,15 +73,68 @@ def feature_runtime(fields):
                 damage=integer('damage') & 0xffff, blocking=bool(integer('blocking') & 1), reclaimable=bool(integer('reclaimable') & 1),
                 autoreclaimable=bool(integer('autoreclaimable', 1) & 1), indestructible=bool(integer('indestructible') & 1),
                 flamable=bool(integer('flamable') & 1), geothermal=bool(integer('geothermal') & 1),
+                animating=bool(integer('animating') & 1), animtrans=bool(integer('animtrans') & 1), shadtrans=bool(integer('shadtrans') & 1),
                 featuredead=str(fields.get('featuredead', '')).lower(), featurereclamate=str(fields.get('featurereclamate', '')).lower(),
                 object=str(fields.get('object', '')).lower())
 
 
-def prepare_features(content, output, required_textures, issues):
+def gaf_timing(data):
+    """GAF entry loop byte (+2) and per-frame durations: the low word of each frame table entry's second dword."""
+    count, = unpack('<I', data, 4)
+    timing = {}
+    for i in range(count):
+        at, = unpack('<I', data, 12 + i * 4)
+        frames, = unpack('<H', data, at)
+        name = span(data, at + 8, 32).split(b'\0', 1)[0].decode('latin-1').lower()
+        timing.setdefault(name, dict(loop=data[at + 2], durations=[unpack('<H', data, at + 40 + frame * 8 + 4)[0] for frame in range(frames)]))
+    return timing
+
+
+def feature_sprites(content, output, fields, palette, cache, issues, name):
+    """Extract a 2D feature's GAF sequences (anims/<filename>.gaf): every frame of seqname (animating features
+    cycle them) and of seqnameshad, each with the GAF frame header x/y offsets."""
+    filename = str(fields.get('filename', '')).strip().lower()
+    if not filename:
+        return None
+    path = f'anims/{filename}.gaf'
+    if path not in content.paths:
+        issues.append(dict(feature=name, missing_gaf=path))
+        return None
+    if path not in cache:
+        data = content.read(path)
+        cache[path] = (data, gaf_entries(data), {}, gaf_timing(data))
+    data, entries, written, timing = cache[path]
+    result = {}
+    for key in ['seqname', 'seqnameshad']:
+        sequence = str(fields.get(key, '')).strip().lower()
+        if not sequence:
+            continue
+        if sequence not in entries:
+            issues.append(dict(feature=name, missing_sequence=f'{path}:{sequence}'))
+            continue
+        if (sequence, key) not in written:
+            frames = []
+            # Animating features step the shadow state (+0xd8) like the main one, so every shadow frame is kept.
+            offsets = entries[sequence]
+            for index, at in enumerate(offsets):
+                image, x, y = gaf_frame(data, at, palette)
+                digest = hashlib.sha256(f'{path}:{sequence}:{index}'.encode()).hexdigest()[:20]
+                image_name = f'features/sprites/{digest}.png'
+                image.save(output / image_name)
+                frames.append(dict(image=image_name, x=x, y=y, width=image.width, height=image.height))
+            written[(sequence, key)] = dict(source=f'{path}:{sequence}', frames=frames, loop=timing[sequence]['loop'],
+                                            durations=timing[sequence]['durations'][:len(frames)])
+        result['sprite' if key == 'seqname' else 'shadow'] = written[(sequence, key)]
+    return result or None
+
+
+def prepare_features(content, output, required_textures, issues, palette):
     features = {}
     folder = output / 'features'
     folder.mkdir(exist_ok=True)
+    (folder / 'sprites').mkdir(exist_ok=True)
     models = {}
+    gaf_cache = {}
     for path in sorted(content.paths):
         if not path.startswith('features/') or not path.endswith('.tdf'):
             continue
@@ -90,7 +143,9 @@ def prepare_features(content, output, required_textures, issues):
             if not isinstance(fields, dict) or name in features:
                 continue
             runtime = feature_runtime(fields)
-            entry = dict(source=path, runtime=runtime, model=None)
+            entry = dict(source=path, runtime=runtime, model=None, sprites=None)
+            if not runtime['object']:
+                entry['sprites'] = feature_sprites(content, output, fields, palette, gaf_cache, issues, name)
             model_path = f"objects3d/{runtime['object']}.3do" if runtime['object'] else ''
             if model_path and model_path in content.paths:
                 if runtime['object'] not in models:
@@ -153,11 +208,11 @@ def prepare(root, output):
         movement_fields = movement_classes.get(fields.get('movementclass', '').lower(), fields)
         units[unit_id] = dict(name=unit['name'], path=f'{unit_id}/unit.json', definition=fields,
                              movement=movement_definition(movement_fields))
-    features = prepare_features(content, output, required_textures, issues)
     palette_bytes = content.read('palettes/palette.pal')
     if len(palette_bytes) != 1024:
         raise FormatError('Unexpected palette length')
     palette = [channel for i in range(256) for channel in palette_bytes[i * 4:i * 4 + 3]]
+    features = prepare_features(content, output, required_textures, issues, palette)
     textures = {}
     texture_folder = output / 'textures'
     texture_folder.mkdir(exist_ok=True)
@@ -183,7 +238,7 @@ def prepare(root, output):
                 if name in weapons:
                     issues.append(dict(duplicate_weapon=name, previous=weapons[name]['source'], source=path))
                 weapons[name] = dict(source=path, definition=fields, runtime=weapon_runtime(fields))
-    index = dict(movement_runtime_version=1, weapon_runtime_version=5, feature_runtime_version=2, profile=PROFILE, profile_status='provisional archive precedence', units=units,
+    index = dict(movement_runtime_version=1, weapon_runtime_version=5, feature_runtime_version=5, profile=PROFILE, profile_status='provisional archive precedence', units=units,
                  build_menus=menus, menu_additions=additions, weapons=weapons, features=features, textures=textures,
                  palette=[palette[i:i + 3] for i in range(0, 768, 3)], issues=issues,
                  missing_textures=missing_textures, missing_menu_units=missing_menu_units)
