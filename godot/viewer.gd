@@ -255,6 +255,10 @@ func start_world_movement() -> void:
 		if not run_wreckage_demo():
 			push_error("Wreckage scenario failed")
 			get_tree().quit(1)
+	if "--verify-squads" in OS.get_cmdline_user_args():
+		if not run_squad_demo():
+			push_error("Squad scenario failed")
+			get_tree().quit(1)
 	if "--verify-ground-attack" in OS.get_cmdline_user_args():
 		if not run_ground_attack_demo():
 			push_error("Ground attack scenario failed")
@@ -545,6 +549,90 @@ func select_group_in_rect(rect: Rect2) -> int:
 		if rect.abs().has_point(economy.units[id].position):
 			ids.append(id)
 	return select_group(ids)
+
+## Squads (0x48d920 CreateSquad / 0x48d9a0 SelectSquad): the squad number lives on each unit (unit +0xac).
+## Creating squad n puts every selected unit in n and moves units that were in n but are not selected to squad 0.
+func create_squad(squad: int) -> int:
+	var count := 0
+	for id: int in economy.units:
+		var unit: Dictionary = economy.units[id]
+		if int(unit.get("team", 0)) != 0:
+			continue
+		if id in selected_group:
+			unit.squad = squad
+			count += 1
+		elif int(unit.get("squad", 0)) == squad:
+			unit.squad = 0
+	status_label.text = "  Squad %d: %d units" % [squad, count]
+	return count
+
+## Selecting squad n selects its selectable members; without Shift everything else is deselected, with Shift it adds.
+func select_squad(squad: int, add := false) -> int:
+	var ids: Array = selected_group.duplicate() if add else []
+	for id: int in economy.units:
+		if int(economy.units[id].get("squad", 0)) == squad and selectable_unit(id) and not combat.pending_deaths.has(id) and not id in ids:
+			ids.append(id)
+	var count := select_group(ids)
+	status_label.text = "  Selected squad %d: %d units" % [squad, count]
+	return count
+
+## Ctrl+Z: add every own selectable unit whose type matches a selected unit's type.
+func select_same_types() -> int:
+	var types: Array = []
+	for id in selected_group:
+		if economy.units.has(int(id)):
+			types.append(economy.units[int(id)].type)
+	var ids: Array = selected_group.duplicate()
+	for id: int in economy.units:
+		if selectable_unit(id) and economy.units[id].type in types and not id in ids:
+			ids.append(id)
+	return select_group(ids)
+
+func select_all_own() -> int:
+	var ids: Array = []
+	for id: int in economy.units:
+		if selectable_unit(id):
+			ids.append(id)
+	return select_group(ids)
+
+func run_squad_demo() -> bool:
+	# Ctrl+number assigns, Alt+number selects (Shift adds), dead members drop out, Ctrl+Z adds matching types.
+	var type := "armflash" if faction == "arm" else "corraid"
+	var ids: Array = []
+	for index in range(4):
+		var point: Vector2 = navigation.nearest_open(unit_position + Vector2(-240 + index * 60, 200))
+		var id: int = economy.add_unit(type if index < 3 else ("armpw" if faction == "arm" else "corak"), point, 0.0, 0)
+		economy.mobile_units[id] = MobileUnit.new(economy.unit_navigation(economy.units[id].type), unit_catalog.definition(economy.units[id].type), point, economy.scripts[id])
+		add_structure_sprite(id)
+		ids.append(id)
+	select_group([ids[0], ids[1]])
+	if create_squad(2) != 2:
+		return false
+	select_group([ids[3]])
+	create_squad(3)
+	select_group([ids[2]])
+	if select_squad(2) != 2 or not (ids[0] in selected_group and ids[1] in selected_group) or ids[2] in selected_group:
+		printerr("Squad demo: squad 2 selection ", selected_group)
+		return false
+	if select_squad(3, true) != 3:
+		printerr("Squad demo: shift add gave ", selected_group)
+		return false
+	select_group([ids[1]])
+	create_squad(2)
+	if int(economy.units[ids[0]].get("squad", 0)) != 0 or select_squad(2) != 1:
+		printerr("Squad demo: reassignment left ", economy.units[ids[0]].get("squad", 0))
+		return false
+	select_group([ids[0]])
+	if select_same_types() != 3:
+		printerr("Squad demo: Ctrl+Z selected ", selected_group)
+		return false
+	combat.apply_damage(ids[1], 5000)
+	combat.process_deaths()
+	if select_squad(2) != 0:
+		printerr("Squad demo: dead member still selected")
+		return false
+	print("SQUADS_VERIFY_OK Ctrl+number assign, Alt+number select, Shift add, reassignment, Ctrl+Z same type and dead-member removal")
+	return true
 
 func select_army() -> int:
 	var ids: Array = []
@@ -1840,6 +1928,23 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		toggle_walk()
 	elif event.keycode == KEY_S:
 		stop_order()
+	elif event.keycode >= KEY_1 and event.keycode <= KEY_9 and economy != null and (event.ctrl_pressed or event.alt_pressed):
+		# Default (SwitchAlt off): Ctrl+digit creates a squad, Alt+digit selects it (Shift adds).
+		var squad: int = event.keycode - KEY_0
+		if event.ctrl_pressed:
+			create_squad(squad)
+		else:
+			select_squad(squad, event.shift_pressed)
+	elif event.keycode == KEY_A and event.ctrl_pressed and economy != null:
+		status_label.text = "  Selected all: %d units" % select_all_own()
+	elif event.keycode == KEY_Z and event.ctrl_pressed and economy != null:
+		status_label.text = "  Selected matching types: %d units" % select_same_types()
+	elif event.keycode == KEY_ESCAPE:
+		if not placement_type.is_empty():
+			placement_type = ""
+			status_label.text = "  Order cancelled"
+		elif economy != null:
+			select_group([])
 	elif event.keycode == KEY_1:
 		aim_and_fire()
 	elif event.keycode == KEY_2:

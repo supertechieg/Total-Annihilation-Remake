@@ -146,6 +146,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Sherwood viewer run failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --map the-cold-place --faction core --verify-commander-combat
     if ($LASTEXITCODE -ne 0) { throw 'The Cold Place Core viewer run failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-squads
+    if ($LASTEXITCODE -ne 0) { throw 'Arm squads failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-squads --faction core
+    if ($LASTEXITCODE -ne 0) { throw 'Core squads failed' }
     & $godotPath --headless --path godot --script res://test_minimap.gd
     if ($LASTEXITCODE -ne 0) { throw 'Minimap checks failed' }
     & $godotPath --headless --path godot --script res://test_feature_animation.gd
