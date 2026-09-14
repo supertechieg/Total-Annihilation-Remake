@@ -1,0 +1,7 @@
+{
+  "cases": 352,
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "mismatch_count": 0,
+  "mismatches": [],
+  "scope": "Original synchronous Killed(severity, corpsetype) through 0x4b0bc0 after Create for 32 level-one unit and structure scripts at 11 severities: returned corpse type, EXPLODE (vtable+0x34) piece/flag order and hidden pieces; excludes debris simulation, death explosion and corpse placement"
+}

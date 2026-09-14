@@ -22,6 +22,8 @@ var shading: Dictionary = {}
 var caching: Dictionary = {}
 var completions: Dictionary = {}
 var events: Array = []
+## EXPLODE callbacks in call order as [piece, flags].
+var explosions: Array = []
 var fault := ""
 var ticks := 0
 var next_id := 1
@@ -244,6 +246,11 @@ func run_slot(slot: int) -> void:
 				var piece: Dictionary = pieces[int(args[0])]
 				piece.visible = op == "SHOW"
 				record("visibility", {"piece": piece.name, "visible": piece.visible, "pc": pc})
+			"EXPLODE":
+				# Engine callback vtable+0x34 (piece, flags): debris only; the host renders or ignores these events.
+				var flags := pop(thread)
+				explosions.append([int(args[0]), flags])
+				record("explode", {"piece": int(args[0]), "flags": flags, "pc": pc})
 			"DONT_SHADE", "SHADE":
 				shading[int(args[0])] = op == "SHADE"
 			"DONT_CACHE", "CACHE":

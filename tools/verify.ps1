@@ -118,6 +118,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Core Commander real-map combat failed' }
     & $godotPath --headless --path godot --script res://test_dgun.gd
     if ($LASTEXITCODE -ne 0) { throw 'D-gun checks failed' }
+    & $godotPath --headless --path godot --script res://test_unit_death.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Unit death checks failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun
     if ($LASTEXITCODE -ne 0) { throw 'Arm Commander real-map D-gun failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun --faction core
@@ -384,6 +386,10 @@ try {
         & $godotPath --headless --path godot --script res://compare_native_firing.gd -- --corraid
         if ($LASTEXITCODE -ne 0) { throw 'Raider firing script differs from original interpreter' }
         # Core roster firing traces must exist before the tank origin/target oracles below.
+        python tools\native_killed_reference.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original Killed script reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_killed.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Killed scripts differ from original interpreter' }
         python tools\native_beam_motion.py
         if ($LASTEXITCODE -ne 0) { throw 'Original beam motion reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_beam_motion.gd

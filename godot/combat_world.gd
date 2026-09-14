@@ -42,6 +42,9 @@ var guard_pursuit: Dictionary = {}
 ## Command-fire (D-gun) orders use weapon slot 3 with their own script cycle.
 var command_orders: Dictionary = {}
 var command_cycles: Dictionary = {}
+var pending_deaths: Array = []
+## Processed deaths: unit type, severity, Killed corpse type, corpse feature name, position and debris explosions.
+var deaths: Array = []
 var projectiles: Array = []
 var effects: Array = []
 const EffectAssets = preload("res://weapon_effects.gd")
@@ -427,17 +430,9 @@ func step() -> void:
 			continue
 		var target: int = world.collision.target_at(world, next_raw, int(projectile.owner))
 		if target != 0:
-			var damage := Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0)
-			world.units[target].health = maxi(0, int(world.units[target].health) - damage)
-			hits += 1
+			apply_damage(target, Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0))
 			add_effect(end, str(projectile.get("explosion", "")))
 			request_sound(str(projectile.get("soundhit", "")), end)
-			if int(world.units[target].health) == 0:
-				destroyed.append(target)
-				world.remove_unit(target)
-				stop(target)
-				cycles.erase(target)
-				launch_offsets.erase(target)
 			continue
 		projectile.previous = start
 		projectile.position = end
@@ -452,6 +447,7 @@ func step() -> void:
 	projectiles = survivors
 	# Native updater snapshots its pool size: newly copied rounds move next tick.
 	projectiles.append_array(burst_copies)
+	process_deaths()
 
 func advance_bursts() -> Array:
 	var copies: Array = []
@@ -530,13 +526,9 @@ func step_beam(projectile: Dictionary) -> bool:
 	var target: int = world.collision.target_at(world, next.head, int(projectile.owner))
 	if target != 0:
 		if int(projectile.get("area", 0)) < 17:
-			var damage := Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0)
-			world.units[target].health = maxi(0, int(world.units[target].health) - damage)
-			hits += 1
+			apply_damage(target, Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0))
 			add_effect(projectile.position, str(projectile.get("explosion", "")))
 			request_sound(str(projectile.get("soundhit", "")), projectile.position)
-			if int(world.units[target].health) == 0:
-				destroy_unit(target)
 		else:
 			blast(projectile)
 		return keep
@@ -552,6 +544,63 @@ func destroy_unit(id: int) -> void:
 	cycles.erase(id)
 	command_cycles.erase(id)
 	launch_offsets.erase(id)
+	pending_deaths.erase(id)
+
+## 0x489ce0: subtract from the signed health word; at or below zero the unit is flagged dying (0x4000) and ignores
+## further damage until its update processes the death.
+func apply_damage(id: int, damage: int) -> void:
+	if not world.units.has(id) or pending_deaths.has(id):
+		return
+	var unit: Dictionary = world.units[id]
+	unit.health = int(unit.health) - damage
+	hits += 1
+	if int(unit.health) < 1:
+		pending_deaths.append(id)
+
+func process_deaths() -> void:
+	while not pending_deaths.is_empty():
+		kill_unit(int(pending_deaths[0]))
+
+## 0x4864b0 / 0x4866d0 for weapon deaths: severity, Killed corpse type, removal, then the explodeas death explosion.
+func kill_unit(id: int) -> void:
+	if not world.units.has(id):
+		pending_deaths.erase(id)
+		return
+	var unit: Dictionary = world.units[id]
+	var fields: Dictionary = world.catalog.definition(unit.type)
+	var severity := death_severity(int(unit.health), int(fields.get("maxdamage", "1")), int(unit.get("previous_health_percent", 0)))
+	var corpse := 0
+	var debris: Array = []
+	if world.scripts.has(id) and world.scripts[id].functions.has("Killed"):
+		var vm = world.scripts[id]
+		vm.explosions.clear()
+		var invocation: int = vm.invoke("Killed", [severity, 0])
+		if vm.completions.has(invocation):
+			corpse = int(vm.completions[invocation].locals[1])
+			vm.completions.erase(invocation)
+		debris = vm.explosions.duplicate()
+	var complete := float(unit.remaining) == 0.0
+	if not complete:
+		corpse = 0
+	var position_raw: Array = world.collision.records[id].position_raw.duplicate() if world.collision.records.has(id) else [roundi(unit.position.x * 65536.0), 0, roundi(unit.position.y * 65536.0)]
+	var team := int(unit.get("team", 0))
+	deaths.append({"id": id, "type": unit.type, "severity": severity, "corpsetype": corpse, "corpse": str(fields.get("corpse", "")),
+		"position": unit.position, "position_raw": position_raw, "team": team, "debris": debris, "tick": tick})
+	destroy_unit(id)
+	var explosion: Dictionary = world.catalog.weapon(str(fields.get("explodeas", ""))) if complete and severity > 0 else {}
+	if not explosion.is_empty():
+		var definition: Dictionary = explosion.definition
+		blast({"source": id, "owner": team, "position": render_point(position_raw), "position_raw": position_raw,
+			"area": int(definition.get("areaofeffect", "0")), "edge": float(definition.get("edgeeffectiveness", "0")),
+			"explosion": str(definition.get("explosiongaf", "")) + "/" + str(definition.get("explosionart", "")),
+			"soundhit": str(definition.get("soundhit", "")), "damage": definition.get("damage", {})})
+
+## Killed severity: ((-health * 100) as unsigned / maxdamage + previous health percent) / 2, clamped to 1..100.
+static func death_severity(health: int, maxdamage: int, previous_percent: int) -> int:
+	@warning_ignore("integer_division")
+	var overkill := ((-health * 100) & 0xffffffff) / maxi(1, maxdamage)
+	@warning_ignore("integer_division")
+	return clampi(int((overkill + (previous_percent & 0xff)) / 2), 1, 100)
 
 func step_shell(projectile: Dictionary) -> bool:
 	var expired := Motion.expiration(tick, int(projectile.deadline), int(projectile.timer), projectile.burnblow)
@@ -593,8 +642,4 @@ func blast(projectile: Dictionary) -> void:
 		var multiplier := Splash.multiplier(projectile.position_raw, record.position_raw, record.bounds.lower, record.bounds.upper, radius, float(projectile.edge))
 		if multiplier <= 0:
 			continue
-		var damage := Damage.amount(Damage.base_damage(projectile.damage, world.units[id].type), multiplier)
-		world.units[id].health = maxi(0, int(world.units[id].health) - damage)
-		hits += 1
-		if int(world.units[id].health) == 0:
-			destroy_unit(id)
+		apply_damage(id, Damage.amount(Damage.base_damage(projectile.damage, world.units[id].type), multiplier))

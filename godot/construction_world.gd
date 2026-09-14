@@ -80,7 +80,9 @@ func add_unit(type: String, position: Vector2, remaining: float, team := 0) -> i
 	var definition: Dictionary = catalog.definition(type)
 	units[id] = {"id": id, "team": team, "type": type, "position": position, "remaining": remaining,
 		"energy_ledger": empty_ledger(), "metal_ledger": empty_ledger(),
-		"health": 1 if remaining > 0 else int(definition.get("maxdamage", "1")), "active": true}
+		"health": 1 if remaining > 0 else int(definition.get("maxdamage", "1")), "active": true,
+		# Unit+0xf6/+0xf7: current and previous 30-tick health percentage samples, both zero at creation.
+		"health_percent": 0, "previous_health_percent": 0}
 	# Only these healthy scripts currently have native lifecycle comparisons.
 	if type in SCRIPTED_UNITS:
 		var vm = VM.new(catalog.load_script(type))
@@ -409,6 +411,8 @@ func step() -> void:
 	ticks += 1
 	step_wind()
 	completed.clear()
+	if ticks % 30 == 0:
+		sample_health_percent()
 	for id: int in scripts:
 		if external_units.has(id):
 			continue
@@ -435,6 +439,14 @@ func step() -> void:
 		return
 	if advance_construction(task_id, builder_id):
 		task_id = 0
+
+## Unit update on game ticks divisible by 30: previous = current; current = (health * 100 as unsigned) / maxdamage, clamped.
+func sample_health_percent() -> void:
+	for unit: Dictionary in units.values():
+		@warning_ignore("integer_division")
+		var percent := ((int(unit.health) * 100) & 0xffffffff) / maxi(1, int(catalog.definition(unit.type).get("maxdamage", "1")))
+		unit.previous_health_percent = int(unit.get("health_percent", 0))
+		unit.health_percent = clampi(percent, 0, 100)
 
 func advance_construction(target_id: int, source_id: int) -> bool:
 	if int(units[target_id].get("team", 0)) != int(units[source_id].get("team", 0)):
