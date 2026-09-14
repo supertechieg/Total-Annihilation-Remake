@@ -250,7 +250,7 @@ func start_world_movement() -> void:
 			get_tree().quit(1)
 	for core_unit in CORE_DUEL_UNITS:
 		if "--verify-" + core_unit in OS.get_cmdline_user_args():
-			# Thud shells pass ~4 units over a Raider at 128; see CORE_COMBAT.md. Its duel uses a longer standoff.
+			# The original executable's own Thud shots pass over a Raider at 128 (native-cannon-launch-validation.json); see CORE_COMBAT.md.
 			if not run_duel_demo(true, core_unit, 192.0 if core_unit == "corthud" else 128.0):
 				push_error("Core duel failed: " + core_unit)
 				get_tree().quit(1)

@@ -146,6 +146,15 @@ func muzzle(source: int, piece: String) -> Vector3:
 	var raw := Origin.model_origin(model, world.scripts[source].pieces, piece, [0, int(world.mobile_units[source].heading), 0])
 	return Vector3(unit.position.x, world.navigation.height_at(unit.position), unit.position.y) + render_point(raw)
 
+static func offset_point(base_raw: Array, offset_raw: Array) -> Array:
+	return [Ground.signed32(int(base_raw[0]) + int(offset_raw[0])), Ground.signed32(int(base_raw[1]) + int(offset_raw[1])), Ground.signed32(int(base_raw[2]) + int(offset_raw[2]))]
+
+## Relative turret heading and ballistic pitch from an AimFrom point to a target point (raw 16.16).
+static func ballistic_angles(aim_raw: Array, target_raw: Array, unit_heading: int, speed: int, gravity: int, minimum_angle: float) -> Array:
+	var delta := [int(aim_raw[0]) - int(target_raw[0]), int(aim_raw[1]) - int(target_raw[1]), int(aim_raw[2]) - int(target_raw[2])]
+	var heading := roundi(atan2(float(delta[0]), float(delta[2])) * 65536.0 / TAU) - unit_heading
+	return [heading, Aim.solve(delta, speed, gravity, minimum_angle)]
+
 static func raw_point(point: Vector3) -> Array:
 	return [roundi(point.x * 65536.0), roundi(point.y * 65536.0), roundi(point.z * 65536.0)]
 
@@ -176,7 +185,9 @@ func step() -> void:
 			continue
 		var aim_origin := muzzle(source, aim_piece)
 		var target_point := center(target)
-		var heading := roundi(atan2(aim_origin.x - target_point.x, aim_origin.z - target_point.z) * 65536.0 / TAU) - int(world.mobile_units[source].heading)
+		var ballistic := int(cycle.definition.get("ballistic", "0")) != 0
+		var angles := ballistic_angles(raw_point(aim_origin), raw_point(target_point), int(world.mobile_units[source].heading), int(cycle.runtime.velocity_raw_per_tick), gravity, float(cycle.runtime.minimum_barrel_angle))
+		var heading := int(angles[0])
 		var within_range := origin.distance_to(destination) <= float(cycle.definition.get("range", "0"))
 		if order.pursue:
 			if not within_range and tick >= int(order.next_path):
@@ -188,8 +199,7 @@ func step() -> void:
 			elif within_range and order.chasing:
 				world.mobile_units[source].stop()
 				order.chasing = false
-		var ballistic := int(cycle.definition.get("ballistic", "0")) != 0
-		var pitch := Aim.solve(raw_point(aim_origin - target_point), int(cycle.runtime.velocity_raw_per_tick), gravity, float(cycle.runtime.minimum_barrel_angle)) if ballistic else 0
+		var pitch := int(angles[1]) if ballistic else 0
 		within_range = within_range and pitch != 0x8000
 		if cycle.aim_id < 0 and (not cycle.requested or heading != int(order.heading) or pitch != int(order.pitch)):
 			cycle.aim(heading, pitch)

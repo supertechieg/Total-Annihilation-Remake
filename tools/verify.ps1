@@ -388,6 +388,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Original tank origin reference failed' }
         & $godotPath --headless --path godot --script res://compare_native_tank_origins.gd
         if ($LASTEXITCODE -ne 0) { throw 'Tank origins differ from original setters and transforms' }
+        python tools\native_cannon_launch.py
+        if ($LASTEXITCODE -ne 0) { throw 'Original cannon shot composition reference failed' }
+        & $godotPath --headless --path godot --script res://compare_native_cannon_launch.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Cannon shot composition differs from original executable' }
         python tools\native_weapon_reference.py
         if ($LASTEXITCODE -ne 0) { throw 'Original weapon scalar reference failed' }
         python tools\compare_native_weapons.py

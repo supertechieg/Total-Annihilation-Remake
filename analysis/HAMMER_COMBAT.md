@@ -1,5 +1,9 @@
 # Hammer combat investigation
 
+## Resolution
+
+The remaining Hammer barrel overshoot is original behavior. The end-to-end native cannon oracle (see CORE_COMBAT.md, "Thud and Hammer short-range overshoot") runs the original weapon init, aim loop with the real `AimPrimary` script, turret fire callback `0x49d580`, launcher and projectile update on the Hammer's model. The original's own shells pass 4.5–9.5 units above the aim point at 128–192 units, and the host reproduces every engagement exactly. Undamaged Hammers therefore miss short targets as the original does. Damage-based spread, recovered from `0x49d580` but not yet implemented, can scatter shots in the original.
+
 ## Current result
 
 The weapon host now resolves each shot's muzzle before invoking FirePrimary or
