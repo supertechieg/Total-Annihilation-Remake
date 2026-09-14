@@ -46,6 +46,18 @@ Recovered by the command-layer research workflow (analyst + adversarial verifier
 - Order hotkeys await the unified order queue and order GUI port (research plan recorded in HANDOFF.md).
 
 
+## Height projection
+
+The original draws objects in an oblique projection. The box select `0x48c390` tests units at `sy = z - camY - (y >> 1) + 32`, so an object's screen row is its world z minus half its integer height. Terrain tiles are not shifted.
+
+- **Drawing.** The viewer now uses that projection for units, the Commander, structures, 3D wrecks, selection rings, enemy rings, health bars, projectiles, beams and explosion effects.
+  - Mobile units use their movement height.
+  - Structures use the terrain height at their position.
+  - 2D features keep their own anchor (`0x46a610`, see MAP_FEATURE_SPRITES.md).
+- **Picking.** Click picks and box select test footprints around the drawn position. A unit on a hill is therefore selected where it appears, not at its ground cell.
+- **Terrain clicks** (move, build placement, ground attack) still map straight to world x/z. The original's inverse projection over terrain height is not recovered yet.
+- **Evidence.** `--verify-projection` finds the highest open cell near the start, checks the sprite position against `z - (height >> 1)`, and checks that click and box select hit the drawn position. When the lift exceeds 40 px it also checks that the ground cell misses. It runs on Comet Catcher (Arm, height 55) and Sherwood (Core, height 191).
+
 ## Picture build menu
 
 - **Menu pages.** Builder menus come from the original GUI page files `guis/<builder><page>.gui`.

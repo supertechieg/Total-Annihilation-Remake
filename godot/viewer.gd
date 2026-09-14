@@ -250,6 +250,7 @@ func start_world_movement() -> void:
 	combat.gravity = int(scene_data.get("environment", {}).get("gravity_raw_per_tick", 8155))
 	combat_overlay = CombatOverlay.new()
 	combat_overlay.combat = combat
+	combat_overlay.project_unit = func(id: int) -> Vector2: return drawn_position(id)
 	combat_overlay.z_index = 10
 	world.add_child(combat_overlay)
 	map_center = unit_position
@@ -260,6 +261,10 @@ func start_world_movement() -> void:
 	if "--verify-build-menu" in OS.get_cmdline_user_args():
 		if not run_build_menu_demo():
 			push_error("Build menu scenario failed")
+			get_tree().quit(1)
+	if "--verify-projection" in OS.get_cmdline_user_args():
+		if not run_projection_demo():
+			push_error("Projection scenario failed")
 			get_tree().quit(1)
 	if "--verify-squads" in OS.get_cmdline_user_args():
 		if not run_squad_demo():
@@ -549,10 +554,29 @@ func select_group(ids: Array) -> int:
 	combat_overlay.queue_redraw()
 	return selected_group.size()
 
+## Original object projection (box select 0x48c390 uses the same): screen y = world z - (integer height >> 1).
+## Terrain tiles are drawn unshifted; units, wrecks, projectiles and effects are lifted by half their height.
+static func lift(point: Vector2, height: float) -> Vector2:
+	return Vector2(point.x, point.y - float(int(floor(height)) >> 1))
+
+func unit_height(id: int) -> float:
+	if id == economy.builder_id and mobile != null:
+		return float(mobile.height)
+	if economy.mobile_units.has(id):
+		return float(economy.mobile_units[id].height)
+	return float(navigation.height_at(economy.units[id].position))
+
+func drawn_position(id: int) -> Vector2:
+	return lift(economy.units[id].position, unit_height(id))
+
+## Picking tests a unit's footprint around its drawn (lifted) position, like the original screen-space box test.
+func unit_under(id: int, point: Vector2, grow := 0.0) -> bool:
+	return economy.footprint(economy.units[id].type, drawn_position(id)).grow(grow).has_point(point)
+
 func select_group_in_rect(rect: Rect2) -> int:
 	var ids: Array = []
 	for id: int in economy.units:
-		if rect.abs().has_point(economy.units[id].position):
+		if rect.abs().has_point(drawn_position(id)):
 			ids.append(id)
 	return select_group(ids)
 
@@ -600,6 +624,40 @@ func select_all_own() -> int:
 		if selectable_unit(id):
 			ids.append(id)
 	return select_group(ids)
+
+func run_projection_demo() -> bool:
+	# Find the highest open cell near the start, put a unit there and check drawing and picking use z - (height >> 1).
+	var type := "armflash" if faction == "arm" else "corraid"
+	var best := Vector2(-1, -1)
+	var best_height := -1
+	for dz in range(-12, 13):
+		for dx in range(-12, 13):
+			var point: Vector2 = navigation.nearest_open(unit_position + Vector2(dx, dz) * 48.0)
+			if point.x >= 0 and navigation.height_at(point) > best_height:
+				best_height = navigation.height_at(point)
+				best = point
+	if best_height < 2:
+		printerr("Projection demo: no raised ground near the start")
+		return false
+	var id: int = economy.add_unit(type, best, 0.0, 0)
+	economy.mobile_units[id] = MobileUnit.new(economy.unit_navigation(type), unit_catalog.definition(type), best, economy.scripts[id])
+	add_structure_sprite(id)
+	var height: int = economy.mobile_units[id].height
+	var expected := Vector2(best.x, best.y - float(height >> 1))
+	if structure_sprites[id].position != expected or drawn_position(id) != expected:
+		printerr("Projection demo: sprite at ", structure_sprites[id].position, " expected ", expected)
+		return false
+	if not unit_under(id, expected) or (height >> 1 > 40 and unit_under(id, best)):
+		printerr("Projection demo: picking does not follow the drawn position")
+		return false
+	if select_group_in_rect(Rect2(expected - Vector2(2, 2), Vector2(4, 4))) != 1 or selected_group[0] != id:
+		printerr("Projection demo: box select missed the drawn position")
+		return false
+	if not lift(Vector2(10, 100), 7.9) == Vector2(10, 97) or not lift(Vector2(0, 0), 255) == Vector2(0, -127):
+		printerr("Projection demo: height shift is not an integer >> 1")
+		return false
+	print("PROJECTION_VERIFY_OK unit at height %d drawn %d px up; click and box select use the drawn position" % [height, height >> 1])
+	return true
 
 func run_squad_demo() -> bool:
 	# Ctrl+number assigns, Alt+number selects (Shift adds), dead members drop out, Ctrl+Z adds matching types.
@@ -947,7 +1005,7 @@ func choose_dgun() -> void:
 func dgun_at(point: Vector2) -> bool:
 	for id: int in economy.units.keys():
 		var unit: Dictionary = economy.units[id]
-		if int(unit.get("team", 0)) != 0 and economy.footprint(unit.type, unit.position).grow(8).has_point(point):
+		if int(unit.get("team", 0)) != 0 and unit_under(id, point, 8.0):
 			var accepted: bool = combat.command_fire(economy.builder_id, id)
 			status_label.text = "  " + combat.status
 			return accepted
@@ -1216,7 +1274,7 @@ func sync_feature_sprites() -> void:
 		var sprite := Sprite2D.new()
 		sprite.texture = structure_texture(key, -anchor - 1)
 		sprite.set_meta("feature", str(instance.name))
-		sprite.position = Vector2(float(instance.position_raw[0]), float(instance.position_raw[2])) / 65536.0
+		sprite.position = lift(Vector2(float(instance.position_raw[0]), float(instance.position_raw[2])) / 65536.0, float(int(instance.position_raw[1]) >> 16))
 		sprite.scale = Vector2.ONE * (0.28 * 192.0 / 55.0)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		world.add_child(sprite)
@@ -1333,7 +1391,7 @@ func add_structure_sprite(id: int) -> void:
 	var type: String = unit.type
 	var sprite := Sprite2D.new()
 	sprite.texture = structure_texture(type, id)
-	sprite.position = unit.position
+	sprite.position = drawn_position(id)
 	sprite.scale = Vector2.ONE * (0.28 * 192.0 / 55.0)
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	world.add_child(sprite)
@@ -1625,7 +1683,7 @@ func step_script() -> void:
 				add_structure_sprite(id)
 		resource_label.text = preload("res://resource_display.gd").describe(economy.resources(0))
 		for id: int in structure_sprites:
-			structure_sprites[id].position = economy.units[id].position
+			structure_sprites[id].position = drawn_position(id)
 			var remaining := float(economy.units[id].remaining)
 			structure_sprites[id].modulate = Color(1, 1, 1, 0.25 + 0.75 * (1.0 - remaining))
 			if structure_models.has(id) and economy.scripts.has(id):
@@ -1854,8 +1912,10 @@ func update_world() -> void:
 		return
 	world.scale = Vector2(map_zoom, map_zoom)
 	world.position = map_panel.size * 0.5 - map_center * map_zoom
-	selection.position = (economy.units[selected_unit].position if selected_unit != 0 and economy != null else unit_position) + Vector2(0, 15)
-	unit_sprite.position = unit_position
+	var commander_height := float(mobile.height) if mobile != null else 0.0
+	var selected_point: Vector2 = drawn_position(selected_unit) if selected_unit != 0 and economy != null and economy.units.has(selected_unit) else lift(unit_position, commander_height)
+	selection.position = selected_point + Vector2(0, 15)
+	unit_sprite.position = lift(unit_position, commander_height)
 	if zoom_label != null:
 		zoom_label.text = "Zoom  %d%%" % roundi(map_zoom * 100)
 	refresh_minimap()
@@ -1911,7 +1971,7 @@ func map_input(event: InputEvent) -> void:
 					group_handled = true
 					var clicked := 0
 					for id: int in economy.units:
-						if economy.footprint(economy.units[id].type, economy.units[id].position).has_point(pos):
+						if unit_under(id, pos):
 							clicked = id
 					if clicked != 0 and int(economy.units[clicked].get("team", 0)) != 0:
 						group_attack(clicked)
@@ -1937,21 +1997,21 @@ func map_input(event: InputEvent) -> void:
 					ids.reverse()
 					for id: int in ids:
 						var unit: Dictionary = economy.units[id]
-						if int(unit.get("team", 0)) != 0 and economy.footprint(unit.type, unit.position).has_point(pos):
+						if int(unit.get("team", 0)) != 0 and unit_under(id, pos):
 							combat.attack(economy.builder_id if selected_unit == 0 else selected_unit, id, true)
 							status_label.text = "  " + combat.status
 							resumed = true
 							break
-						if economy.footprint(unit.type, unit.position).has_point(pos) and (economy.factories.has(id) or economy.mobile_units.has(id)) and float(unit.remaining) == 0:
+						if unit_under(id, pos) and (economy.factories.has(id) or economy.mobile_units.has(id)) and float(unit.remaining) == 0:
 							select_unit(id)
 							resumed = true
 							break
-						if economy.footprint(unit.type, unit.position).has_point(pos) and economy.set_active(id, not bool(unit.active)):
+						if unit_under(id, pos) and economy.set_active(id, not bool(unit.active)):
 							status_label.text = "  Solar collector " + ("on" if unit.active else "off")
 							resumed = true
 							break
 						var source_id: int = economy.builder_id if selected_unit == 0 else selected_unit
-						if economy.footprint(unit.type, unit.position).has_point(pos) and economy.resume_build(id, source_id):
+						if unit_under(id, pos) and economy.resume_build(id, source_id):
 							if selected_unit == 0:
 								mobile.stop()
 							if selected_unit == 0 and not building:

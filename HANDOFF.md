@@ -12,6 +12,10 @@ Codex investigates, plans, and reviews; Claude implements assigned changes. A CL
 
 User reiterated (September 13): the ultimate goal is a playable full port of Total Annihilation, and every verified checkpoint must be committed and pushed to GitHub.
 
+Height projection: units, Commander, wrecks, rings, health bars, projectiles and effects are drawn at z - (height >> 1), the projection box select 0x48c390 uses; click and box picks test the drawn position. Terrain clicks are still flat (inverse cursor projection under research). --verify-projection (Comet Catcher Arm, Sherwood Core) in NORMAL. See PLAYER_CONTROLS.md.
+
+Skirmish AI research: the original computer player (ai/<profile>.txt plan/weight/limit, 9 group handlers, difficulty only selects plan blocks and scales type-2 income 0.5/0.7/1.0, omniscient nearest-enemy attacks, FBI ai_limit never applied due to a native bug) is written up as a 15-checkpoint port plan in analysis/SKIRMISH_AI_RESEARCH.md. CP2 profile interpreter with native oracle is in progress.
+
 Squads and command research: viewer control groups per recovered 0x48d920/0x48d9a0 (Ctrl+1..9 assign, Alt+1..9 select, Shift add, Ctrl+A, Ctrl+Z, Esc) with --verify-squads both factions; sidebar minimap (minimap.gd). Command-layer research (order record 0x56 bytes, 67-entry sorted order table, 0x43adc0 insert/marker rules, shift toggle 0x43afc0, dispatcher 0x43b7c0 return codes, background list 0x43bad0, stances f110 bits 18-21, keyboard map) saved as the unified order-queue plan; implement after the COB VM parity checkpoint. See PLAYER_CONTROLS.md.
 
 LOS foundation: prepare_visibility.py extracts LOS.TDF and VISMASKS.GAF (10 vismask frames, header version 0); los_tables.gd ports the 0x433130 ray loader incl. its TDF parser quirks (rays grouped by rotation, not interleaved) - native 33,899/33,899 (audited, 5 parser bugs fixed); los_height_grid.gd ports 0x482c20 - native 244/244 grids (568,416 bytes, full branch coverage). Both in -Native. See LOS_FOUNDATION.md. Next: stamping/lifecycle (C4) and visibility queries (C6) are in progress as workflows, then world hook, radar/jam/cloak, targeting gates, fog rendering.
