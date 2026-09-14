@@ -168,6 +168,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Order queue tests failed' }
     & $godotPath --headless --path godot --script res://test_hover_pick.gd
     if ($LASTEXITCODE -ne 0) { throw 'Hover pick tests failed' }
+    & $godotPath --headless --path godot --script res://test_ai_profile.gd
+    if ($LASTEXITCODE -ne 0) { throw 'AI profile tests failed' }
     & $godotPath --headless --path godot --script res://test_ai_brain.gd
     if ($LASTEXITCODE -ne 0) { throw 'AI brain tests failed' }
     & $godotPath --headless --path godot --script res://test_minimap.gd
@@ -492,6 +494,12 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Native AI groups failed' }
         & $godotPath --headless --path godot --script res://compare_native_ai_groups.gd
         if ($LASTEXITCODE -ne 0) { throw 'AI groups native comparison failed' }
+        python tools\prepare_ai.py
+        if ($LASTEXITCODE -ne 0) { throw 'AI profile data preparation failed' }
+        python tools\native_ai_profile.py
+        if ($LASTEXITCODE -ne 0) { throw 'Native AI profile failed' }
+        & $godotPath --headless --path godot --script res://compare_native_ai_profile.gd
+        if ($LASTEXITCODE -ne 0) { throw 'Native AI profile comparison failed' }
         python tools\native_hover_pick.py
         if ($LASTEXITCODE -ne 0) { throw 'Native hover pick failed' }
         & $godotPath --headless --path godot --script res://compare_native_hover_pick.gd

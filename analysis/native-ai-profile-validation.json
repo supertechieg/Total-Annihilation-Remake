@@ -1,0 +1,962 @@
+{
+  "oracle": "tools/native_ai_profile.py",
+  "comparator": "godot/compare_native_ai_profile.gd",
+  "exe_sha256": "3b9c0fadabf3dc67ed5f05a70f1e1505a0c65deadd1a3c930adfe30e2a84995e",
+  "cases": 426,
+  "groups": {
+    "real": 75,
+    "synthetic": 329,
+    "fbi": 22
+  },
+  "native_fault_cases": [
+    {
+      "name": "token-storage-128-d0",
+      "kind": "token_storage_overflow",
+      "eip": "0x4b74d5"
+    },
+    {
+      "name": "fallback-token-47-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x4b7910"
+    },
+    {
+      "name": "fallback-token-48-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x4b0078"
+    },
+    {
+      "name": "fallback-token-49-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7478"
+    },
+    {
+      "name": "fallback-token-50-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x747874"
+    },
+    {
+      "name": "fallback-token-51-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7478742e"
+    },
+    {
+      "name": "fallback-token-52-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x78742e7a"
+    },
+    {
+      "name": "fallback-token-53-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x742e7a7a"
+    },
+    {
+      "name": "fallback-token-54-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x2e7a7a7a"
+    },
+    {
+      "name": "fallback-token-55-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7a7a7a7a"
+    },
+    {
+      "name": "fallback-token-56-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7a7a7a7a"
+    },
+    {
+      "name": "fallback-token-57-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7a7a7a7a"
+    },
+    {
+      "name": "fallback-token-58-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7a7a7a7a"
+    },
+    {
+      "name": "fallback-token-59-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7a7a7a7a"
+    },
+    {
+      "name": "fallback-token-60-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7a7a7a7a"
+    },
+    {
+      "name": "fallback-token-61-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7a7a7a7a"
+    },
+    {
+      "name": "fallback-token-62-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7a7a7a7a"
+    },
+    {
+      "name": "fallback-token-63-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7a7a7a7a"
+    },
+    {
+      "name": "fallback-token-64-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7a7a7a7a"
+    },
+    {
+      "name": "fallback-token-65-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7a7a7a7a"
+    },
+    {
+      "name": "fallback-token-66-d0",
+      "kind": "fallback_path_overflow",
+      "eip": "0x7a7a7a7a"
+    }
+  ],
+  "real_profile_inputs": {
+    "local/ai/archives/ccdata_ccx/acid.txt": "6898c1e8c705dae55198319520081d9595646887f76aa05740d081ea147d37b5",
+    "local/ai/archives/ccdata_ccx/airbattle.txt": "430dd8223b0208ef4732a5ca0ce74735a65c5a7a27321302df02db0e6ab9b59c",
+    "local/ai/archives/ccdata_ccx/default.txt": "f29ac19ab63faefbbdedbdc6a051e80cf6ee78aba7fb71ed20ce70f64ffda5c6",
+    "local/ai/archives/ccdata_ccx/hover.txt": "41578b1b6c074273d1ed61357ffac01d5f72b6dab0ba65fb04bcbaef1c73835f",
+    "local/ai/archives/ccdata_ccx/krogoth.txt": "2083ad3672a43c8a1faf70fb98f11fca2effbe90a610d5f5d7f399f7ef2be4ef",
+    "local/ai/archives/ccdata_ccx/metal.txt": "d8cc03d4c61cdafa47972162e7fe96ae8bc3964ec0d1cc7750dd8187655e28a6",
+    "local/ai/archives/ccdata_ccx/missions.txt": "385248d605ac0cd745807985b8e9475459b3ec01adb5bde54abfc7d84f7e7434",
+    "local/ai/archives/ccdata_ccx/seabattle.txt": "1891e1721339e42eeffa2386c91e16a38856bba50f929677b90ad70dc9cba3f5",
+    "local/ai/archives/ccdata_ccx/urban.txt": "5eeab9e8aa742037132732d2b6dd1aa009e1c2d3139452f937e2b0b33fb49e0d",
+    "local/ai/archives/ccdata_ccx/waterwrld.txt": "c68edd68accad9d364cb49d56cdb6a0623ef2cc093460811a3b8307cfb653b24",
+    "local/ai/archives/rev31_gp3/acid.txt": "1a33c95bc92b7d57f446efa2ead8cd5c4453c3f5dc4eb7e9f8c25adf1c6e96e8",
+    "local/ai/archives/rev31_gp3/airbattle.txt": "0a6597d7c0e03206ff4a9a2090ad9e701c7ea099a6505e0003e1f6759cae5acc",
+    "local/ai/archives/rev31_gp3/default.txt": "a611ffe0bb9be4fa781ce9df40a7e55a4bb785f2c7449070178549197ce68ddf",
+    "local/ai/archives/rev31_gp3/hover.txt": "b4bac50e6ce26dd4a4c7b8dae502c1d0eb90ca7ac4da622a0e7f78d6103fbf6f",
+    "local/ai/archives/rev31_gp3/metal.txt": "7cd926a0d51eb36d61a878b49cdd176e94763ae96ed43fd587ceffa5b3238222",
+    "local/ai/archives/rev31_gp3/missions.txt": "a48c3791d36d77705e85abc72a857a0c9b56ca539dec5828b839f3eb8dd2619d",
+    "local/ai/archives/rev31_gp3/seabattle.txt": "ee41b3378ef01837fbc61072d60fa8671636cd27601a47867e5fff9349f34c90",
+    "local/ai/archives/rev31_gp3/urban.txt": "47e2bbe0fc667fa4fe68420e007db704ea0551b66111b67eba6a2928049fadc4",
+    "local/ai/archives/rev31_gp3/waterwrld.txt": "5b7395134603565e24604df74f4c1b7bb924d5fd6a7d007578ac934c8f57d7cd",
+    "local/ai/archives/totala1_hpi/airbattle.txt": "c90b52ed047bcece0719889d3cc9508bda890ac29a647b14b398014b3b34ddd2",
+    "local/ai/archives/totala1_hpi/default.txt": "e811da381d760cfe10159687be663dce071b249c28c82b9063cec8c7c727b2e7",
+    "local/ai/archives/totala1_hpi/missions.txt": "94aa581d1d845d35f597cce8cb4426b14c32adc8717f40baa39e7977e4cd336e",
+    "local/ai/archives/totala1_hpi/seabattle.txt": "ba824514b1a1fc8d1c687147f0eaceab88dc5fe9fcfdef274d4de2f19338d0cb",
+    "local/ai/resolved/default.txt": "a611ffe0bb9be4fa781ce9df40a7e55a4bb785f2c7449070178549197ce68ddf"
+  },
+  "units_real": 272,
+  "units_synthetic": 19,
+  "unit_sets": [
+    "synthetic",
+    "synthetic_plan"
+  ],
+  "atof_strings": 7912,
+  "atof_distinct_doubles": 6205,
+  "pow10_tables": {
+    "positive": {
+      "address": "0x5116f0",
+      "entries": 29,
+      "executable_equals_derivation_equals_port": true
+    },
+    "negative": {
+      "address": "0x511850",
+      "entries": 29,
+      "executable_equals_derivation_equals_port": true
+    }
+  },
+  "executed_original": [
+    "0x406f00",
+    "0x4b7620",
+    "0x4b7760",
+    "0x4b78e0",
+    "0x488e70",
+    "0x488c50",
+    "0x409470",
+    "0x4648e0",
+    "0x40a100",
+    "0x4b7a30",
+    "0x4b7440",
+    "0x4b74f0",
+    "0x4b7900",
+    "0x406c90",
+    "0x406db0",
+    "0x406e40",
+    "0x488d30",
+    "0x409dc0",
+    "0x409e90",
+    "0x409f80",
+    "0x40a040",
+    "0x409f20",
+    "0x417890",
+    "0x4bc370",
+    "0x4e4560 atof chain (0x4eaf00, 0x4f3d10, 0x4f8c40, 0x4f9390, 0x4f90d0, 0x4f3990/0x4f37c0)",
+    "0x4e4f70 atoi",
+    "0x4e42b0 sprintf",
+    "0x4f8a70 _stricmp"
+  ],
+  "stubs": [
+    "heap 0x4d8660/0x4d83c0/0x4e8890 and frees",
+    "_getptd 0x4eb0f0",
+    "slot-7 name 0x4356c0",
+    "file loader 0x4bbe50",
+    "unit spawn 0x485f50 (recorded)",
+    "spawn position 0x47ddc0",
+    "debugdat open 0x4bb5b0 (recorded, returns 0)",
+    "non-profile console handlers (recorded, ret 4)",
+    "Win32 imports trap (Enter/LeaveCriticalSection no-ops); a trap aborts the run"
+  ],
+  "fault_classification": "UcError only; eip in 0x4b7440..0x4b74ef -> token_storage_overflow; last event a debugdat open with path > 59 chars -> fallback_path_overflow; else unclassified",
+  "real_profile_results_skirmish_slot1": {
+    "real-rev31.gp3-acid.txt-d0": {
+      "slot1_weight_locks": 29,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 266,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-acid.txt-d1": {
+      "slot1_weight_locks": 29,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 246,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-acid.txt-d2": {
+      "slot1_weight_locks": 31,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 244,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-ccdata.ccx-acid.txt-d0": {
+      "slot1_weight_locks": 29,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 266,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-acid.txt-d1": {
+      "slot1_weight_locks": 29,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 246,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-acid.txt-d2": {
+      "slot1_weight_locks": 31,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 244,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-rev31.gp3-airbattle.txt-d0": {
+      "slot1_weight_locks": 29,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 266,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-airbattle.txt-d1": {
+      "slot1_weight_locks": 29,
+      "slot1_limit_locks": 260,
+      "slot1_weights_not_100": 246,
+      "slot1_limits_set": 263,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-airbattle.txt-d2": {
+      "slot1_weight_locks": 29,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 246,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-ccdata.ccx-airbattle.txt-d0": {
+      "slot1_weight_locks": 29,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 266,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-airbattle.txt-d1": {
+      "slot1_weight_locks": 29,
+      "slot1_limit_locks": 254,
+      "slot1_weights_not_100": 246,
+      "slot1_limits_set": 257,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-airbattle.txt-d2": {
+      "slot1_weight_locks": 29,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 246,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-totala1.hpi-airbattle.txt-d0": {
+      "slot1_weight_locks": 23,
+      "slot1_limit_locks": 2,
+      "slot1_weights_not_100": 21,
+      "slot1_limits_set": 32,
+      "fbi_ai_limit_types_left_unlimited": 14,
+      "events": {
+        "load_file": 1,
+        "script_file": 5
+      }
+    },
+    "real-totala1.hpi-airbattle.txt-d1": {
+      "slot1_weight_locks": 23,
+      "slot1_limit_locks": 2,
+      "slot1_weights_not_100": 21,
+      "slot1_limits_set": 32,
+      "fbi_ai_limit_types_left_unlimited": 14,
+      "events": {
+        "load_file": 1,
+        "script_file": 5
+      }
+    },
+    "real-totala1.hpi-airbattle.txt-d2": {
+      "slot1_weight_locks": 23,
+      "slot1_limit_locks": 2,
+      "slot1_weights_not_100": 21,
+      "slot1_limits_set": 32,
+      "fbi_ai_limit_types_left_unlimited": 14,
+      "events": {
+        "load_file": 1,
+        "script_file": 5
+      }
+    },
+    "real-rev31.gp3-default.txt-d0": {
+      "slot1_weight_locks": 21,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 266,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-default.txt-d1": {
+      "slot1_weight_locks": 26,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 246,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-default.txt-d2": {
+      "slot1_weight_locks": 30,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 244,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-ccdata.ccx-default.txt-d0": {
+      "slot1_weight_locks": 21,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 266,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-default.txt-d1": {
+      "slot1_weight_locks": 26,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 246,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-default.txt-d2": {
+      "slot1_weight_locks": 30,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 244,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-totala1.hpi-default.txt-d0": {
+      "slot1_weight_locks": 11,
+      "slot1_limit_locks": 0,
+      "slot1_weights_not_100": 6,
+      "slot1_limits_set": 205,
+      "fbi_ai_limit_types_left_unlimited": 2,
+      "events": {
+        "load_file": 1
+      }
+    },
+    "real-totala1.hpi-default.txt-d1": {
+      "slot1_weight_locks": 11,
+      "slot1_limit_locks": 0,
+      "slot1_weights_not_100": 6,
+      "slot1_limits_set": 71,
+      "fbi_ai_limit_types_left_unlimited": 14,
+      "events": {
+        "load_file": 1
+      }
+    },
+    "real-totala1.hpi-default.txt-d2": {
+      "slot1_weight_locks": 11,
+      "slot1_limit_locks": 0,
+      "slot1_weights_not_100": 6,
+      "slot1_limits_set": 30,
+      "fbi_ai_limit_types_left_unlimited": 14,
+      "events": {
+        "load_file": 1
+      }
+    },
+    "real-rev31.gp3-hover.txt-d0": {
+      "slot1_weight_locks": 47,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 263,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-hover.txt-d1": {
+      "slot1_weight_locks": 47,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 237,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-hover.txt-d2": {
+      "slot1_weight_locks": 47,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 237,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-ccdata.ccx-hover.txt-d0": {
+      "slot1_weight_locks": 47,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 263,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-hover.txt-d1": {
+      "slot1_weight_locks": 47,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 237,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-hover.txt-d2": {
+      "slot1_weight_locks": 47,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 237,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-krogoth.txt-d0": {
+      "slot1_weight_locks": 29,
+      "slot1_limit_locks": 155,
+      "slot1_weights_not_100": 236,
+      "slot1_limits_set": 225,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 18
+      }
+    },
+    "real-ccdata.ccx-krogoth.txt-d1": {
+      "slot1_weight_locks": 29,
+      "slot1_limit_locks": 155,
+      "slot1_weights_not_100": 236,
+      "slot1_limits_set": 225,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 18
+      }
+    },
+    "real-ccdata.ccx-krogoth.txt-d2": {
+      "slot1_weight_locks": 29,
+      "slot1_limit_locks": 155,
+      "slot1_weights_not_100": 236,
+      "slot1_limits_set": 225,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 18
+      }
+    },
+    "real-rev31.gp3-metal.txt-d0": {
+      "slot1_weight_locks": 30,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 265,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-metal.txt-d1": {
+      "slot1_weight_locks": 26,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 246,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-metal.txt-d2": {
+      "slot1_weight_locks": 30,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 244,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-ccdata.ccx-metal.txt-d0": {
+      "slot1_weight_locks": 30,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 265,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-metal.txt-d1": {
+      "slot1_weight_locks": 26,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 246,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-metal.txt-d2": {
+      "slot1_weight_locks": 30,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 244,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-rev31.gp3-missions.txt-d0": {
+      "slot1_weight_locks": 5,
+      "slot1_limit_locks": 6,
+      "slot1_weights_not_100": 151,
+      "slot1_limits_set": 26,
+      "fbi_ai_limit_types_left_unlimited": 17,
+      "events": {
+        "load_file": 1,
+        "script_file": 3
+      }
+    },
+    "real-rev31.gp3-missions.txt-d1": {
+      "slot1_weight_locks": 5,
+      "slot1_limit_locks": 6,
+      "slot1_weights_not_100": 151,
+      "slot1_limits_set": 26,
+      "fbi_ai_limit_types_left_unlimited": 17,
+      "events": {
+        "load_file": 1,
+        "script_file": 3
+      }
+    },
+    "real-rev31.gp3-missions.txt-d2": {
+      "slot1_weight_locks": 5,
+      "slot1_limit_locks": 2,
+      "slot1_weights_not_100": 4,
+      "slot1_limits_set": 22,
+      "fbi_ai_limit_types_left_unlimited": 17,
+      "events": {
+        "load_file": 1,
+        "script_file": 3
+      }
+    },
+    "real-ccdata.ccx-missions.txt-d0": {
+      "slot1_weight_locks": 5,
+      "slot1_limit_locks": 4,
+      "slot1_weights_not_100": 151,
+      "slot1_limits_set": 24,
+      "fbi_ai_limit_types_left_unlimited": 17,
+      "events": {
+        "load_file": 1,
+        "script_file": 3
+      }
+    },
+    "real-ccdata.ccx-missions.txt-d1": {
+      "slot1_weight_locks": 5,
+      "slot1_limit_locks": 4,
+      "slot1_weights_not_100": 151,
+      "slot1_limits_set": 24,
+      "fbi_ai_limit_types_left_unlimited": 17,
+      "events": {
+        "load_file": 1,
+        "script_file": 3
+      }
+    },
+    "real-ccdata.ccx-missions.txt-d2": {
+      "slot1_weight_locks": 5,
+      "slot1_limit_locks": 0,
+      "slot1_weights_not_100": 4,
+      "slot1_limits_set": 20,
+      "fbi_ai_limit_types_left_unlimited": 17,
+      "events": {
+        "load_file": 1,
+        "script_file": 3
+      }
+    },
+    "real-totala1.hpi-missions.txt-d0": {
+      "slot1_weight_locks": 5,
+      "slot1_limit_locks": 4,
+      "slot1_weights_not_100": 151,
+      "slot1_limits_set": 24,
+      "fbi_ai_limit_types_left_unlimited": 17,
+      "events": {
+        "load_file": 1
+      }
+    },
+    "real-totala1.hpi-missions.txt-d1": {
+      "slot1_weight_locks": 5,
+      "slot1_limit_locks": 4,
+      "slot1_weights_not_100": 151,
+      "slot1_limits_set": 24,
+      "fbi_ai_limit_types_left_unlimited": 17,
+      "events": {
+        "load_file": 1
+      }
+    },
+    "real-totala1.hpi-missions.txt-d2": {
+      "slot1_weight_locks": 5,
+      "slot1_limit_locks": 4,
+      "slot1_weights_not_100": 151,
+      "slot1_limits_set": 24,
+      "fbi_ai_limit_types_left_unlimited": 17,
+      "events": {
+        "load_file": 1
+      }
+    },
+    "real-rev31.gp3-seabattle.txt-d0": {
+      "slot1_weight_locks": 48,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 264,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-seabattle.txt-d1": {
+      "slot1_weight_locks": 50,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 235,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-seabattle.txt-d2": {
+      "slot1_weight_locks": 54,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 231,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-ccdata.ccx-seabattle.txt-d0": {
+      "slot1_weight_locks": 48,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 264,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-seabattle.txt-d1": {
+      "slot1_weight_locks": 50,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 235,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-seabattle.txt-d2": {
+      "slot1_weight_locks": 54,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 231,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-totala1.hpi-seabattle.txt-d0": {
+      "slot1_weight_locks": 22,
+      "slot1_limit_locks": 2,
+      "slot1_weights_not_100": 25,
+      "slot1_limits_set": 32,
+      "fbi_ai_limit_types_left_unlimited": 14,
+      "events": {
+        "load_file": 1,
+        "script_file": 5
+      }
+    },
+    "real-totala1.hpi-seabattle.txt-d1": {
+      "slot1_weight_locks": 22,
+      "slot1_limit_locks": 2,
+      "slot1_weights_not_100": 25,
+      "slot1_limits_set": 32,
+      "fbi_ai_limit_types_left_unlimited": 14,
+      "events": {
+        "load_file": 1,
+        "script_file": 5
+      }
+    },
+    "real-totala1.hpi-seabattle.txt-d2": {
+      "slot1_weight_locks": 22,
+      "slot1_limit_locks": 2,
+      "slot1_weights_not_100": 25,
+      "slot1_limits_set": 32,
+      "fbi_ai_limit_types_left_unlimited": 14,
+      "events": {
+        "load_file": 1,
+        "script_file": 5
+      }
+    },
+    "real-rev31.gp3-urban.txt-d0": {
+      "slot1_weight_locks": 21,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 266,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-urban.txt-d1": {
+      "slot1_weight_locks": 28,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 246,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-urban.txt-d2": {
+      "slot1_weight_locks": 32,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 244,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-ccdata.ccx-urban.txt-d0": {
+      "slot1_weight_locks": 21,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 266,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-urban.txt-d1": {
+      "slot1_weight_locks": 28,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 246,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-urban.txt-d2": {
+      "slot1_weight_locks": 32,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 244,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-rev31.gp3-waterwrld.txt-d0": {
+      "slot1_weight_locks": 21,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 267,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-waterwrld.txt-d1": {
+      "slot1_weight_locks": 21,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 249,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-rev31.gp3-waterwrld.txt-d2": {
+      "slot1_weight_locks": 21,
+      "slot1_limit_locks": 261,
+      "slot1_weights_not_100": 249,
+      "slot1_limits_set": 264,
+      "fbi_ai_limit_types_left_unlimited": 0,
+      "events": {
+        "load_file": 1,
+        "script_file": 25
+      }
+    },
+    "real-ccdata.ccx-waterwrld.txt-d0": {
+      "slot1_weight_locks": 21,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 267,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-waterwrld.txt-d1": {
+      "slot1_weight_locks": 21,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 249,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    },
+    "real-ccdata.ccx-waterwrld.txt-d2": {
+      "slot1_weight_locks": 21,
+      "slot1_limit_locks": 255,
+      "slot1_weights_not_100": 249,
+      "slot1_limits_set": 258,
+      "fbi_ai_limit_types_left_unlimited": 1,
+      "events": {
+        "load_file": 1,
+        "script_file": 22
+      }
+    }
+  },
+  "fbi_ai_limit_types": 17
+}
