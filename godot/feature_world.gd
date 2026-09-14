@@ -97,6 +97,20 @@ func place(name: String, x: int, z: int, position_raw = null, owner := 0) -> int
 	revision += 1
 	return anchor
 
+## 0x423550/0x423710: remove a feature and place its featurereclamate (reclaimed) or featuredead (destroyed)
+## at the same anchor and instance position with owner 10. Returns the new anchor, or -1 when nothing replaces it.
+func replace(cell: int, reclaimed: bool) -> int:
+	var anchor := anchor_of(cell)
+	if not instances.has(anchor):
+		return -1
+	var instance: Dictionary = instances[anchor]
+	var successor := str(catalog.feature(instance.name).get("featurereclamate" if reclaimed else "featuredead", ""))
+	if not remove(anchor):
+		return -1
+	if successor.is_empty() or catalog.feature(successor).is_empty():
+		return -1
+	return place(successor, anchor % width, anchor / width, instance.position_raw, 10)
+
 ## 0x486360: corpse type 1 places the definition corpse; each further step follows featuredead.
 func place_corpse(corpse: String, corpse_type: int, x: int, z: int, position_raw: Array, owner: int) -> int:
 	var name := corpse.to_lower()

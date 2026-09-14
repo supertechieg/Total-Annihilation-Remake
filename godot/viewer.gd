@@ -200,6 +200,10 @@ func start_world_movement() -> void:
 		if not run_wreckage_demo():
 			push_error("Wreckage scenario failed")
 			get_tree().quit(1)
+	if "--verify-reclaim" in OS.get_cmdline_user_args():
+		if not run_reclaim_demo():
+			push_error("Reclaim scenario failed")
+			get_tree().quit(1)
 	if "--verify-group-orders" in OS.get_cmdline_user_args():
 		if not run_group_orders():
 			push_error("Group order scenario failed")
@@ -575,6 +579,71 @@ func run_wreckage_demo() -> bool:
 		return false
 	print("WRECKAGE_VERIFY_OK %s died with severity %d, corpse type %d -> %s at cell %d; map features %d; %.1f s" % [enemy_type, int(death.severity), int(death.corpsetype),
 		economy.features.instances[anchor].name if anchor >= 0 else "none", anchor, map_features, float(Time.get_ticks_msec() - started) / 1000.0])
+	return true
+
+## A click on a reclaimable feature orders the selected builder (or the Commander) to reclaim it.
+func reclaim_at(point: Vector2) -> bool:
+	if economy == null or point.x < 0 or point.y < 0:
+		return false
+	var cell := int(point.y / 16) * int(economy.features.width) + int(point.x / 16)
+	var anchor: int = economy.features.anchor_of(cell)
+	if anchor < 0 or not economy.features.instances.has(anchor) or not bool(unit_catalog.feature(economy.features.instances[anchor].name).get("reclaimable", false)):
+		return false
+	var source: int = economy.builder_id if selected_unit == 0 else selected_unit
+	if not economy.can_reclaim(source):
+		return false
+	if source == economy.builder_id and building:
+		toggle_build()
+	var accepted: bool = economy.reclaim(source, cell)
+	if accepted and source == economy.builder_id:
+		combat.stop(source, false)
+		route_line.points = mobile.route
+	status_label.text = "  " + economy.status
+	return accepted
+
+func run_reclaim_demo() -> bool:
+	# The Commander destroys an adjacent enemy, then reclaims its wreck: metal is credited and the wreck becomes its featurereclamate.
+	var enemy_type := "armflash" if faction == "core" else "corraid"
+	var point: Vector2 = navigation.nearest_open(unit_position + Vector2(150, 0))
+	var enemy: int = economy.add_unit(enemy_type, point, 0.0, 1)
+	add_structure_sprite(enemy)
+	var deaths_before: int = combat.deaths.size()
+	for tick in range(1500):
+		step_script()
+		if not economy.units.has(enemy):
+			break
+	if economy.units.has(enemy) or combat.deaths.size() == deaths_before or int(combat.deaths[deaths_before].anchor) < 0:
+		printerr("Reclaim demo: no wreck to reclaim")
+		return false
+	var anchor := int(combat.deaths[deaths_before].anchor)
+	var width := int(economy.features.width)
+	var wreck: String = economy.features.instances[anchor].name
+	var definition: Dictionary = unit_catalog.feature(wreck)
+	# Leave storage headroom so the credited metal is visible in stock.
+	economy.metal = 0.0
+	var reclaimed_before: int = economy.reclaimed.size()
+	var started: int = economy.ticks
+	@warning_ignore("integer_division")
+	if not reclaim_at(Vector2(anchor % width, anchor / width) * 16.0 + Vector2(8, 8)):
+		printerr("Reclaim demo: order refused: ", economy.status)
+		return false
+	for tick in range(1500):
+		step_script()
+		if economy.reclaimed.size() > reclaimed_before:
+			break
+	if economy.reclaimed.size() == reclaimed_before:
+		printerr("Reclaim demo: not finished: ", economy.reclaim_jobs.get(economy.builder_id, {}))
+		return false
+	var result: Dictionary = economy.reclaimed[reclaimed_before]
+	var stock: float = economy.metal
+	for tick in range(40):
+		step_script()
+	var successor: String = economy.features.instances[anchor].name if economy.features.instances.has(anchor) else ""
+	if successor != str(definition.get("featurereclamate", "")) or economy.metal - stock < float(definition.metal) - 1.0 or not script_vm.fault.is_empty():
+		printerr("Reclaim demo: successor=%s metal %.1f -> %.1f fault=%s" % [successor, stock, economy.metal, script_vm.fault])
+		return false
+	print("RECLAIM_VERIFY_OK %s reclaimed %s (%d metal, countdown %d) %d ticks after the order; it became %s; metal %.1f -> %.1f" % [commander_type, wreck,
+		int(definition.metal), ConstructionWorld.reclaim_countdown(definition), int(result.tick) - started, successor, stock, economy.metal])
 	return true
 
 func choose_dgun() -> void:
@@ -1060,7 +1129,10 @@ func step_script() -> void:
 		if was_building and economy.task_id == 0 and building:
 			toggle_build()
 			status_label.text = "  Construction complete"
-		if economy.builder_jobs.has(selected_unit):
+		var reclaimer: int = economy.builder_id if selected_unit == 0 else selected_unit
+		if economy.reclaim_jobs.has(reclaimer):
+			status_label.text = "  " + economy.reclaim_jobs[reclaimer].status
+		elif economy.builder_jobs.has(selected_unit):
 			status_label.text = "  " + economy.builder_jobs[selected_unit].status
 		elif selected_target != 0 and selected_target in economy.completed:
 			status_label.text = "  Construction complete"
@@ -1350,6 +1422,8 @@ func map_input(event: InputEvent) -> void:
 								toggle_build()
 							resumed = true
 							break
+					if not resumed:
+						resumed = reclaim_at(pos)
 					if not resumed:
 						issue_move(pos)
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:

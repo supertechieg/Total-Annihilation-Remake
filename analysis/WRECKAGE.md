@@ -45,7 +45,7 @@ Destroyed units now leave their original wreck (or heap) as a map feature with t
 
 ## Limits
 
-- **Resources and damage.** Wrecks cannot yet be reclaimed. Features take no weapon damage and are not replaced by heaps when destroyed.
+- **Resources and damage.** Reclaim is implemented (see `RECLAIM.md`). Features take no weapon damage and are not replaced by heaps when destroyed.
 - **Water and 2D features.** The underwater sinking branch of `0x486360`, flamable burning, and 2D sprite features are not handled.
 - **Pathing refresh.** Rebuilds whole navigation grids rather than the original local refresh.
 - **Map features.** Loaded from the prepared placements, not by executing the original TNT loader.

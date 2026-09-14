@@ -126,6 +126,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Arm real-map wreckage failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-wreckage --faction core
     if ($LASTEXITCODE -ne 0) { throw 'Core real-map wreckage failed' }
+    & $godotPath --headless --path godot --script res://test_reclaim.gd
+    if ($LASTEXITCODE -ne 0) { throw 'Reclaim checks failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-reclaim
+    if ($LASTEXITCODE -ne 0) { throw 'Arm real-map reclaim failed' }
+    & $godotPath --headless --path godot --quit-after 2 -- --verify-reclaim --faction core
+    if ($LASTEXITCODE -ne 0) { throw 'Core real-map reclaim failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun
     if ($LASTEXITCODE -ne 0) { throw 'Arm Commander real-map D-gun failed' }
     & $godotPath --headless --path godot --quit-after 2 -- --verify-dgun --faction core

@@ -73,7 +73,8 @@ def feature_runtime(fields):
                 damage=integer('damage') & 0xffff, blocking=bool(integer('blocking') & 1), reclaimable=bool(integer('reclaimable') & 1),
                 autoreclaimable=bool(integer('autoreclaimable', 1) & 1), indestructible=bool(integer('indestructible') & 1),
                 flamable=bool(integer('flamable') & 1), geothermal=bool(integer('geothermal') & 1),
-                featuredead=str(fields.get('featuredead', '')).lower(), object=str(fields.get('object', '')).lower())
+                featuredead=str(fields.get('featuredead', '')).lower(), featurereclamate=str(fields.get('featurereclamate', '')).lower(),
+                object=str(fields.get('object', '')).lower())
 
 
 def prepare_features(content, output, required_textures, issues):
@@ -182,7 +183,7 @@ def prepare(root, output):
                 if name in weapons:
                     issues.append(dict(duplicate_weapon=name, previous=weapons[name]['source'], source=path))
                 weapons[name] = dict(source=path, definition=fields, runtime=weapon_runtime(fields))
-    index = dict(movement_runtime_version=1, weapon_runtime_version=5, feature_runtime_version=1, profile=PROFILE, profile_status='provisional archive precedence', units=units,
+    index = dict(movement_runtime_version=1, weapon_runtime_version=5, feature_runtime_version=2, profile=PROFILE, profile_status='provisional archive precedence', units=units,
                  build_menus=menus, menu_additions=additions, weapons=weapons, features=features, textures=textures,
                  palette=[palette[i:i + 3] for i in range(0, 768, 3)], issues=issues,
                  missing_textures=missing_textures, missing_menu_units=missing_menu_units)

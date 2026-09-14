@@ -61,6 +61,8 @@ var status := "Idle"
 var ticks := 0
 var builder_ready := true
 var builder_jobs: Dictionary = {}
+var reclaim_jobs: Dictionary = {}
+var reclaimed: Array = []
 
 # Core coverage is limited to natively verified scripts; unverified Core menu entries stay visible but unbuildable.
 static func supported(type: String) -> bool:
@@ -381,7 +383,129 @@ func assign_build(source_id: int, target: int) -> void:
 		mobile_units[source_id].stop()
 		builder_jobs[source_id] = {"target": target, "started": false, "status": "Waiting for builder to stop"}
 
+## Reclaim order 0x4147b0 state 2: countdown = trunc(30.0 - (metal + energy) * -0.5) from the feature definition.
+static func reclaim_countdown(definition: Dictionary) -> int:
+	return int(30.0 - (float(definition.get("metal", 0)) + float(definition.get("energy", 0))) * -0.5)
+
+func can_reclaim(source_id: int) -> bool:
+	if not units.has(source_id) or float(units[source_id].remaining) > 0 or int(catalog.definition(units[source_id].type).get("canreclamate", "0")) == 0:
+		return false
+	return source_id == builder_id or (mobile_units.has(source_id) and scripts.has(source_id))
+
+func feature_bounds(anchor: int) -> Rect2:
+	var definition: Dictionary = catalog.feature(features.instances[anchor].name)
+	return Rect2(Vector2(anchor % features.width, anchor / features.width) * 16.0, Vector2(int(definition.footprintx), int(definition.footprintz)) * 16.0)
+
+## Provisional approach rule: the builder's build distance to the feature footprint, as for construction.
+func in_reclaim_range(source_id: int, anchor: int) -> bool:
+	var bounds := feature_bounds(anchor)
+	var origin: Vector2 = units[source_id].position
+	return origin.distance_to(origin.clamp(bounds.position, bounds.end)) <= float(catalog.definition(units[source_id].type).get("builddistance", "60"))
+
+## Order a builder to reclaim the feature covering a map cell (16 units per cell).
+func reclaim(source_id: int, cell: int) -> bool:
+	if not can_reclaim(source_id):
+		status = "Select a completed unit that can reclaim"
+		return false
+	var anchor: int = features.anchor_of(cell)
+	if anchor < 0 or not features.instances.has(anchor):
+		status = "Nothing to reclaim there"
+		return false
+	var name: String = features.instances[anchor].name
+	if not bool(catalog.feature(name).get("reclaimable", false)):
+		status = "Feature is not reclaimable"
+		return false
+	stop_build(source_id)
+	var mobile = mobile_units.get(source_id)
+	if not in_reclaim_range(source_id, anchor):
+		var bounds := feature_bounds(anchor)
+		var centre := bounds.get_center()
+		var direction: Vector2 = (units[source_id].position - centre).normalized()
+		var approach: Vector2 = centre + direction * (bounds.size.length() * 0.5 + float(catalog.definition(units[source_id].type).get("builddistance", "60")) * 0.5)
+		if mobile == null or not mobile.move_to(mobile.navigation.nearest_open(approach)):
+			status = "Cannot reach the feature"
+			return false
+	elif mobile != null:
+		mobile.stop()
+	reclaim_jobs[source_id] = {"anchor": anchor, "name": name, "state": 0, "countdown": 0, "wake": 0, "started": false, "status": "Reclaiming"}
+	status = "Reclaiming " + name
+	return true
+
+func stop_reclaim(source_id: int) -> void:
+	if reclaim_jobs.has(source_id):
+		if reclaim_jobs[source_id].started and scripts.has(source_id):
+			scripts[source_id].invoke("StopBuilding")
+		reclaim_jobs.erase(source_id)
+
+## States follow 0x4147b0: approach and aim (0/1), countdown set (2), two-tick sleeps subtracting two (3), completion (4).
+func step_reclaimers() -> void:
+	for source_id: int in reclaim_jobs.keys():
+		var job: Dictionary = reclaim_jobs[source_id]
+		var anchor := int(job.anchor)
+		if not units.has(source_id) or not features.instances.has(anchor) or str(features.instances[anchor].name) != str(job.name):
+			stop_reclaim(source_id)
+			continue
+		var vm = scripts.get(source_id)
+		if vm != null and not vm.fault.is_empty():
+			job.status = "Script fault: " + vm.fault
+			continue
+		var mobile = mobile_units.get(source_id)
+		if int(job.state) == 0:
+			if not in_reclaim_range(source_id, anchor):
+				if mobile == null or mobile.route.is_empty():
+					job.status = "Reclaim paused: out of range"
+				continue
+			if mobile != null and not mobile.route.is_empty():
+				mobile.stop()
+			if mobile != null and mobile.speed != 0:
+				job.status = "Stopping to reclaim"
+				continue
+			if vm != null:
+				var origin: Vector2 = units[source_id].position
+				var target := feature_bounds(anchor).get_center()
+				var heading := int(mobile.heading) if mobile != null else 0
+				vm.invoke("StartBuilding", [roundi(atan2(origin.x - target.x, origin.y - target.y) * 65536.0 / TAU) - heading, 0])
+				job.started = true
+			job.state = 1
+		if int(job.state) == 1:
+			if vm != null and int(vm.values.get(5, 0)) != 1:
+				job.status = "Preparing construction arm"
+				continue
+			job.countdown = reclaim_countdown(catalog.feature(str(job.name)))
+			job.state = 2
+			job.countdown_tick = ticks
+			job.status = "Reclaiming"
+			continue
+		if ticks < int(job.wake):
+			continue
+		if int(job.state) == 2:
+			job.wake = ticks + 2
+			job.countdown = int(job.countdown) - 2
+			if int(job.countdown) <= 0:
+				job.state = 3
+			continue
+		complete_reclaim(source_id, anchor)
+
+## 0x4237d0: feature energy and metal join the reclaimer's income accumulators, then 0x423550(x, z, 1)
+## swaps in featurereclamate. The AI-controller multiplier branch is not applied.
+func complete_reclaim(source_id: int, anchor: int) -> void:
+	var name: String = features.instances[anchor].name
+	var definition: Dictionary = catalog.feature(name)
+	var energy_ledger: Dictionary = units[source_id].energy_ledger
+	var metal_ledger: Dictionary = units[source_id].metal_ledger
+	energy_ledger.income = Upkeep.float32(energy_ledger.income + float(definition.get("energy", 0)))
+	metal_ledger.income = Upkeep.float32(metal_ledger.income + float(definition.get("metal", 0)))
+	var successor: int = features.replace(anchor, true)
+	var duration := ticks - int(reclaim_jobs[source_id].get("countdown_tick", ticks))
+	stop_reclaim(source_id)
+	refresh_feature_blocking()
+	reclaimed.append({"source": source_id, "name": name, "anchor": anchor, "metal": float(definition.get("metal", 0)), "energy": float(definition.get("energy", 0)),
+		"successor": features.instances[successor].name if successor >= 0 else "", "tick": ticks,
+		"duration": duration})
+	status = "Reclaimed " + name
+
 func stop_build(source_id := 0) -> void:
+	stop_reclaim(builder_id if source_id == 0 else source_id)
 	if source_id == 0 or source_id == builder_id:
 		task_id = 0
 	elif builder_jobs.has(source_id):
@@ -462,6 +586,7 @@ func step() -> void:
 		settle_economy()
 	step_factories()
 	step_builders()
+	step_reclaimers()
 	if task_id == 0 or not builder_ready:
 		return
 	var unit: Dictionary = units[task_id]
