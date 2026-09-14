@@ -32,6 +32,13 @@ Each behavior was recovered by a reverse-engineering workflow: an analyst plus a
   - It keeps the health as a signed 16-bit word and records the last damage type.
   - Surviving victims queue `HitByWeapon` and `TakeDamage` without running them, skipping any the script lacks or when it has no free thread. The calls are listed in `notifications`.
 - **Positions passed.** Direct hits pass the impact position, beams their head position, and splash victims the projectile position.
+- **Veterancy and kill credit.**
+  - The `+0xb8` kill word is incremented at `0x4869ca` when a fully built victim dies whose last attacker (`+0xf0`) belongs to another owner (`+0xf4 ≠ +0xff`).
+  - Veterancy level is `min(kills/5, 5)`.
+  - Attackers add `(6k + 100)/100` to weapon damage (`0x499dae`). Targets then scale all non-heal damage by `(25 − k)·4/100` after the armor modifier (`0x489bf3`).
+  - `DamageNotify.attacker_veterancy`/`target_veterancy` implement these. `apply_damage` records `last_attacker` and `last_attacker_team`, and `kill_unit` credits the killer's `experience`, which firing spread and reload already use.
+  - Death explosions carry no attacker, matching the synthetic projectile `0x49a0c0`.
+  - The native comparator now checks the host veterancy functions against the original (the veterancy group matches 2,500 / 2,500). `test_damage_notify.gd` adds 6 checks: the veterancy factors, boosted damage from a 10-kill attacker, and kill credit that skips same-owner and unfinished victims.
 
 ### Evidence
 
@@ -49,7 +56,6 @@ Each behavior was recovered by a reverse-engineering workflow: an analyst plus a
 
 ### Limits
 
-- **Veterancy.** Kills are not tracked, so veterancy is always 0.
 - **Paralyzers.** They still apply damage in the host; the paralyze order is not implemented.
 - **Inactive owners.** The owner branch (health clamped to 0, scripts run) does not arise in the host.
 - **`damagemodifier` conversion.** The float-to-16.16 conversion is inferred.

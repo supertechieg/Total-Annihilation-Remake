@@ -30,6 +30,24 @@ static func health_percent(health: int, maxdamage: int) -> int:
 	@warning_ignore("integer_division")
 	return clampi(((health * 100) & 0xffffffff) / maxi(1, maxdamage & 0xffffffff), 0, 100)
 
+static func trunc_div(value: int, divisor: int) -> int:
+	@warning_ignore("integer_division")
+	var quotient := absi(value) / divisor
+	return -quotient if value < 0 else quotient
+
+## Veterancy level from the unit +0xb8 kill word: min(kills / 5, 5).
+static func veterancy_level(experience: int) -> int:
+	@warning_ignore("integer_division")
+	return mini((experience & 0xffff) / 5, 5)
+
+## 0x499dae: an attacking unit adds 6% damage per veterancy level (32-bit product, truncating division).
+static func attacker_veterancy(damage: int, experience: int) -> int:
+	return trunc_div(Ground.signed32((6 * veterancy_level(experience) + 100) * damage), 100)
+
+## 0x489bf3: the damaged unit removes 4% per veterancy level, applied after the armored modifier.
+static func target_veterancy(damage: int, experience: int) -> int:
+	return trunc_div(Ground.signed32(Ground.signed32((25 - veterancy_level(experience)) * damage) * 4), 100)
+
 ## 0x489bc3: a unit whose script set ARMORED takes damage * damagemodifier (16.16) >> 16 for damage below 30000.
 static func armored_damage(damage: int, armored: bool, modifier: int) -> int:
 	if not armored or damage >= 30000:

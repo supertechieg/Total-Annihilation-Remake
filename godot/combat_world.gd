@@ -502,7 +502,7 @@ func step() -> void:
 			continue
 		var target: int = world.collision.target_at(world, next_raw, int(projectile.owner))
 		if target != 0:
-			apply_damage(target, Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0), next_raw)
+			apply_damage(target, Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0), next_raw, 1, int(projectile.get("attacker", projectile.source)))
 			add_effect(end, str(projectile.get("explosion", "")))
 			request_sound(str(projectile.get("soundhit", "")), end)
 			continue
@@ -598,7 +598,7 @@ func step_beam(projectile: Dictionary) -> bool:
 	var target: int = world.collision.target_at(world, next.head, int(projectile.owner))
 	if target != 0:
 		if int(projectile.get("area", 0)) < 17:
-			apply_damage(target, Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0), next.head)
+			apply_damage(target, Damage.amount(Damage.base_damage(projectile.damage, world.units[target].type), 1.0), next.head, 1, int(projectile.get("attacker", projectile.source)))
 			add_effect(projectile.position, str(projectile.get("explosion", "")))
 			request_sound(str(projectile.get("soundhit", "")), projectile.position)
 		else:
@@ -622,17 +622,24 @@ func destroy_unit(id: int) -> void:
 ## the signed health word is reduced; at or below zero the unit is flagged dying (0x4000), ignores further damage until
 ## its update processes the death, and gets no scripts. Surviving weapon-hit victims queue HitByWeapon(cos, sin) and
 ## TakeDamage(percent) threads. Veterancy scaling awaits kill tracking.
-func apply_damage(id: int, damage: int, source_raw = null, damage_type := 1) -> void:
+func apply_damage(id: int, damage: int, source_raw = null, damage_type := 1, attacker := 0) -> void:
 	if not world.units.has(id) or pending_deaths.has(id):
 		return
 	var unit: Dictionary = world.units[id]
 	# Unit +0xf5: the last damage type selects the death explosion (3 = self-destruct uses selfdestructas).
 	unit.damage_type = damage_type
+	# Unit +0xf0/+0xf4: the last attacker and its owner, used for kill credit when the unit dies.
+	if attacker != 0 and world.units.has(attacker):
+		unit.last_attacker = attacker
+		unit.last_attacker_team = int(world.units[attacker].get("team", 0))
 	var vm = world.scripts.get(id)
 	var fields: Dictionary = world.catalog.definition(unit.type)
+	if source_raw != null and attacker != 0 and world.units.has(attacker):
+		damage = DamageNotify.attacker_veterancy(damage, int(world.units[attacker].get("experience", 0)))
 	if source_raw != null:
 		var armored: bool = vm != null and int(vm.values.get(20, 0)) != 0
 		damage = DamageNotify.armored_damage(damage, armored, int(float(fields.get("damagemodifier", "1")) * 65536.0))
+	damage = DamageNotify.target_veterancy(damage, int(unit.get("experience", 0)))
 	unit.health = Ground.signed16(int(unit.health) - (damage & 0xffff))
 	hits += 1
 	if int(unit.health) < 1:
@@ -763,13 +770,19 @@ func kill_unit(id: int) -> void:
 	var record := {"id": id, "type": unit.type, "severity": severity, "corpsetype": corpse, "corpse": str(fields.get("corpse", "")),
 		"position": unit.position, "position_raw": position_raw, "team": team, "debris": debris, "tick": tick, "anchor": -1}
 	deaths.append(record)
+	# Death at 0x4869a7..0x4869ca: a fully built victim killed by a unit of another owner adds one to the attacker's
+	# +0xb8 kill word, which feeds veterancy damage, firing spread and reload.
+	var killer := int(unit.get("last_attacker", 0))
+	if killer != 0 and complete and world.units.has(killer) and team != int(unit.get("last_attacker_team", team)):
+		world.units[killer].experience = (int(world.units[killer].get("experience", 0)) + 1) & 0xffff
+		record.killer = killer
 	destroy_unit(id)
 	# 0x49b000: reason 3 (self-destruct) detonates selfdestructas (def+0x224) instead of explodeas (def+0x220).
 	var blast_weapon := str(fields.get("selfdestructas" if int(unit.get("damage_type", 1)) == 3 else "explodeas", ""))
 	var explosion: Dictionary = world.catalog.weapon(blast_weapon) if complete and severity > 0 else {}
 	if not explosion.is_empty():
 		var definition: Dictionary = explosion.definition
-		blast({"source": id, "owner": team, "position": render_point(position_raw), "position_raw": position_raw,
+		blast({"source": id, "attacker": 0, "owner": team, "position": render_point(position_raw), "position_raw": position_raw,
 			"area": int(definition.get("areaofeffect", "0")), "edge": float(definition.get("edgeeffectiveness", "0")),
 			"explosion": str(definition.get("explosiongaf", "")) + "/" + str(definition.get("explosionart", "")),
 			"soundhit": str(definition.get("soundhit", "")), "damage": definition.get("damage", {}), "firestarter": int(definition.get("firestarter", "0")),
@@ -827,7 +840,7 @@ func blast(projectile: Dictionary) -> void:
 		var multiplier := Splash.multiplier(projectile.position_raw, record.position_raw, record.bounds.lower, record.bounds.upper, radius, float(projectile.edge))
 		if multiplier <= 0:
 			continue
-		apply_damage(id, Damage.amount(Damage.base_damage(projectile.damage, world.units[id].type), multiplier), projectile.position_raw)
+		apply_damage(id, Damage.amount(Damage.base_damage(projectile.damage, world.units[id].type), multiplier), projectile.position_raw, 1, int(projectile.get("attacker", projectile.source)))
 	# 0x49a120 feature pass: features within half the area of effect take the weapon's default damage (0x4244b0).
 	if "features" in world and world.features != null:
 		var weapon := {"default": int(str(projectile.damage.get("default", "0")).to_int()), "area": int(projectile.get("area", 0)),

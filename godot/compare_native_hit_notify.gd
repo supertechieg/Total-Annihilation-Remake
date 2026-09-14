@@ -1,7 +1,7 @@
 extends SceneTree
 ## Compare damage_notify.gd with the original 0x499cd0 -> 0x489bb0 -> 0x489ce0 weapon hit path (tools/native_hit_notify.py).
-## Core cases (no veterancy, game flags 0) use only DamageNotify plus the trunc(default*scale) lookup; veterancy/game-flag,
-## paralyzer and inactive-owner cases add the recovered formulas inline and are reported separately.
+## Damage uses DamageNotify throughout (angle, arguments, percent, armor and both veterancy terms) plus the
+## trunc(default*scale) lookup; game flags, paralyzer and inactive-owner branches add recovered formulas inline.
 const DamageNotify = preload("res://damage_notify.gd")
 const SCRIPTS := 0x2030000
 
@@ -26,8 +26,7 @@ func expected(case: Dictionary) -> Dictionary:
 	var has_attacker: bool = case.attacker != null
 	var damage := int(float(case.default_damage) * float(case.scale))
 	if has_attacker:
-		var k := mini(int(case.attacker.veterancy) / 5, 5)
-		damage = tdiv(s32((6 * k + 100) * damage), 100)
+		damage = DamageNotify.attacker_veterancy(damage, int(case.attacker.veterancy))
 	var game_flags := int(case.game_flags)
 	if game_flags & 0x80:
 		damage = s32(damage + damage)
@@ -36,8 +35,7 @@ func expected(case: Dictionary) -> Dictionary:
 	var returned := damage
 	var kind := 2 if int(case.weapon_flags) & 0x80 else 1
 	damage = DamageNotify.armored_damage(damage, bool(target.armored), int(target.modifier))
-	var target_k := mini(int(target.veterancy) / 5, 5)
-	damage = tdiv(s32(s32((25 - target_k) * damage) * 4), 100)
+	damage = DamageNotify.target_veterancy(damage, int(target.veterancy))
 	var byte := DamageNotify.angle_byte(ints(case.projectile), ints(target.position), int(target.heading))
 	var packet := {"code": 11, "target": int(target.index), "attacker": int(case.attacker.index) if has_attacker else 0,
 		"damage": damage & 0xffff, "angle": byte, "type": kind}
