@@ -1,9 +1,18 @@
 extends Node2D
 var combat: RefCounted
+## Player group selection rings and the in-progress drag box (world coordinates).
+var selected: Array = []
+var box := Rect2()
 
 func _draw() -> void:
 	if combat == null:
 		return
+	for id in selected:
+		if combat.world.units.has(int(id)):
+			draw_arc(combat.world.units[int(id)].position, 16, 0, TAU, 32, Color("7dff7d"), 1.5)
+	if box.size != Vector2.ZERO:
+		draw_rect(box.abs(), Color(0.5, 1.0, 0.5, 0.12), true)
+		draw_rect(box.abs(), Color("7dff7d"), false, 1.0)
 	for unit: Dictionary in combat.world.units.values():
 		if int(unit.get("team", 0)) != 0:
 			var point: Vector2 = unit.position

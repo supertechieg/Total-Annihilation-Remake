@@ -32,6 +32,8 @@ var structure_sprites: Dictionary = {}
 var structure_views: Dictionary = {}
 var structure_models: Dictionary = {}
 var selected_unit := 0
+var selected_group: Array[int] = []
+var box_start := Vector2.INF
 var factory_picker: OptionButton
 var factory_controls: VBoxContainer
 var factory_label: Label
@@ -188,6 +190,10 @@ func start_world_movement() -> void:
 	combat_overlay.z_index = 10
 	world.add_child(combat_overlay)
 	map_center = unit_position
+	if "--verify-group-orders" in OS.get_cmdline_user_args():
+		if not run_group_orders():
+			push_error("Group order scenario failed")
+			get_tree().quit(1)
 	if "--verify-dgun" in OS.get_cmdline_user_args():
 		if not run_dgun_demo():
 			push_error("D-gun scenario failed")
@@ -422,6 +428,116 @@ func run_factory_demo(factory_type := "armvp", product_type := "armflash", produ
 	print("FACTORY_VERIFY_OK built=%s produced=%d %s; exit and selected movement passed" % [factory_type, product_count, product_type])
 	return true
 
+## Group control: Shift+drag box select, A selects the army, clicks issue formation moves or group attacks.
+func selectable_unit(id: int) -> bool:
+	if not economy.units.has(id) or id == economy.builder_id:
+		return false
+	var unit: Dictionary = economy.units[id]
+	return int(unit.get("team", 0)) == 0 and float(unit.remaining) == 0 and economy.mobile_units.has(id)
+
+func select_group(ids: Array) -> int:
+	selected_group.clear()
+	for id in ids:
+		if selectable_unit(int(id)):
+			selected_group.append(int(id))
+	if selected_group.size() == 1:
+		select_unit(selected_group[0])
+	elif not selected_group.is_empty():
+		select_unit(selected_group[0])
+		selection_label.text = "Selected: %d units" % selected_group.size()
+	combat_overlay.selected = selected_group.duplicate()
+	combat_overlay.queue_redraw()
+	return selected_group.size()
+
+func select_group_in_rect(rect: Rect2) -> int:
+	var ids: Array = []
+	for id: int in economy.units:
+		if rect.abs().has_point(economy.units[id].position):
+			ids.append(id)
+	return select_group(ids)
+
+func select_army() -> int:
+	var ids: Array = []
+	for id: int in economy.units:
+		if selectable_unit(id) and economy.units[id].type in Combat.SUPPORTED_UNITS:
+			ids.append(id)
+	return select_group(ids)
+
+func group_move(point: Vector2) -> int:
+	var live: Array = selected_group.filter(func(id: int) -> bool: return economy.units.has(id))
+	var columns := maxi(1, ceili(sqrt(float(live.size()))))
+	@warning_ignore("integer_division")
+	var rows := maxi(1, ceili(float(live.size()) / float(columns)))
+	var accepted := 0
+	for index in range(live.size()):
+		var id: int = live[index]
+		var offset := Vector2((index % columns) - (columns - 1) * 0.5, (index / columns) - (rows - 1) * 0.5) * 40.0
+		var destination: Vector2 = economy.unit_navigation(economy.units[id].type).nearest_open(point + offset)
+		if destination.x >= 0 and economy.move_unit(id, destination):
+			combat.stop(id, false)
+			accepted += 1
+	status_label.text = "  Group move: %d / %d units" % [accepted, live.size()]
+	return accepted
+
+func group_attack(target: int) -> int:
+	var accepted := 0
+	for id: int in selected_group:
+		if economy.units.has(id) and combat.attack(id, target, true):
+			accepted += 1
+	status_label.text = "  Group attack: %d units" % accepted
+	return accepted
+
+func spawn_own_unit(type: String, point: Vector2) -> int:
+	var id: int = economy.add_unit(type, point, 0.0)
+	economy.mobile_units[id] = MobileUnit.new(economy.unit_navigation(type), unit_catalog.definition(type), point, economy.scripts.get(id))
+	economy.mobile_units[id].heading = 32768
+	add_structure_sprite(id)
+	return id
+
+func run_group_orders() -> bool:
+	var type: String = Opponent.FACTIONS[faction].vehicle_combat
+	var squad: Array = []
+	for offset: Vector2 in [Vector2(-40, 0), Vector2(0, 0), Vector2(40, 0), Vector2(0, 40)]:
+		var point: Vector2 = navigation.nearest_open(unit_position + Vector2(-240, 160) + offset)
+		if point.x < 0:
+			return false
+		squad.append(spawn_own_unit(type, point))
+	var box := Rect2(unit_position + Vector2(-320, 100), Vector2(160, 140))
+	if select_group_in_rect(box) != squad.size():
+		printerr("Group select found %d of %d" % [selected_group.size(), squad.size()])
+		return false
+	var destination: Vector2 = navigation.nearest_open(unit_position + Vector2(-240, -200))
+	if group_move(destination) != squad.size():
+		return false
+	for tick in range(1500):
+		step_script()
+	var positions: Array = squad.map(func(id: int) -> Vector2: return economy.units[id].position)
+	for index in range(positions.size()):
+		if positions[index].distance_to(destination) > 90:
+			printerr("Group move: unit %d ended %s from %s" % [index, positions[index], destination])
+			return false
+		for other in range(index + 1, positions.size()):
+			if positions[index].distance_to(positions[other]) < 16:
+				printerr("Group move: units %d and %d overlap" % [index, other])
+				return false
+	var enemy_type := "armflash" if faction == "core" else "corraid"
+	var enemy: int = economy.add_unit(enemy_type, navigation.nearest_open(destination + Vector2(0, -160)), 0.0, 1)
+	add_structure_sprite(enemy)
+	if group_attack(enemy) != squad.size():
+		return false
+	for tick in range(1500):
+		step_script()
+		if not economy.units.has(enemy):
+			break
+	for id: int in squad:
+		if economy.scripts.has(id) and not economy.scripts[id].fault.is_empty():
+			return false
+	if economy.units.has(enemy):
+		printerr("Group attack did not destroy the enemy")
+		return false
+	print("GROUP_VERIFY_OK box-selected %d %s, formation move and group attack destroyed %s" % [squad.size(), type, enemy_type])
+	return true
+
 func choose_dgun() -> void:
 	if economy == null or not economy.units.has(economy.builder_id):
 		return
@@ -570,6 +686,14 @@ func issue_move(target: Vector2) -> bool:
 
 func stop_order() -> void:
 	placement_type = ""
+	if not selected_group.is_empty() and economy != null:
+		for id: int in selected_group:
+			if economy.units.has(id):
+				combat.stop(id)
+				if economy.mobile_units.has(id):
+					economy.mobile_units[id].stop()
+		status_label.text = "  Group stop"
+		return
 	if combat != null:
 		combat.stop(selected_unit if selected_unit != 0 or economy == null else economy.builder_id)
 	if selected_unit != 0 and economy.mobile_units.has(selected_unit):
@@ -1010,7 +1134,11 @@ func build_interface() -> void:
 	factory_controls.add_child(factory_picker)
 	factory_controls.add_child(button("Queue unit", queue_factory_unit))
 	factory_controls.add_child(button("Clear pending orders", func() -> void: economy.clear_factory_queue(selected_unit)))
-	column.add_child(button("Select Commander", func() -> void: select_unit(0)))
+	column.add_child(button("Select Commander", func() -> void:
+		selected_group.clear()
+		combat_overlay.selected = []
+		select_unit(0)))
+	column.add_child(label("Shift+drag selects units · A selects army", 11))
 	column.add_child(button("Add practice target", func() -> void: add_practice_target()))
 	column.add_child(button("Add armed Raider", add_armed_raider))
 	column.add_child(button("Start opponent", start_opponent))
@@ -1092,12 +1220,42 @@ func reset_view() -> void:
 func map_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
+			var world_point: Vector2 = (event.position - world.position) / map_zoom
+			if event.pressed and event.shift_pressed and economy != null:
+				box_start = world_point
+				dragging = false
+				return
+			if not event.pressed and box_start != Vector2.INF:
+				var rect := Rect2(box_start, world_point - box_start)
+				box_start = Vector2.INF
+				combat_overlay.box = Rect2()
+				if rect.abs().size.length() >= 5:
+					status_label.text = "  Selected %d units" % select_group_in_rect(rect)
+				update_world()
+				return
 			dragging = event.pressed
 			if event.pressed:
 				set_meta("press_position", event.position)
 			elif event.position.distance_to(get_meta("press_position", event.position)) < 5:
 				var pos: Vector2 = (event.position - world.position) / map_zoom
-				if placement_type == DGUN_MODE:
+				var group_handled := false
+				if placement_type.is_empty() and not selected_group.is_empty():
+					group_handled = true
+					var clicked := 0
+					for id: int in economy.units:
+						if economy.footprint(economy.units[id].type, economy.units[id].position).has_point(pos):
+							clicked = id
+					if clicked != 0 and int(economy.units[clicked].get("team", 0)) != 0:
+						group_attack(clicked)
+					elif clicked != 0:
+						group_handled = false
+						selected_group.clear()
+						combat_overlay.selected = []
+					else:
+						group_move(pos)
+				if group_handled:
+					pass
+				elif placement_type == DGUN_MODE:
 					placement_type = ""
 					dgun_at(pos)
 				elif not placement_type.is_empty():
@@ -1138,6 +1296,9 @@ func map_input(event: InputEvent) -> void:
 			var factor := 1.2 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0 / 1.2
 			map_zoom = clampf(map_zoom * factor, 0.04, 8.0)
 			map_center = before - (event.position - map_panel.size * 0.5) / map_zoom
+	elif event is InputEventMouseMotion and box_start != Vector2.INF:
+		combat_overlay.box = Rect2(box_start, (event.position - world.position) / map_zoom - box_start)
+		combat_overlay.queue_redraw()
 	elif event is InputEventMouseMotion and dragging:
 		map_center -= event.relative / map_zoom
 	update_world()
@@ -1167,6 +1328,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		toggle_build()
 	elif event.keycode == KEY_D:
 		choose_dgun()
+	elif event.keycode == KEY_A and economy != null:
+		status_label.text = "  Selected army: %d units" % select_army()
 
 func _process(delta: float) -> void:
 	frames += 1
